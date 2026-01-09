@@ -25,9 +25,10 @@
 
 .header-left,
 .header-right {
-    min-width: 60px;
+    flex: 1;
     display: flex;
     align-items: center;
+    min-width: 0;
 }
 
 .header-right {
@@ -35,11 +36,9 @@
 }
 
 .header-center {
-    flex: 1;
+    flex: 0 0 auto;
     display: flex;
     justify-content: center;
-    min-width: 0;
-    /* Allow shrinking */
 }
 
 .header-center h2 {
@@ -114,6 +113,13 @@
         gap: 0 !important;
     }
 
+    body.no-scroll {
+        overflow: hidden !important;
+        height: 100vh !important;
+        position: fixed;
+        width: 100%;
+    }
+
     .main-nav {
         width: calc(100% - 2rem);
         max-width: none;
@@ -122,11 +128,11 @@
         margin: 0 1rem;
         position: relative;
         background: linear-gradient(135deg,
-                rgba(255, 255, 255, 0.15) 0%,
-                rgba(255, 255, 255, 0.05) 50%,
-                rgba(0, 0, 0, 0.2) 100%);
-        backdrop-filter: blur(25px) saturate(180%) contrast(105%) brightness(110%);
-        -webkit-backdrop-filter: blur(25px) saturate(180%) contrast(105%) brightness(110%);
+                rgba(255, 255, 255, 0.05) 0%,
+                rgba(0, 0, 0, 0.15) 50%,
+                rgba(0, 0, 0, 0.55) 100%);
+        backdrop-filter: blur(25px) saturate(180%) contrast(105%) brightness(85%);
+        -webkit-backdrop-filter: blur(25px) saturate(180%) contrast(105%) brightness(85%);
         border: 1px solid rgba(255, 255, 255, 0.2);
         box-shadow:
             0 8px 32px rgba(0, 0, 0, 0.4),
@@ -863,13 +869,19 @@ td {
     }
 
     /* 2. Navigation Scroll */
-    /* 2. Navigation Scroll - DISABLED for stretch effect */
+    .header-left,
+    .header-right {
+        display: none !important;
+    }
+
     .header-center {
         justify-content: center;
         overflow: visible;
         padding: 0;
         margin: 0;
         width: 100%;
+        display: flex;
+        flex: 1 !important;
     }
 
     .header-center::-webkit-scrollbar {
@@ -1220,8 +1232,9 @@ td {
         display: block;
         padding: 0;
         border: none;
-        overflow-wrap: break-word;
-        word-break: break-word;
+        overflow-wrap: anywhere;
+        word-break: normal;
+        white-space: normal !important;
         max-width: 100%;
     }
 
@@ -1249,8 +1262,8 @@ td {
         color: var(--text-main);
         order: 1;
         line-height: 1.3;
-        padding-right: 2.5rem;
-        /* Space for ID */
+        padding-right: 4.5rem;
+        /* Space for Action Icons */
     }
 
     /* 3. Translation (Full Width) */
@@ -1261,6 +1274,8 @@ td {
         color: var(--secondary);
         order: 2;
         margin-bottom: 0.4rem;
+        padding-right: 1.5rem;
+        /* Slight padding to avoid touching edge */
     }
 
     /* 4-5. Info Tags (Auto Width) */

@@ -7,6 +7,13 @@ class StudyModule {
         this.currentSession = null;
         this.settings = {
             audio: true,
+            audioWord: true,
+            audioInfo1: true,
+            audioInfo2: true,
+            audioEx1: false,
+            audioEx2: false,
+            audioEx3: false,
+            audioTranslation: true,
             examples: true,
             showWord: true,
             showInfo1: true,
@@ -19,7 +26,8 @@ class StudyModule {
             showStatDue: true,
             showStatToday: true,
             masterCard: false,
-            masterInterface: false
+            masterInterface: false,
+            masterAudio: true
         };
 
         // DOM Elements
@@ -50,6 +58,9 @@ class StudyModule {
         this.cardDeletedOverlay = document.getElementById('card-deleted-overlay');
         this.btnRestoreWord = document.getElementById('btn-restore-word');
         this.btnSkipDeleted = document.getElementById('btn-skip-deleted');
+        this.btnQuickToggleAudio = document.getElementById('btn-quick-toggle-audio');
+        this.iconAudioOn = document.getElementById('icon-audio-on');
+        this.iconAudioOff = document.getElementById('icon-audio-off');
 
         // Session Stats
         this.totalWordsCount = document.getElementById('total-words-count');
@@ -192,14 +203,36 @@ class StudyModule {
         this.sectionCardElements = document.getElementById('section-card-elements');
         this.sectionInterfaceElements = document.getElementById('section-interface-elements');
 
-        if (this.btnToggleAudio) {
-            this.btnToggleAudio.onclick = (e) => {
+        this.btnMasterAudio = document.getElementById('btn-master-toggle-audio');
+        this.sectionAudioElements = document.getElementById('section-audio-elements');
+        this.btnToggleAudioWord = document.getElementById('btn-toggle-audio-word');
+        this.btnToggleAudioInfo1 = document.getElementById('btn-toggle-audio-info1');
+        this.btnToggleAudioInfo2 = document.getElementById('btn-toggle-audio-info2');
+        this.btnToggleAudioEx1 = document.getElementById('btn-toggle-audio-ex1');
+        this.btnToggleAudioEx2 = document.getElementById('btn-toggle-audio-ex2');
+        this.btnToggleAudioEx3 = document.getElementById('btn-toggle-audio-ex3');
+        this.btnToggleAudioTranslation = document.getElementById('btn-toggle-audio-translation');
+
+        if (this.btnMasterAudio) {
+            this.btnMasterAudio.onclick = (e) => {
                 e.preventDefault(); e.stopPropagation();
                 this.settings.audio = !this.settings.audio;
-                this.btnToggleAudio.classList.toggle('active', this.settings.audio);
+                this.settings.masterAudio = this.settings.audio;
+                if (!this.settings.audio) this.stopAudio();
+                this.updateElementsVisibility();
                 this.db.saveSettings(this.settings);
             };
-            this.btnToggleAudio.classList.toggle('active', this.settings.audio);
+        }
+
+        if (this.btnQuickToggleAudio) {
+            this.btnQuickToggleAudio.onclick = (e) => {
+                e.preventDefault(); e.stopPropagation();
+                this.settings.audio = !this.settings.audio;
+                this.settings.masterAudio = this.settings.audio;
+                if (!this.settings.audio) this.stopAudio();
+                this.updateElementsVisibility();
+                this.db.saveSettings(this.settings);
+            };
         }
 
         const setupToggle = (btn, settingsKey) => {
@@ -208,12 +241,25 @@ class StudyModule {
                     e.preventDefault(); e.stopPropagation();
                     this.settings[settingsKey] = !this.settings[settingsKey];
                     btn.classList.toggle('active', this.settings[settingsKey]);
+                    if (!this.settings[settingsKey]) {
+                        // If specific item disabled and we only had one item or its currently speaking, stop
+                        // For simplicity, just cancel if anything is disabled to be sure
+                        this.stopAudio();
+                    }
                     this.updateElementsVisibility();
                     this.db.saveSettings(this.settings);
                 };
                 btn.classList.toggle('active', this.settings[settingsKey]);
             }
         };
+
+        setupToggle(this.btnToggleAudioWord, 'audioWord');
+        setupToggle(this.btnToggleAudioInfo1, 'audioInfo1');
+        setupToggle(this.btnToggleAudioInfo2, 'audioInfo2');
+        setupToggle(this.btnToggleAudioEx1, 'audioEx1');
+        setupToggle(this.btnToggleAudioEx2, 'audioEx2');
+        setupToggle(this.btnToggleAudioEx3, 'audioEx3');
+        setupToggle(this.btnToggleAudioTranslation, 'audioTranslation');
 
         setupToggle(this.btnToggleWord, 'showWord');
         setupToggle(this.btnToggleInfo1, 'showInfo1');
@@ -269,6 +315,15 @@ class StudyModule {
 
         if (this.sectionCardElements) this.sectionCardElements.classList.toggle('expanded', this.settings.masterCard);
         if (this.sectionInterfaceElements) this.sectionInterfaceElements.classList.toggle('expanded', this.settings.masterInterface);
+        if (this.sectionAudioElements) this.sectionAudioElements.classList.toggle('expanded', this.settings.masterAudio);
+
+        // Update audio buttons
+        if (this.btnMasterAudio) this.btnMasterAudio.classList.toggle('active', this.settings.audio);
+        if (this.btnQuickToggleAudio) {
+            this.btnQuickToggleAudio.classList.toggle('active-toggle', this.settings.audio);
+            if (this.iconAudioOn) this.iconAudioOn.classList.toggle('hidden', !this.settings.audio);
+            if (this.iconAudioOff) this.iconAudioOff.classList.toggle('hidden', this.settings.audio);
+        }
     }
 
     // --- STATS LOGIC ---
@@ -525,14 +580,62 @@ class StudyModule {
     }
 
     // --- TTS HELPER ---
-    speakText(text) {
-        if (!text || !this.settings.audio) return;
+    speakText(text, lang = 'de', onEndCallback) {
+        if (!text || !this.settings.audio) {
+            if (onEndCallback) onEndCallback();
+            return;
+        }
+
         if (window.responsiveVoice && window.responsiveVoice.voiceSupport()) {
-            window.responsiveVoice.speak(text, "Deutsch Male");
+            const voice = (lang === 'de') ? "Deutsch Male" : "Russian Female";
+            window.responsiveVoice.speak(text, voice, { onend: onEndCallback });
         } else {
             const u = new SpeechSynthesisUtterance(text);
-            u.lang = 'de-DE';
+            u.lang = (lang === 'de') ? 'de-DE' : 'ru-RU';
+            if (onEndCallback) u.onend = onEndCallback;
             window.speechSynthesis.speak(u);
+        }
+    }
+
+    speakSequence(items) {
+        if (!items.length || !this.settings.audio) return;
+        const item = items.shift();
+        this.speakText(item.text, item.lang, () => {
+            if (items.length && this.settings.audio) {
+                this.speakSequence(items);
+            }
+        });
+    }
+
+    stopAudio() {
+        if (window.responsiveVoice) window.responsiveVoice.cancel();
+        window.speechSynthesis.cancel();
+    }
+
+    playDeSequence(word) {
+        if (!this.settings.audio || !word) return;
+
+        const rawItems = [];
+        if (this.settings.audioWord && word.word) rawItems.push({ text: word.word, lang: 'de' });
+        if (this.settings.audioInfo1 && word.info1) rawItems.push({ text: word.info1, lang: 'de' });
+        if (this.settings.audioInfo2 && word.info2) rawItems.push({ text: word.info2, lang: 'de' });
+        if (this.settings.audioEx1 && word.ex1) rawItems.push({ text: word.ex1, lang: 'de' });
+        if (this.settings.audioEx2 && word.ex2) rawItems.push({ text: word.ex2, lang: 'de' });
+        if (this.settings.audioEx3 && word.ex3) rawItems.push({ text: word.ex3, lang: 'de' });
+
+        if (rawItems.length) {
+            const groupedItems = [];
+            rawItems.forEach(item => {
+                const last = groupedItems[groupedItems.length - 1];
+                if (last && last.lang === item.lang) {
+                    last.text += '. ' + item.text;
+                } else {
+                    groupedItems.push({ ...item });
+                }
+            });
+
+            this.stopAudio();
+            this.speakSequence(groupedItems);
         }
     }
 
@@ -624,7 +727,24 @@ class StudyModule {
             this.flashcard.onclick = () => {
                 // Do not flip if the card is in 'deleted' state
                 if (this.deletedWordBackup) return;
+
+                // Stop any ongoing speech immediately on flip
+                this.stopAudio();
+
+                const willShowBack = !this.flashcard.classList.contains('is-flipped');
                 this.flashcard.classList.toggle('is-flipped');
+
+                if (willShowBack) {
+                    // Speak translation when flipping to the back, if enabled
+                    if (this.settings.audio && this.settings.audioTranslation && this.currentSession && this.currentSession.currentWord) {
+                        this.speakText(this.currentSession.currentWord.translation, 'ru');
+                    }
+                } else {
+                    // Repeat German sequence when flipping back to front
+                    if (this.settings.audio && this.currentSession && this.currentSession.currentWord) {
+                        this.playDeSequence(this.currentSession.currentWord);
+                    }
+                }
             };
         }
 
@@ -833,7 +953,8 @@ class StudyModule {
 
         this.updateElementsVisibility();
 
-        this.speakText(word.word);
+        // Sequential Audio Queue
+        this.playDeSequence(word);
 
         setTimeout(() => {
             this.cardTranslation.textContent = word.translation;

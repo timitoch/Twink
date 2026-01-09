@@ -218,27 +218,37 @@ function switchView(targetView) {
     const globalHeader = document.getElementById('global-header');
 
     // Header Logic
-    if (targetView === viewStudySession) {
-        globalHeader.classList.add('hidden');
-        if (groupEditHeader) groupEditHeader.classList.add('hidden');
-    } else if (targetView === viewGroupEdit) {
-        globalHeader.classList.add('hidden');
+    globalHeader.classList.remove('hidden');
+    if (targetView === viewGroupEdit) {
         if (groupEditHeader) groupEditHeader.classList.remove('hidden');
     } else {
-        globalHeader.classList.remove('hidden');
         if (groupEditHeader) groupEditHeader.classList.add('hidden');
+    }
 
-        // Update Nav Tabs Active State
-        Object.values(navTabs).forEach(btn => btn && btn.classList.remove('active'));
+    // Update Nav Tabs Active State
+    Object.values(navTabs).forEach(btn => btn && btn.classList.remove('active'));
+    if (navSettingsMobileBtn) navSettingsMobileBtn.classList.remove('active');
 
-        if (targetView === viewStudy && navTabs.study) navTabs.study.classList.add('active');
-        else if (targetView === viewProfile && navTabs.profile) navTabs.profile.classList.add('active');
-        else if (targetView === viewWords && navTabs.dictionary) navTabs.dictionary.classList.add('active');
-        else if (targetView === viewImport && navTabs.import) navTabs.import.classList.add('active');
-        else if (targetView === viewSettings && navSettingsMobileBtn) navSettingsMobileBtn.classList.add('active');
+    if (targetView === viewStudy || targetView === viewStudySession) {
+        if (navTabs.study) navTabs.study.classList.add('active');
+    } else if (targetView === viewProfile) {
+        if (navTabs.profile) navTabs.profile.classList.add('active');
+    } else if (targetView === viewWords) {
+        if (navTabs.dictionary) navTabs.dictionary.classList.add('active');
+    } else if (targetView === viewImport) {
+        if (navTabs.import) navTabs.import.classList.add('active');
+    } else if (targetView === viewSettings) {
+        if (navSettingsMobileBtn) navSettingsMobileBtn.classList.add('active');
+    }
 
-        // Move the liquid glass indicator
-        setTimeout(updateNavIndicator, 0);
+    // Move the liquid glass indicator
+    setTimeout(updateNavIndicator, 0);
+
+    // Disable scroll on Study view for mobile
+    if (targetView === viewStudy || targetView === viewStudySession) {
+        document.body.classList.add('no-scroll');
+    } else {
+        document.body.classList.remove('no-scroll');
     }
 }
 

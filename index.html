@@ -342,13 +342,31 @@
                     <!-- Top Bar: Back (Left), Mastered Count & Settings (Right) -->
                     <div class="session-top-bar"
                         style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                        <div class="session-actions-left">
+                        <div class="session-actions-left" style="display: flex; gap: 0.75rem;">
                             <button id="btn-exit-session" class="btn-square icon-btn" title="Выйти">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
                                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                     stroke-linejoin="round">
                                     <line x1="19" y1="12" x2="5" y2="12"></line>
                                     <polyline points="12 19 5 12 12 5"></polyline>
+                                </svg>
+                            </button>
+                            <button id="btn-quick-toggle-audio" class="btn-square icon-btn active-toggle"
+                                title="Озвучка">
+                                <!-- Volume 2 Icon (Speaker) -->
+                                <svg id="icon-audio-on" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round">
+                                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                                </svg>
+                                <!-- Volume X Icon (Muted) -->
+                                <svg id="icon-audio-off" class="hidden" xmlns="http://www.w3.org/2000/svg" width="20"
+                                    height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round">
+                                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                    <line x1="23" y1="9" x2="17" y2="15"></line>
+                                    <line x1="17" y1="9" x2="23" y2="15"></line>
                                 </svg>
                             </button>
                         </div>
@@ -919,6 +937,26 @@
                                                 <span
                                                     style="font-size: 0.85rem; font-weight: 500;">Красный-Голубой</span>
                                             </button>
+
+                                            <button class="color-scheme-btn" data-color-scheme="midnight-gold">
+                                                <div class="scheme-preview"
+                                                    style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                                    <div
+                                                        style="width: 40px; height: 40px; border-radius: 8px; background: linear-gradient(135deg, #1e1b4b, #facc15);">
+                                                    </div>
+                                                </div>
+                                                <span style="font-size: 0.85rem; font-weight: 500;">Индиго-Золото</span>
+                                            </button>
+
+                                            <button class="color-scheme-btn" data-color-scheme="pure-black">
+                                                <div class="scheme-preview"
+                                                    style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                                    <div
+                                                        style="width: 40px; height: 40px; border-radius: 8px; background: #000000; border: 1px solid rgba(255,255,255,0.2);">
+                                                    </div>
+                                                </div>
+                                                <span style="font-size: 0.85rem; font-weight: 500;">Чистый черный</span>
+                                            </button>
                                         </div>
                                     </div>
 
@@ -1138,7 +1176,7 @@
         <div
             style="max-width: 520px; width: 100%; max-height: calc(100vh - 2rem); position: relative; display: flex; flex-direction: column;">
             <div class="word-edit-card"
-                style="backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); animation: liquidGlassOpen 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; display: flex; flex-direction: column; max-height: 100%; border-radius: 24px; border: 1px solid rgba(255,255,255,0.12); overflow: hidden; background: rgba(15,23,42,0.65);">
+                style="backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); animation: liquidGlassOpen 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; display: flex; flex-direction: column; max-height: 100%; border-radius: 24px; border: 1px solid var(--border); overflow: hidden; background: rgba(255, 255, 255, 0.03);">
                 <div class="card-header-mini">
                     <span class="card-num">Настройки сессии</span>
                     <div class="card-actions-mini">
@@ -1156,69 +1194,104 @@
                     style="display: flex; flex-direction: column; gap: 0rem; padding: 1rem 2rem; overflow-y: auto; flex: 1;">
 
                     <!-- Main Settings -->
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 0;">
-                        <span style="font-size: 1.1rem; font-weight: 500; color: var(--text-main);">Автоозвучка</span>
-                        <button id="btn-toggle-audio" class="toggle-switch-btn active">
+                    <div class="setting-row">
+                        <span class="setting-label">Настройка озвучки</span>
+                        <button id="btn-master-toggle-audio" class="toggle-switch-btn active">
                             <div class="toggle-thumb"></div>
                         </button>
+                    </div>
+
+                    <div id="section-audio-elements" class="settings-expand-section expanded">
+                        <div class="setting-inner-grid">
+                            <div class="setting-row">
+                                <span class="setting-label">Слово</span>
+                                <button id="btn-toggle-audio-word" class="toggle-switch-btn active">
+                                    <div class="toggle-thumb"></div>
+                                </button>
+                            </div>
+                            <div class="setting-row">
+                                <span class="setting-label">Инфо 1</span>
+                                <button id="btn-toggle-audio-info1" class="toggle-switch-btn active">
+                                    <div class="toggle-thumb"></div>
+                                </button>
+                            </div>
+                            <div class="setting-row">
+                                <span class="setting-label">Инфо 2</span>
+                                <button id="btn-toggle-audio-info2" class="toggle-switch-btn active">
+                                    <div class="toggle-thumb"></div>
+                                </button>
+                            </div>
+                            <div class="setting-row">
+                                <span class="setting-label">Пример 1</span>
+                                <button id="btn-toggle-audio-ex1" class="toggle-switch-btn">
+                                    <div class="toggle-thumb"></div>
+                                </button>
+                            </div>
+                            <div class="setting-row">
+                                <span class="setting-label">Пример 2</span>
+                                <button id="btn-toggle-audio-ex2" class="toggle-switch-btn">
+                                    <div class="toggle-thumb"></div>
+                                </button>
+                            </div>
+                            <div class="setting-row">
+                                <span class="setting-label">Пример 3</span>
+                                <button id="btn-toggle-audio-ex3" class="toggle-switch-btn">
+                                    <div class="toggle-thumb"></div>
+                                </button>
+                            </div>
+                            <div class="setting-row">
+                                <span class="setting-label">Перевод</span>
+                                <button id="btn-toggle-audio-translation" class="toggle-switch-btn active">
+                                    <div class="toggle-thumb"></div>
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     <div style="height: 1px; background: rgba(255,255,255,0.05); margin: 0.5rem 0;"></div>
 
                     <!-- CARD SECTION MASTER -->
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 0;">
-                        <span style="font-size: 1.1rem; font-weight: 500; color: var(--text-main);">Настройка
-                            карточки</span>
+                    <div class="setting-row">
+                        <span class="setting-label">Настройка карточки</span>
                         <button id="btn-master-toggle-card" class="toggle-switch-btn">
                             <div class="toggle-thumb"></div>
                         </button>
                     </div>
 
                     <div id="section-card-elements" class="settings-expand-section">
-                        <!-- CARD ELEMENTS TOGGLES -->
-                        <div
-                            style="margin-top: 1.5rem; margin-bottom: 0.5rem; font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">
-                            Элементы карточки</div>
-
-                        <div style="display: flex; flex-direction: column;">
-                            <div
-                                style="display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                                <span style="font-size: 1.05rem; color: var(--text-main);">Слово</span>
+                        <div class="setting-inner-grid">
+                            <div class="setting-row">
+                                <span class="setting-label">Слово</span>
                                 <button id="btn-toggle-word" class="toggle-switch-btn active">
                                     <div class="toggle-thumb"></div>
                                 </button>
                             </div>
-                            <div
-                                style="display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                                <span style="font-size: 1.05rem; color: var(--text-main);">Инфо 1</span>
+                            <div class="setting-row">
+                                <span class="setting-label">Инфо 1</span>
                                 <button id="btn-toggle-info1" class="toggle-switch-btn active">
                                     <div class="toggle-thumb"></div>
                                 </button>
                             </div>
-                            <div
-                                style="display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                                <span style="font-size: 1.05rem; color: var(--text-main);">Инфо 2</span>
+                            <div class="setting-row">
+                                <span class="setting-label">Инфо 2</span>
                                 <button id="btn-toggle-info2" class="toggle-switch-btn active">
                                     <div class="toggle-thumb"></div>
                                 </button>
                             </div>
-                            <div
-                                style="display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                                <span style="font-size: 1.05rem; color: var(--text-main);">Пример 1</span>
+                            <div class="setting-row">
+                                <span class="setting-label">Пример 1</span>
                                 <button id="btn-toggle-ex1" class="toggle-switch-btn active">
                                     <div class="toggle-thumb"></div>
                                 </button>
                             </div>
-                            <div
-                                style="display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                                <span style="font-size: 1.05rem; color: var(--text-main);">Пример 2</span>
+                            <div class="setting-row">
+                                <span class="setting-label">Пример 2</span>
                                 <button id="btn-toggle-ex2" class="toggle-switch-btn active">
                                     <div class="toggle-thumb"></div>
                                 </button>
                             </div>
-                            <div
-                                style="display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 0;">
-                                <span style="font-size: 1.05rem; color: var(--text-main);">Пример 3</span>
+                            <div class="setting-row">
+                                <span class="setting-label">Пример 3</span>
                                 <button id="btn-toggle-ex3" class="toggle-switch-btn active">
                                     <div class="toggle-thumb"></div>
                                 </button>
@@ -1229,45 +1302,35 @@
                     <div style="height: 1px; background: rgba(255,255,255,0.05); margin: 0.5rem 0;"></div>
 
                     <!-- INTERFACE SECTION MASTER -->
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 0;">
-                        <span style="font-size: 1.1rem; font-weight: 500; color: var(--text-main);">Настройка
-                            интерфейса</span>
+                    <div class="setting-row">
+                        <span class="setting-label">Настройка интерфейса</span>
                         <button id="btn-master-toggle-interface" class="toggle-switch-btn">
                             <div class="toggle-thumb"></div>
                         </button>
                     </div>
 
                     <div id="section-interface-elements" class="settings-expand-section">
-                        <!-- INTERFACE TOGGLES -->
-                        <div
-                            style="margin-top: 1.5rem; margin-bottom: 0.5rem; font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">
-                            Интерфейс</div>
-
-                        <div style="display: flex; flex-direction: column;">
-                            <div
-                                style="display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                                <span style="font-size: 1.05rem; color: var(--text-main);">Прогресс-бар</span>
+                        <div class="setting-inner-grid">
+                            <div class="setting-row">
+                                <span class="setting-label">Прогресс-бар</span>
                                 <button id="btn-toggle-progress" class="toggle-switch-btn active">
                                     <div class="toggle-thumb"></div>
                                 </button>
                             </div>
-                            <div
-                                style="display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                                <span style="font-size: 1.05rem; color: var(--text-main);">Всего слов</span>
+                            <div class="setting-row">
+                                <span class="setting-label">Всего слов</span>
                                 <button id="btn-toggle-stat-total" class="toggle-switch-btn active">
                                     <div class="toggle-thumb"></div>
                                 </button>
                             </div>
-                            <div
-                                style="display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                                <span style="font-size: 1.05rem; color: var(--text-main);">К повторению</span>
+                            <div class="setting-row">
+                                <span class="setting-label">К повторению</span>
                                 <button id="btn-toggle-stat-due" class="toggle-switch-btn active">
                                     <div class="toggle-thumb"></div>
                                 </button>
                             </div>
-                            <div
-                                style="display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 0;">
-                                <span style="font-size: 1.05rem; color: var(--text-main);">Пройдено сегодня</span>
+                            <div class="setting-row">
+                                <span class="setting-label">Пройдено сегодня</span>
                                 <button id="btn-toggle-stat-today" class="toggle-switch-btn active">
                                     <div class="toggle-thumb"></div>
                                 </button>
@@ -1275,16 +1338,16 @@
                         </div>
                     </div>
 
-                    <div
-                        style="margin-top: 2rem; padding-bottom: 1rem; display: flex; justify-content: center; position: sticky; bottom: -1rem; background: transparent;">
+                    <div style="margin-top: 1.5rem; display: flex; justify-content: center; padding-bottom: 0.5rem;">
                         <button type="button" class="btn-primary"
                             onclick="document.getElementById('session-settings-menu').classList.add('hidden')"
-                            style="max-width: 240px; border-radius: 999px; height: 48px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">Готово</button>
+                            style="max-width: 200px; border-radius: 999px; height: 42px; font-size: 0.9rem; background: #ffffff; color: #000000; font-weight: 700;">Готово</button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+    <script src="https://code.responsivevoice.org/responsivevoice.js?key=i8NuynN8"></script>
 </body>
 
 </html>
