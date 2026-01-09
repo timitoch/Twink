@@ -1,0 +1,945 @@
+// DOM Elements - Screens
+const loginScreen = document.getElementById('login-screen');
+const registerScreen = document.getElementById('register-screen');
+const dashboardScreen = document.getElementById('dashboard-screen');
+
+// Header Items
+const navHomeBtn = document.getElementById('nav-home-btn');
+
+// DOM Elements - Dashboard Views
+const viewProfile = document.getElementById('view-profile');
+const viewImport = document.getElementById('view-import');
+const viewWords = document.getElementById('view-words');
+const viewStudy = document.getElementById('view-study');
+const viewStudySession = document.getElementById('view-study-session');
+const viewSettings = document.getElementById('view-settings');
+
+// Menu Buttons
+const navSettingsBtn = document.getElementById('nav-settings-btn');
+
+// Forms & Inputs
+const loginForm = document.getElementById('login-form');
+const registerForm = document.getElementById('register-form');
+const toRegisterBtn = document.getElementById('to-register');
+const toLoginBtn = document.getElementById('to-login');
+const loginError = document.getElementById('login-error');
+const regError = document.getElementById('reg-error');
+const excelFileInput = document.getElementById('excel-file-input');
+const importStatus = document.getElementById('import-status');
+const wordsTableBody = document.getElementById('words-table-body');
+
+// Modal Elements
+const editModal = document.getElementById('edit-modal');
+const closeModalBtn = document.getElementById('close-modal-btn');
+const editForm = document.getElementById('edit-form');
+const deleteWordBtn = document.getElementById('delete-word-btn');
+const editInputs = {
+    id: document.getElementById('edit-id'),
+    word: document.getElementById('edit-word'),
+    translation: document.getElementById('edit-translation'),
+    info1: document.getElementById('edit-info1'),
+    info2: document.getElementById('edit-info2'),
+    ex1: document.getElementById('edit-ex1'),
+    ex2: document.getElementById('edit-ex2'),
+    ex3: document.getElementById('edit-ex3')
+};
+
+// --- STATE ---
+let allWordsCache = [];
+
+// --- DATABASE HANDLER ---
+class WordLabDB {
+    constructor() { this.db = firebase.database(); }
+    get userId() { return firebase.auth().currentUser ? firebase.auth().currentUser.uid : null; }
+
+    subscribeToWords(callback) {
+        if (!this.userId) return;
+        this.db.ref(`users/${this.userId}/words`).on('value', snap => callback(snap.val()));
+    }
+
+    async updateWord(id, updates) {
+        await this.db.ref(`users/${this.userId}/words/${id}`).update(updates);
+    }
+
+    async updateProgress(wordId, typeKey, newProgress) {
+        await this.db.ref(`users/${this.userId}/words/${wordId}/${typeKey}`).set(newProgress);
+    }
+
+    async saveSettings(settings) {
+        if (!this.userId) return;
+        await this.db.ref(`users/${this.userId}/settings/study`).set(settings);
+    }
+
+    async getSettings() {
+        if (!this.userId) return null;
+        const snap = await this.db.ref(`users/${this.userId}/settings/study`).once('value');
+        return snap.val();
+    }
+
+    async deleteWord(id) {
+        await this.db.ref(`users/${this.userId}/words/${id}`).remove();
+    }
+
+    async resetProgressOnly() {
+        if (!this.userId) return;
+        if (confirm("Вы уверены? Это сбросит прогресс изучения для ВСЕХ слов, но сами слова останутся.")) {
+            const words = await this.getAllWords();
+            const updates = {};
+            const defaultProgress = { interval: 0, nextDate: Date.now(), state: "new" };
+            Object.keys(words).forEach(id => {
+                updates[`users/${this.userId}/words/${id}/progress_global`] = defaultProgress;
+                updates[`users/${this.userId}/words/${id}/progress_groups`] = defaultProgress;
+            });
+            await this.db.ref().update(updates);
+            alert("Прогресс сброшен.");
+        }
+    }
+
+    async clearAllWords() {
+        if (!this.userId) return;
+        if (confirm("Вы уверены? Это удалит ТИТАНИЧЕСКОЕ количество слов (весь ваш словарь) безвозвратно.")) {
+            await this.db.ref(`users/${this.userId}/words`).remove();
+            alert("Словарь очищен.");
+        }
+    }
+
+    async resetAllProgress() {
+        if (!this.userId) return;
+        if (confirm("Вы уверены? Это действие удалит ВСЕ ваши слова и данные аккаунта в базе данных.")) {
+            await this.db.ref(`users/${this.userId}`).remove();
+            window.location.reload();
+        }
+    }
+
+    async getAllWords() {
+        const snap = await this.db.ref(`users/${this.userId}/words`).once('value');
+        return snap.val() || {};
+    }
+
+    async processSmartImport(rows) {
+        const existingWords = await this.getAllWords();
+        const existingIds = new Set(Object.keys(existingWords));
+        const updates = {};
+        const newIdsInFile = new Set();
+        let stats = { updated: 0, created: 0, deleted: 0 };
+        let startIndex = 0;
+        if (rows.length > 0 && String(rows[0][0]).toLowerCase().includes('id')) startIndex = 1;
+
+        for (let i = startIndex; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row || !Array.isArray(row) || row.length < 2) continue;
+            const id = String(row[0] || "").trim();
+            if (!id) continue;
+            newIdsInFile.add(id);
+            const wordData = {
+                word: String(row[1] || "").trim(),
+                translation: String(row[2] || "").trim(),
+                info1: String(row[3] || "").trim(),
+                info2: String(row[4] || "").trim(),
+                ex1: String(row[5] || "").trim(),
+                ex2: String(row[6] || "").trim(),
+                ex3: String(row[7] || "").trim()
+            };
+            const dbPath = `users/${this.userId}/words/${id}`;
+            if (existingIds.has(id)) {
+                updates[`${dbPath}/word`] = wordData.word;
+                updates[`${dbPath}/translation`] = wordData.translation;
+                updates[`${dbPath}/info1`] = wordData.info1;
+                updates[`${dbPath}/info2`] = wordData.info2;
+                updates[`${dbPath}/ex1`] = wordData.ex1;
+                updates[`${dbPath}/ex2`] = wordData.ex2;
+                updates[`${dbPath}/ex3`] = wordData.ex3;
+                stats.updated++;
+            } else {
+                const defaultProgress = { interval: 0, nextDate: Date.now(), state: "new" };
+                updates[dbPath] = {
+                    id: id,
+                    ...wordData,
+                    progress_global: defaultProgress,
+                    progress_groups: defaultProgress
+                };
+                stats.created++;
+            }
+        }
+        existingIds.forEach(id => {
+            if (!newIdsInFile.has(id)) {
+                updates[`users/${this.userId}/words/${id}`] = null;
+                stats.deleted++;
+            }
+        });
+        if (Object.keys(updates).length > 0) await this.db.ref().update(updates);
+        return stats;
+    }
+}
+const db = new WordLabDB();
+
+// --- NAVIGATION ---
+// --- NAVIGATION ---
+const navTabs = {
+    profile: document.getElementById('nav-profile-btn'),
+    study: document.getElementById('nav-study-btn'),
+    dictionary: document.getElementById('nav-dictionary-btn'),
+    import: document.getElementById('nav-import-btn')
+};
+
+// Get viewGroupEdit reference
+const viewGroupEdit = document.getElementById('view-group-edit');
+const groupEditHeader = document.getElementById('group-edit-header');
+
+function updateNavIndicator() {
+    const activeTab = document.querySelector('.nav-tab.active');
+    const indicator = document.querySelector('.nav-indicator');
+    if (activeTab && indicator) {
+        indicator.style.width = `${activeTab.offsetWidth}px`;
+        indicator.style.height = `${activeTab.offsetHeight}px`;
+        indicator.style.left = `${activeTab.offsetLeft}px`;
+        indicator.style.top = `${activeTab.offsetTop}px`;
+        indicator.style.opacity = '1';
+    } else if (indicator) {
+        indicator.style.opacity = '0';
+    }
+}
+window.addEventListener('resize', updateNavIndicator);
+
+function switchView(targetView) {
+    // Hide all views
+    [viewProfile, viewImport, viewWords, viewStudy, viewStudySession, viewSettings, viewGroupEdit].forEach(v => v && v.classList.add('hidden'));
+    targetView.classList.remove('hidden');
+    targetView.classList.add('fade-in');
+
+    const appContainer = document.querySelector('.app-container');
+    // Wide mode for Words, Settings, IMPORT, STUDY, GROUP EDIT, and PROFILE
+    if (targetView === viewWords || targetView === viewSettings || targetView === viewImport || targetView === viewStudy || targetView === viewGroupEdit || targetView === viewProfile) {
+        appContainer.classList.add('wide-mode');
+    } else {
+        appContainer.classList.remove('wide-mode');
+    }
+
+    const globalHeader = document.getElementById('global-header');
+
+    // Header Logic
+    if (targetView === viewStudySession) {
+        globalHeader.classList.add('hidden');
+        if (groupEditHeader) groupEditHeader.classList.add('hidden');
+    } else if (targetView === viewGroupEdit) {
+        globalHeader.classList.add('hidden');
+        if (groupEditHeader) groupEditHeader.classList.remove('hidden');
+    } else {
+        globalHeader.classList.remove('hidden');
+        if (groupEditHeader) groupEditHeader.classList.add('hidden');
+
+        // Update Nav Tabs Active State
+        Object.values(navTabs).forEach(btn => btn && btn.classList.remove('active'));
+
+        if (targetView === viewStudy && navTabs.study) navTabs.study.classList.add('active');
+        else if (targetView === viewProfile && navTabs.profile) navTabs.profile.classList.add('active');
+        else if (targetView === viewWords && navTabs.dictionary) navTabs.dictionary.classList.add('active');
+        else if (targetView === viewImport && navTabs.import) navTabs.import.classList.add('active');
+        else if (targetView === viewSettings && navSettingsMobileBtn) navSettingsMobileBtn.classList.add('active');
+
+        // Move the liquid glass indicator
+        setTimeout(updateNavIndicator, 0);
+    }
+}
+
+// Export switchView globally for StudyModule
+window.switchView = switchView;
+
+
+// Nav Tab Click Handlers
+if (navTabs.profile) navTabs.profile.onclick = () => {
+    if (window.ProfileModule) {
+        window.ProfileModule.renderProfile();
+        switchView(viewProfile);
+    }
+};
+if (navTabs.study) navTabs.study.onclick = () => {
+    if (window.StudyModule) {
+        window.StudyModule.renderStudyDashboard();
+        switchView(viewStudy);
+    }
+};
+if (navTabs.dictionary) navTabs.dictionary.onclick = () => { renderTable(allWordsCache); switchView(viewWords); };
+if (navTabs.import) navTabs.import.onclick = () => switchView(viewImport);
+
+// Keep existing secondary navs
+if (navHomeBtn) navHomeBtn.onclick = () => {
+    if (window.StudyModule) {
+        window.StudyModule.renderStudyDashboard();
+        switchView(viewStudy);
+    }
+};
+navSettingsBtn.onclick = () => switchView(viewSettings);
+
+
+// Mobile Settings Button
+const navSettingsMobileBtn = document.getElementById('nav-settings-mobile-btn');
+if (navSettingsMobileBtn) {
+    navSettingsMobileBtn.onclick = () => switchView(viewSettings);
+}
+
+// Study functionality is now handled by StudyModule
+
+
+
+
+
+
+// --- AUTH ---
+firebase.auth().onAuthStateChanged((user) => {
+    if (user) {
+        loginScreen.classList.add('hidden');
+        registerScreen.classList.add('hidden');
+        dashboardScreen.classList.remove('hidden');
+
+        // Reset state
+        allWordsCache = [];
+
+        // LOAD DATA
+        db.subscribeToWords(w => {
+            if (!w) {
+                allWordsCache = [];
+            } else {
+                allWordsCache = Object.values(w).sort((a, b) => parseInt(a.id) - parseInt(b.id));
+            }
+
+            // Update StudyModule cache
+            if (window.StudyModule) {
+                window.StudyModule.updateWordsCache(allWordsCache);
+            }
+
+            // Update Profile Stats
+            if (window.ProfileModule) {
+                window.ProfileModule.updateStats(allWordsCache);
+            }
+
+            // Always render current view if it's a dashboard view
+            if (!viewStudy.classList.contains('hidden') && window.StudyModule) {
+                window.StudyModule.renderStudyDashboard();
+            }
+            if (!viewWords.classList.contains('hidden')) renderTable(allWordsCache);
+        });
+
+        // Set default view
+        switchView(viewStudy);
+
+        // Initialize StudyModule
+        if (window.StudyModule) {
+            window.StudyModule.init(db, allWordsCache);
+            window.StudyModule.renderStudyDashboard();
+        }
+
+        // Initialize Settings Module
+        if (window.SettingsModule) {
+            window.SettingsModule.init(db);
+            window.SettingsModule.loadAvatar(user.uid);
+        }
+
+        // Initialize Profile Module
+        if (window.ProfileModule) {
+            window.ProfileModule.init(db, user, allWordsCache);
+        }
+    } else {
+        dashboardScreen.classList.add('hidden');
+        loginScreen.classList.remove('hidden');
+    }
+});
+
+// --- COLUMNS FILTER ---
+// Load from localStorage or default
+const defaultColumns = {
+    id: true,
+    word: true,
+    translation: true,
+    info1: true,
+    info2: true,
+    ex1: true,
+    ex2: true,
+    ex3: true,
+    interval: true,
+    nextDate: true
+};
+let savedCols = localStorage.getItem('visibleColumns');
+const visibleColumns = savedCols ? JSON.parse(savedCols) : defaultColumns;
+
+function toggleColumn(colKey) {
+    visibleColumns[colKey] = !visibleColumns[colKey];
+    localStorage.setItem('visibleColumns', JSON.stringify(visibleColumns)); // Save
+    renderTable(getFilteredWords());
+    updateColumnFilterUI();
+}
+
+function updateColumnFilterUI() {
+    const checkboxes = document.querySelectorAll('#dict-filter-columns-menu input[type="checkbox"]');
+    checkboxes.forEach(cb => {
+        if (visibleColumns[cb.value] !== undefined) {
+            cb.checked = visibleColumns[cb.value];
+        }
+    });
+}
+// Expose for onclick
+window.toggleColumn = toggleColumn;
+
+
+// Helper to get currently filtered words without re-applying logic if possible, 
+// but since we don't cache filtered result separately, we just call applyDictionaryFilters' logic or separate it.
+// To keep it simple, we'll extract the filter logic or just use global cache if no filters active. 
+// BUT applyDictionaryFilters calls renderTable at the end. 
+// A better way: separate 'getFilteredWords' and 'renderTable'.
+// For now, let's just re-run applyDictionaryFilters which calls renderTable.
+function refreshTable() {
+    applyDictionaryFilters();
+}
+
+function renderTable(arr) {
+    wordsTableBody.innerHTML = '';
+
+    // Update Header Visibility
+    // We use display:none so nth-child indices in CSS remain consistent for the remaining visible elements?
+    // wait, if we use display:none, the element IS still in DOM tree, so nth-child counts it.
+    // So our CSS rules targeting nth-child(2) for 'Word' will still work even if ID is hidden.
+    const headRow = document.querySelector('#words-table thead tr');
+    if (headRow) {
+        // IDs of headers must match order or be selected by index. 
+        // Let's assume order: ID(0), Word(1), Trans(2), Info1(3), Info2(4), Ex1(5), Ex2(6), Ex3(7), Interval(8), Next(9), Actions(10,11)
+        const ths = headRow.querySelectorAll('th');
+        if (ths[0]) ths[0].style.display = visibleColumns.id ? '' : 'none';
+        if (ths[1]) ths[1].style.display = visibleColumns.word ? '' : 'none';
+        if (ths[2]) ths[2].style.display = visibleColumns.translation ? '' : 'none';
+        if (ths[3]) ths[3].style.display = visibleColumns.info1 ? '' : 'none';
+        if (ths[4]) ths[4].style.display = visibleColumns.info2 ? '' : 'none';
+        if (ths[5]) ths[5].style.display = visibleColumns.ex1 ? '' : 'none';
+        if (ths[6]) ths[6].style.display = visibleColumns.ex2 ? '' : 'none';
+        if (ths[7]) ths[7].style.display = visibleColumns.ex3 ? '' : 'none';
+        if (ths[8]) ths[8].style.display = visibleColumns.interval ? '' : 'none';
+        if (ths[9]) ths[9].style.display = visibleColumns.nextDate ? '' : 'none';
+    }
+
+    arr.forEach(w => {
+        const tr = document.createElement('tr');
+        const d = w.progress_global && w.progress_global.nextDate ? new Date(w.progress_global.nextDate).toLocaleDateString() : '-';
+
+        // Helper for style
+        const displayStyle = (key) => visibleColumns[key] ? '' : 'display: none;';
+
+        // We MUST render all TD elements so nth-child CSS matches. We hide them via style.
+        tr.innerHTML = `
+            <td class="id-cell" style="${displayStyle('id')}">${w.id}</td>
+            <td style="${displayStyle('word')}"><strong>${w.word}</strong></td>
+            <td style="${displayStyle('translation')}"><strong>${w.translation}</strong></td>
+            <td class="info-cell" style="${displayStyle('info1')}">${w.info1 || ''}</td>
+            <td class="info-cell" style="${displayStyle('info2')}">${w.info2 || ''}</td>
+            <td class="example-cell" style="${displayStyle('ex1')}">${w.ex1 || ''}</td>
+            <td class="example-cell" style="${displayStyle('ex2')}">${w.ex2 || ''}</td>
+            <td class="example-cell" style="${displayStyle('ex3')}">${w.ex3 || ''}</td>
+            <td style="${displayStyle('interval')}"><span class="level-badge">${w.progress_global?.interval || 0} дн.</span></td>
+            <td class="date-info" style="${displayStyle('nextDate')}">${d}</td>
+            
+            <td style="text-align:center;">
+                <button class="btn-icon btn-edit" data-id="${w.id}" title="Редактировать">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                </button>
+            </td>
+            <td style="text-align:center;">
+                <button class="btn-icon btn-delete" data-id="${w.id}" title="Удалить">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        <line x1="10" y1="11" x2="10" y2="17"></line>
+                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                    </svg>
+                </button>
+            </td>`;
+
+        tr.querySelector('.btn-edit').onclick = () => openEditModal(w);
+        tr.querySelector('.btn-delete').onclick = async () => {
+            if (confirm(`Удалить слово "${w.word}"?`)) {
+                await db.deleteWord(w.id);
+            }
+        };
+        wordsTableBody.appendChild(tr);
+    });
+}
+// Need a way to get filtered words in toggleColumn 
+function getFilteredWords() {
+    // Reuse filter logic, but we need to return it, not render it. 
+    // We will refactor applyDictionaryFilters slightly to support this, 
+    // OR just trigger applyDictionaryFilters() which calls renderTable.
+    return applyDictionaryFilters(true); // pass flag to return instead of render? 
+    // Actually, toggleColumn calls renderTable directly with filtered result. 
+    // Let's make applyDictionaryFilters return the array if an arg is passed, otherwise render.
+}
+
+
+// --- EXPORT TO EXCEL ---
+function exportWordsToExcel() {
+    if (!allWordsCache || allWordsCache.length === 0) {
+        alert("Словарь пуст, нечего экспортировать.");
+        return;
+    }
+
+    // Format data for Excel
+    // Columns: [ID, Word, Translation, Info1, Info2, Ex1, Ex2, Ex3]
+    const data = allWordsCache.map(w => ({
+        "ID": w.id,
+        "Немецкое слово": w.word,
+        "Перевод": w.translation,
+        "Доп. инфо 1": w.info1,
+        "Доп. инфо 2": w.info2,
+        "Пример 1": w.ex1,
+        "Пример 2": w.ex2,
+        "Пример 3": w.ex3
+    }));
+
+    // Create worksheet
+    const ws = XLSX.utils.json_to_sheet(data);
+
+    // Create workbook
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Dictionary");
+
+    // Generate file name with date
+    const date = new Date().toISOString().split('T')[0];
+    const fileName = `WordLab_Export_${date}.xlsx`;
+
+    // Save file
+    XLSX.writeFile(wb, fileName);
+}
+// Attach to global scope to call from onclick
+window.exportWordsToExcel = exportWordsToExcel;
+
+// (Duplicate removed)
+
+// Refactor applyDictionaryFilters to support return only
+function applyDictionaryFilters(returnOnly = false) {
+    let result = [...allWordsCache];
+
+    // 1. Search (Fuzzy-ish)
+    const q = dictSearchInput ? dictSearchInput.value.toLowerCase().trim() : '';
+    if (q) {
+        const normalize = (str) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const nQ = normalize(q);
+
+        result = result.filter(w => {
+            const word = w.word ? w.word.toLowerCase() : '';
+            const tr = w.translation ? w.translation.toLowerCase() : '';
+            const nWord = normalize(word);
+            const nTr = normalize(tr);
+            return nWord.includes(nQ) || nTr.includes(nQ);
+        });
+    }
+
+    // 2. Interval Filter (Multi-select)
+    const checkedIntervals = Array.from(intervalCheckboxes).filter(c => c.checked).map(c => c.value);
+    const showAllIntervals = checkedIntervals.includes('all') || checkedIntervals.length === 0;
+
+    if (!showAllIntervals) {
+        result = result.filter(w => {
+            const days = w.progress_global ? (w.progress_global.interval || 0) : 0;
+            if (checkedIntervals.includes('new') && !w.progress_global) return true;
+            if (checkedIntervals.includes('0') && days === 0 && w.progress_global) return true;
+            if (checkedIntervals.includes(String(days))) return true;
+            return false;
+        });
+    }
+
+    // 3. Review Date Filter
+    if (activeReviewMode !== 'all') {
+        const now = Date.now();
+        result = result.filter(w => {
+            if (!w.progress_global || !w.progress_global.nextDate) return false;
+            if (activeReviewMode === 'due') return w.progress_global.nextDate <= now;
+            if (activeReviewMode === 'future') return w.progress_global.nextDate > now;
+            return true;
+        });
+    }
+
+    if (returnOnly) return result;
+    renderTable(result);
+}
+// Open Modal (Edit or Create)
+function openEditModal(w = null) {
+    if (w) {
+        // Editing existing word
+        editInputs.id.value = w.id;
+        editInputs.word.value = w.word;
+        editInputs.translation.value = w.translation;
+        editInputs.info1.value = w.info1 || '';
+        editInputs.info2.value = w.info2 || '';
+        editInputs.ex1.value = w.ex1 || '';
+        editInputs.ex2.value = w.ex2 || '';
+        editInputs.ex3.value = w.ex3 || '';
+
+        // Update modal header
+        const wordIndex = allWordsCache.findIndex(word => word.id === w.id);
+        const modalNumber = document.getElementById('edit-modal-number');
+        const modalId = document.getElementById('edit-modal-id');
+        if (modalNumber) modalNumber.textContent = wordIndex !== -1 ? wordIndex + 1 : '-';
+        if (modalId) modalId.textContent = `#${w.id}`;
+
+        deleteWordBtn.style.display = 'block'; // Show delete button
+    } else {
+        // Creating new word
+        editInputs.id.value = ''; // Empty ID signalises new word
+        editInputs.word.value = '';
+        editInputs.translation.value = '';
+        editInputs.info1.value = '';
+        editInputs.info2.value = '';
+        editInputs.ex1.value = '';
+        editInputs.ex2.value = '';
+        editInputs.ex3.value = '';
+
+        const modalNumber = document.getElementById('edit-modal-number');
+        const modalId = document.getElementById('edit-modal-id');
+        if (modalNumber) modalNumber.textContent = 'New';
+        if (modalId) modalId.textContent = '';
+
+        deleteWordBtn.style.display = 'none'; // Hide delete button
+    }
+
+    editModal.classList.remove('hidden');
+
+    // Block header interactions
+    const header = document.getElementById('global-header');
+    if (header) header.style.pointerEvents = 'none';
+}
+window.openEditModal = openEditModal;
+
+function closeEditModal() {
+    editModal.classList.add('hidden');
+
+    // Re-enable header interactions
+    const header = document.getElementById('global-header');
+    if (header) header.style.pointerEvents = 'auto';
+}
+
+closeModalBtn.onclick = closeEditModal;
+
+editForm.onsubmit = async (e) => {
+    e.preventDefault();
+
+    let id = editInputs.id.value;
+    const isNew = !id;
+
+    if (isNew) {
+        // Generate new ID (max + 1)
+        const maxId = allWordsCache.reduce((max, w) => Math.max(max, parseInt(w.id || 0)), 0);
+        id = String(maxId + 1);
+    }
+
+    const wordData = {
+        word: editInputs.word.value,
+        translation: editInputs.translation.value,
+        info1: editInputs.info1.value,
+        info2: editInputs.info2.value,
+        ex1: editInputs.ex1.value,
+        ex2: editInputs.ex2.value,
+        ex3: editInputs.ex3.value
+    };
+
+    if (isNew) {
+        // Create new word logic
+        // We need to construct the full object like processSmartImport does
+        const defaultProgress = { interval: 0, nextDate: Date.now(), state: "new" };
+        const newWord = {
+            id: id,
+            ...wordData,
+            progress_global: defaultProgress,
+            progress_groups: defaultProgress
+        };
+        await db.updateWord(id, newWord);
+    } else {
+        // Update existing
+        await db.updateWord(id, wordData);
+    }
+
+    // Notify StudyModule
+    if (window.StudyModule) {
+        if (isNew) {
+            // For new words we might settle with just reloading or manual add, 
+            // but let's try to be smart if StudyModule supports it.
+            // Actually StudyModule listens to DB changes so it should pick it up automatically from updateWordsCache
+        } else {
+            window.StudyModule.onWordUpdated(id, wordData);
+        }
+    }
+
+    closeEditModal();
+};
+deleteWordBtn.onclick = async () => {
+    if (confirm('Del?')) {
+        const id = editInputs.id.value;
+        const backupData = {
+            word: editInputs.word.value, translation: editInputs.translation.value,
+            info1: editInputs.info1.value, info2: editInputs.info2.value,
+            ex1: editInputs.ex1.value, ex2: editInputs.ex2.value, ex3: editInputs.ex3.value,
+            id: id
+        };
+
+        await db.deleteWord(id);
+
+        if (window.StudyModule) {
+            window.StudyModule.onWordDeleted(id, backupData);
+        }
+
+        closeEditModal();
+    }
+};
+
+loginForm.onsubmit = (e) => { e.preventDefault(); firebase.auth().signInWithEmailAndPassword(document.getElementById('login-email').value, document.getElementById('login-password').value).catch(e => loginError.textContent = e.code); };
+registerForm.onsubmit = (e) => {
+    e.preventDefault();
+    const nn = document.getElementById('reg-nickname').value;
+    const email = document.getElementById('reg-email').value;
+    const password = document.getElementById('reg-password').value;
+    const confirm = document.getElementById('reg-password-confirm').value;
+
+    if (password !== confirm) {
+        regError.textContent = "Пароли не совпадают";
+        return;
+    }
+
+    firebase.auth().createUserWithEmailAndPassword(email, password)
+        .then(u => firebase.database().ref('users/' + u.user.uid + '/nickname').set(nn))
+        .catch(e => regError.textContent = e.message);
+};
+
+// Password Visibility Toggle
+document.querySelectorAll('.password-toggle').forEach(btn => {
+    btn.onclick = () => {
+        const input = btn.parentElement.querySelector('input');
+        if (input) {
+            const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+            input.setAttribute('type', type);
+            btn.querySelector('.eye-open').classList.toggle('hidden');
+            btn.querySelector('.eye-closed').classList.toggle('hidden');
+        }
+    };
+});
+toRegisterBtn.onclick = () => { loginScreen.classList.add('hidden'); registerScreen.classList.remove('hidden'); };
+toLoginBtn.onclick = () => { registerScreen.classList.add('hidden'); loginScreen.classList.remove('hidden'); };
+
+if (excelFileInput) {
+    excelFileInput.onchange = async (e) => {
+        const f = e.target.files[0]; if (!f) return;
+        importStatus.textContent = 'Importing...';
+        try {
+            const data = await new Promise((res, rej) => {
+                const r = new FileReader();
+                r.onload = ev => res(XLSX.utils.sheet_to_json(XLSX.read(new Uint8Array(ev.target.result), { type: 'array' }).Sheets[XLSX.read(new Uint8Array(ev.target.result), { type: 'array' }).SheetNames[0]], { header: 1 }));
+                r.onerror = rej; r.readAsArrayBuffer(f);
+            });
+            const s = await db.processSmartImport(data);
+            importStatus.innerHTML = `<span style="color: var(--success);">✔ Импорт завершен: Добавлено: ${s.created}, Обновлено: ${s.updated}, Удалено: ${s.deleted}</span>`;
+        } catch (err) { console.error(err); importStatus.textContent = err.message; }
+        excelFileInput.value = '';
+    };
+}
+
+// Settings are now handled by the SettingsModule
+
+// --- DICTIONARY FILTERING ---
+const dictSearchInput = document.getElementById('dict-search');
+
+// --- Interval Filter UI ---
+const dictFilterIntervalBtn = document.getElementById('dict-filter-interval-btn');
+const dictFilterIntervalMenu = document.getElementById('dict-filter-interval-menu');
+const dictFilterIntervalLabel = document.getElementById('interval-btn-label');
+
+
+// --- Toggle Menus ---
+if (dictFilterIntervalBtn) {
+    dictFilterIntervalBtn.onclick = (e) => {
+        e.stopPropagation();
+        dictFilterIntervalMenu.classList.toggle('hidden');
+        if (dictFilterColumnsMenu) dictFilterColumnsMenu.classList.add('hidden');
+    };
+}
+
+// --- COLUMNS UI HANDLERS ---
+const dictFilterColumnsBtn = document.getElementById('dict-filter-columns-btn');
+const dictFilterColumnsMenu = document.getElementById('dict-filter-columns-menu');
+
+if (dictFilterColumnsBtn) {
+    dictFilterColumnsBtn.onclick = (e) => {
+        e.stopPropagation();
+        dictFilterColumnsMenu.classList.toggle('hidden');
+        if (dictFilterIntervalMenu) dictFilterIntervalMenu.classList.add('hidden');
+    };
+}
+
+// Close menus when clicking outside
+window.addEventListener('click', (e) => {
+    if (dictFilterIntervalMenu && !dictFilterIntervalMenu.classList.contains('hidden')) {
+        if (!dictFilterIntervalMenu.contains(e.target) && !dictFilterIntervalBtn.contains(e.target)) {
+            dictFilterIntervalMenu.classList.add('hidden');
+        }
+    }
+    if (dictFilterColumnsMenu && !dictFilterColumnsMenu.classList.contains('hidden')) {
+        if (!dictFilterColumnsMenu.contains(e.target) && !dictFilterColumnsBtn.contains(e.target)) {
+            dictFilterColumnsMenu.classList.add('hidden');
+        }
+    }
+});
+
+// --- Interval Logic (Event Delegation) ---
+// We attach listener to the menu container to catch bubbling events from new/replaced checkboxes
+if (dictFilterIntervalMenu) {
+    dictFilterIntervalMenu.addEventListener('change', (e) => {
+        if (e.target.tagName === 'INPUT' && e.target.type === 'checkbox') {
+            // Logic for mutual exclusivity of 'all' vs others
+            const checkboxes = dictFilterIntervalMenu.querySelectorAll('input[type="checkbox"]');
+
+            if (e.target.value === 'all') {
+                if (e.target.checked) {
+                    // Uncheck all others
+                    checkboxes.forEach(c => { if (c !== e.target) c.checked = false; });
+                }
+            } else {
+                // Uncheck 'all' if specific selected
+                const allCb = dictFilterIntervalMenu.querySelector('input[value="all"]');
+                if (e.target.checked && allCb) allCb.checked = false;
+            }
+            updateIntervalLabel();
+            applyDictionaryFilters();
+        }
+    });
+}
+
+function updateIntervalLabel() {
+    if (!dictFilterIntervalMenu) return;
+    const checkboxes = dictFilterIntervalMenu.querySelectorAll('input[type="checkbox"]');
+    const checked = Array.from(checkboxes).filter(c => c.checked);
+    if (checked.some(c => c.value === 'all') || checked.length === 0) {
+        dictFilterIntervalLabel.textContent = 'Интервалы: Все';
+    } else {
+        dictFilterIntervalLabel.textContent = `Интервалы: ${checked.length} выбр.`;
+    }
+}
+
+
+function applyDictionaryFilters(returnOnly) {
+    // If called from event listener, returnOnly is an Event object (truthy). 
+    // We must ensure returnOnly is strictly true boolean if we want to return.
+    const shouldReturn = returnOnly === true;
+
+    let result = [...allWordsCache];
+
+    // 1. Search (Fuzzy-ish)
+    const q = dictSearchInput ? dictSearchInput.value.toLowerCase().trim() : '';
+    if (q) {
+        const normalize = (str) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const nQ = normalize(q);
+
+        result = result.filter(w => {
+            const word = w.word ? w.word.toLowerCase() : '';
+            const tr = w.translation ? w.translation.toLowerCase() : '';
+            const nWord = normalize(word);
+            const nTr = normalize(tr);
+            return nWord.includes(nQ) || nTr.includes(nQ);
+        });
+    }
+
+    // 2. Interval Filter (Query fresh elements)
+    if (dictFilterIntervalMenu) {
+        const checkboxes = dictFilterIntervalMenu.querySelectorAll('input[type="checkbox"]');
+        const checkedIntervals = Array.from(checkboxes).filter(c => c.checked).map(c => c.value);
+        const showAllIntervals = checkedIntervals.includes('all') || checkedIntervals.length === 0;
+
+        if (!showAllIntervals) {
+            result = result.filter(w => {
+                const days = w.progress_global ? (w.progress_global.interval || 0) : 0;
+                if (checkedIntervals.includes('new') && !w.progress_global) return true;
+                if (checkedIntervals.includes('0') && days === 0 && w.progress_global) return true;
+                if (checkedIntervals.includes(String(days))) return true;
+                return false;
+            });
+        }
+    }
+
+
+    if (shouldReturn) return result;
+    renderTable(result);
+}
+
+// Attach Listeners
+if (dictSearchInput) dictSearchInput.addEventListener('input', () => applyDictionaryFilters());
+
+// Load UI state for columns on init
+if (savedCols) updateColumnFilterUI();
+
+// Also update Interval UI label on load
+updateIntervalLabel();
+
+// --- EXPORT TO EXCEL ---
+function exportWordsToExcel() {
+    // Get currently filtered words
+    const wordsToExport = applyDictionaryFilters(true);
+
+    if (!wordsToExport || wordsToExport.length === 0) {
+        alert("Нет слов для экспорта, соответствующих текущим фильтрам.");
+        return;
+    }
+
+    // Format data for Excel
+    // Columns: [ID, Word, Translation, Info1, Info2, Ex1, Ex2, Ex3]
+    const data = wordsToExport.map(w => ({
+        "ID": w.id,
+        "Немецкое слово": w.word,
+        "Перевод": w.translation,
+        "Доп. инфо 1": w.info1,
+        "Доп. инфо 2": w.info2,
+        "Пример 1": w.ex1,
+        "Пример 2": w.ex2,
+        "Пример 3": w.ex3
+    }));
+
+    // Create worksheet
+    const ws = XLSX.utils.json_to_sheet(data);
+
+    // Create workbook
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Dictionary");
+
+    // Generate file name with date
+    const date = new Date().toISOString().split('T')[0];
+    const fileName = `WordLab_Export_${date}_(${wordsToExport.length}).xlsx`;
+
+    // Save file
+    XLSX.writeFile(wb, fileName);
+}
+// Attach to global scope to call from onclick
+window.exportWordsToExcel = exportWordsToExcel;
+
+// --- MOBILE FILTER DRAWER LOGIC ---
+const mobileFilterToggle = document.getElementById('dict-mobile-filter-toggle');
+const mobileFilterClose = document.getElementById('dict-mobile-filter-close');
+const filtersGroup = document.getElementById('dict-filters-group');
+
+if (mobileFilterToggle && filtersGroup) {
+    // Toggle Drawer
+    mobileFilterToggle.onclick = (e) => {
+        e.stopPropagation();
+        filtersGroup.classList.toggle('show-filters');
+    };
+
+    // Close Button
+    if (mobileFilterClose) {
+        mobileFilterClose.onclick = (e) => {
+            e.stopPropagation();
+            filtersGroup.classList.remove('show-filters');
+        };
+    }
+
+    // Close when clicking outside
+    window.addEventListener('click', (e) => {
+        if (filtersGroup.classList.contains('show-filters')) {
+            if (!filtersGroup.contains(e.target) && !mobileFilterToggle.contains(e.target)) {
+                filtersGroup.classList.remove('show-filters');
+            }
+        }
+    });
+}

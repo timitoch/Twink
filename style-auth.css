@@ -1,0 +1,375 @@
+.auth-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.75rem;
+    /* Even tighter gap */
+    margin-top: 0;
+    width: 100%;
+    padding: 0;
+}
+
+.app-logo {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.app-logo h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--text-main);
+    letter-spacing: -0.02em;
+    margin-bottom: 0.2rem;
+}
+
+.app-logo span {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+#login-screen,
+#register-screen {
+    /* Styles handled by class */
+}
+
+/* Form Styles */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    /* Tighter gap between label and input */
+    position: relative;
+    width: 100%;
+}
+
+.form-group label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-left: 0.5rem;
+    /* text-transform: uppercase; REMOVED */
+    font-weight: 500;
+}
+
+/* Minimal Input Style */
+input.glass-input {
+    background: rgba(255, 255, 255, 0.05) !important;
+    /* Force transparency logic */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 0.9rem 1.2rem;
+    color: var(--text-main);
+    width: 100%;
+    font-size: 1rem;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: none;
+}
+
+input.glass-input:focus {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-color: var(--primary);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+    /* Subtle focus ring */
+}
+
+input.glass-input::placeholder {
+    color: var(--text-muted);
+    opacity: 0.5;
+}
+
+/* Fix Autofill Background - Force it to match input bg using box-shadow inset */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 30px #0f172a inset !important;
+    /* Matches --bg-main typical color */
+    -webkit-text-fill-color: white !important;
+    caret-color: white;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
+.status-message {
+    text-align: center;
+    color: #ef4444;
+    min-height: 20px;
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+}
+
+/* Auth Buttons */
+.auth-container .btn-primary {
+    margin-top: 1rem;
+    font-size: 1rem;
+    padding: 0.9rem;
+    border-radius: 9999px;
+    /* Pill shape restored */
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+/* Bottom Switcher */
+.auth-switch {
+    text-align: center;
+    margin-top: 1.5rem;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.auth-switch a {
+    color: var(--primary-light);
+    text-decoration: none;
+    font-weight: 600;
+    margin-left: 5px;
+    transition: color 0.2s;
+}
+
+.auth-switch a:hover {
+    color: #ffffff;
+    text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+
+    #login-screen,
+    #register-screen {
+        padding: 1.5rem !important;
+        margin: 5vh auto !important;
+        width: 90% !important;
+    }
+}
+
+.app-logo {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.app-logo h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--text-main);
+    letter-spacing: -0.02em;
+    margin-bottom: 0.2rem;
+}
+
+.app-logo span {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+/* Container Override - Transparent & Centered */
+#login-screen,
+#register-screen {
+    /* Glass card styles are applied by class, just ensure positioning */
+}
+
+/* Form Styles */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    position: relative;
+}
+
+.form-group label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-left: 0.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+}
+
+/* Minimal Input Style */
+input.glass-input {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 1rem 1.2rem;
+    color: var(--text-main);
+    width: 100%;
+    font-size: 1rem;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+}
+
+input.glass-input:focus {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--primary);
+    outline: none;
+    /* Removes yellow border */
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+}
+
+input.glass-input::placeholder {
+    color: var(--text-muted);
+    opacity: 0.5;
+}
+
+/* Remove Autofill Yellow Background */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 30px #1e293b inset !important;
+    /* Matches generic dark bg, might need var(--surface) but hex is safer for shadow */
+    -webkit-text-fill-color: white !important;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
+.status-message {
+    text-align: center;
+    color: #ef4444;
+    min-height: 20px;
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+}
+
+/* Auth Buttons */
+.auth-container .btn-primary {
+    /* Inherits global pill style */
+    margin-top: 1rem;
+    font-size: 1rem;
+    padding: 1rem;
+    border-radius: 14px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+/* Bottom Switcher */
+.auth-switch {
+    text-align: center;
+    margin-top: 1.5rem;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.auth-switch a {
+    color: var(--primary-light);
+    text-decoration: none;
+    font-weight: 600;
+    margin-left: 5px;
+    transition: color 0.2s;
+}
+
+.auth-switch a:hover {
+    color: #ffffff;
+    text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+
+    #login-screen,
+    #register-screen {
+        padding: 1.5rem !important;
+        margin: 5vh auto !important;
+        width: 90% !important;
+    }
+}
+
+.app-logo {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.app-logo h1 {
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--text-main);
+    letter-spacing: -0.01em;
+}
+
+.app-logo span {
+    display: none;
+    /* Minimalist look usually hides subtitle or keeps it very subtle. Hiding for now to match 'Join as guest' simplicity */
+}
+
+/* Container Override - Transparent & Centered */
+#login-screen,
+#register-screen {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    max-width: 360px;
+    /* Narrow and focused */
+    margin: 0 auto;
+    width: 100%;
+}
+
+/* Form Styles */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.form-group label {
+    display: none;
+    /* The image shows placeholders only, typical for this minimal style. Or very subtle labels. Let's hide labels and rely on placeholders if they exist, or make labels very subtle. */
+}
+
+/* Minimal Input Style */
+input {
+    background: rgba(255, 255, 255, 0.05);
+    /* Very slight tint */
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    /* Slightly squarer than pill buttons, as per image input typically */
+    padding: 0.9rem 1rem;
+    color: var(--text-main);
+    width: 100%;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+}
+
+input:focus {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.4);
+    outline: none;
+}
+
+.status-message {
+    text-align: center;
+    color: var(--error);
+    min-height: 20px;
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+}
+
+/* Auth Buttons */
+.auth-container .btn-primary {
+    /* Inherits global pill style */
+    margin-top: 1rem;
+    font-size: 1rem;
+}
+
+/* Bottom Switcher */
+.auth-switch {
+    text-align: center;
+    margin-top: 2rem;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.auth-switch a {
+    color: var(--text-main);
+    text-decoration: underline;
+    font-weight: 500;
+    margin-left: 5px;
+}
+
+.auth-switch a:hover {
+    color: #ffffff;
+    text-decoration: none;
+}
+
+@media (max-width: 480px) {
+
+    #login-screen,
+    #register-screen {
+        padding: 1.5rem;
+    }
+}

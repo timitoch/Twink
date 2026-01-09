@@ -1,0 +1,343 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+
+:root {
+    /* AURORA THEME (Based on image) */
+    --primary: #ffffff;
+    /* White button */
+    --primary-text: #000000;
+    /* Black text on white button */
+    --primary-glow: rgba(255, 255, 255, 0.2);
+
+    --secondary: #10b981;
+    /* Green accent for minimal elements */
+    --accent-1: #3b82f6;
+    --accent-1-rgb: 59, 130, 246;
+    --accent-2: #10b981;
+    --accent-2-rgb: 16, 185, 129;
+    --accent-bright: #34d399;
+
+    --background: #000000;
+    /* Pitch black base */
+    --surface: rgba(255, 255, 255, 0.03);
+    /* Extremely subtle surface */
+    --surface-glass: rgba(0, 0, 0, 0.2);
+    /* Dark transparent glass */
+
+    --text-main: #ffffff;
+    --text-muted: #9ca3af;
+
+    --border: rgba(255, 255, 255, 0.15);
+    /* Subtle border */
+
+    --success: #10b981;
+    --error: #ef4444;
+
+    --input-bg: transparent;
+    /* Transparent inputs as seen in image */
+
+    /* Gradients from image: Deep Blue & Emerald Green */
+    --bg-gradient-1: rgba(0, 50, 200, 0.5);
+    /* Deep Blue */
+    --bg-gradient-2: rgba(0, 200, 150, 0.4);
+    /* Teal/Green */
+}
+
+/* Light theme mapping (Optional adjustments for contrast) */
+[data-theme="light"] {
+    --primary: #000000;
+    --primary-text: #ffffff;
+    --primary-glow: rgba(0, 0, 0, 0.2);
+    --secondary: #10b981;
+    --background: #ffffff;
+    --surface: #f3f4f6;
+    --surface-glass: rgba(255, 255, 255, 0.8);
+    --text-main: #111827;
+    --text-muted: #6b7280;
+    --border: #e5e7eb;
+    --success: #059669;
+    --error: #dc2626;
+    --input-bg: #ffffff;
+    --bg-gradient-1: rgba(0, 50, 200, 0.05);
+    --bg-gradient-2: rgba(0, 200, 150, 0.05);
+}
+
+/* ===== COLOR SCHEMES ===== */
+/* Default (Blue-Green) - already defined in :root */
+
+[data-color-scheme="pink-yellow"] {
+    --secondary: #ec4899;
+    /* Pink */
+    --accent-1: #ec4899;
+    --accent-1-rgb: 236, 72, 153;
+    --accent-2: #f59e0b;
+    --accent-2-rgb: 245, 158, 11;
+    --accent-bright: #fbbf24;
+    --bg-gradient-1: rgba(236, 72, 153, 0.5);
+    /* Pink */
+    --bg-gradient-2: rgba(245, 158, 11, 0.4);
+    /* Yellow */
+    --success: #f59e0b;
+    /* Yellow for success states */
+}
+
+[data-color-scheme="pink-yellow"][data-theme="light"] {
+    --bg-gradient-1: rgba(236, 72, 153, 0.08);
+    --bg-gradient-2: rgba(245, 158, 11, 0.08);
+}
+
+[data-color-scheme="purple-orange"] {
+    --secondary: #8b5cf6;
+    /* Purple */
+    --accent-1: #8b5cf6;
+    --accent-1-rgb: 139, 92, 246;
+    --accent-2: #f97316;
+    --accent-2-rgb: 249, 115, 22;
+    --accent-bright: #fb923c;
+    --bg-gradient-1: rgba(139, 92, 246, 0.5);
+    /* Purple */
+    --bg-gradient-2: rgba(249, 115, 22, 0.4);
+    /* Orange */
+    --success: #f97316;
+    /* Orange for success */
+}
+
+[data-color-scheme="purple-orange"][data-theme="light"] {
+    --bg-gradient-1: rgba(139, 92, 246, 0.08);
+    --bg-gradient-2: rgba(249, 115, 22, 0.08);
+}
+
+[data-color-scheme="red-cyan"] {
+    --secondary: #ef4444;
+    /* Red */
+    --accent-1: #ef4444;
+    --accent-1-rgb: 239, 68, 68;
+    --accent-2: #06b6d4;
+    --accent-2-rgb: 6, 182, 212;
+    --accent-bright: #22d3ee;
+    --bg-gradient-1: rgba(239, 68, 68, 0.5);
+    /* Red */
+    --bg-gradient-2: rgba(6, 182, 212, 0.4);
+    /* Cyan */
+    --success: #06b6d4;
+    /* Cyan for success */
+}
+
+[data-color-scheme="red-cyan"][data-theme="light"] {
+    --bg-gradient-1: rgba(239, 68, 68, 0.08);
+    --bg-gradient-2: rgba(6, 182, 212, 0.08);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: var(--background);
+    color: var(--text-main);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    transition: background-color 0.4s ease, color 0.4s ease;
+    padding: 0;
+    position: relative;
+    overflow-x: hidden;
+}
+
+/* Blurred blob background shapes */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -2;
+    background:
+        radial-gradient(ellipse 800px 600px at 10% 20%, var(--bg-gradient-1), transparent),
+        radial-gradient(ellipse 600px 800px at 90% 70%, var(--bg-gradient-2), transparent),
+        radial-gradient(circle 500px at 50% 100%, rgba(99, 102, 241, 0.15), transparent);
+    filter: blur(80px);
+    opacity: 0.8;
+}
+
+/* Grain/noise texture overlay */
+body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    opacity: 0.03;
+    pointer-events: none;
+}
+
+.app-container {
+    width: 100%;
+    max-width: 480px;
+    margin: 0 auto;
+    /* Removed fixed margin, handled by body/flex */
+    transition: max-width 0.3s ease;
+}
+
+.app-container.wide-mode {
+    max-width: 1800px;
+}
+
+/* Shared Components */
+.glass-card {
+    /* Very minimal container to match the 'floating' look */
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    position: relative;
+    min-height: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.fade-in {
+    animation: fadeIn 0.4s ease forwards;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Primary Button Style from Image: White Pill */
+.btn-primary {
+    background: var(--primary);
+    color: var(--primary-text);
+    border: none;
+    border-radius: 9999px;
+    /* Pill shape */
+    padding: 0.9rem 1.5rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: transform 0.1s, opacity 0.2s;
+    width: 100%;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.btn-primary:hover {
+    opacity: 0.9;
+}
+
+.btn-primary:active {
+    transform: scale(0.98);
+}
+
+.btn-secondary {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-main);
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    /* Pill shape consistency */
+    cursor: pointer;
+}
+
+.btn-icon {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0.5rem;
+    transition: color 0.2s;
+}
+
+.btn-icon:hover {
+    color: var(--text-main);
+}
+
+svg {
+    vertical-align: middle;
+}
+
+/* Universal Inputs */
+input {
+    width: 100%;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    color: var(--text-main);
+    padding: 0.8rem 1rem;
+    border-radius: 10px;
+    outline: none;
+    font-family: inherit;
+    font-size: 0.95rem;
+    height: 42px;
+    box-sizing: border-box;
+    transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+}
+
+input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px var(--primary-glow);
+}
+
+/* Fix browser autofill yellowish background */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 30px #0f172a inset !important;
+    /* Match background color */
+    -webkit-text-fill-color: var(--text-main) !important;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
+/* --- Glass Dropdown Animation & Style --- */
+@keyframes dropdownFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Base class for glass menus if we add it to JS/HTML, otherwise target IDs */
+#dict-filter-interval-menu,
+#dict-filter-review-menu {
+    /* Base override if inline styles conflict, but inline usually wins.*/
+    /* We use !important to enforce animation interactions */
+    transform-origin: top center;
+}
+
+/* Active State for Animation */
+#dict-filter-interval-menu:not(.hidden),
+#dict-filter-review-menu:not(.hidden) {
+    display: flex !important;
+    animation: dropdownFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Hover effects for transparency */
+.filter-checkbox-row:hover,
+.filter-option-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
