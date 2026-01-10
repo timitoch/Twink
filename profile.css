@@ -10,41 +10,52 @@
 .profile-header-card {
     display: flex;
     align-items: center;
-    gap: 3rem;
-    padding: 3rem;
-    background: rgba(255, 255, 255, 0.05);
-    /* Slightly lighter for glass */
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 24px;
-    backdrop-filter: blur(20px);
-    /* More blur */
-    -webkit-backdrop-filter: blur(20px);
-    margin-bottom: 2rem;
+    gap: 1.5rem;
+    padding: 1rem 2.2rem 1rem 1.5rem;
+    /* Asymmetrical padding for visual balance */
     position: relative;
     overflow: hidden;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    margin-bottom: 1.25rem;
+    border-radius: 20px;
+    background: linear-gradient(135deg,
+            rgba(255, 255, 255, 0.05) 0%,
+            rgba(0, 0, 0, 0.15) 50%,
+            rgba(0, 0, 0, 0.55) 100%);
+    backdrop-filter: blur(25px) saturate(180%) contrast(105%) brightness(85%);
+    -webkit-backdrop-filter: blur(25px) saturate(180%) contrast(105%) brightness(85%);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.4),
+        inset 0 1.5px 0 rgba(255, 255, 255, 0.3),
+        inset 0 -1.5px 0 rgba(0, 0, 0, 0.2);
 }
 
 .profile-header-card::before {
     content: '';
     position: absolute;
     top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, var(--primary), var(--secondary));
-    opacity: 0.8;
+    left: -50%;
+    width: 200%;
+    height: 100%;
+    background: linear-gradient(90deg,
+            transparent,
+            rgba(255, 255, 255, 0.1) 50%,
+            transparent);
+    transform: skewX(-20deg);
+    pointer-events: none;
+    opacity: 0.6;
 }
 
 .profile-avatar-large {
-    width: 150px;
-    height: 150px;
+    width: 110px;
+    height: 110px;
     border-radius: 50%;
+    border: 4px solid rgba(255, 255, 255, 0.03);
     overflow: hidden;
-    border: 4px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     position: relative;
-    flex-shrink: 0;
+    z-index: 2;
+    background: var(--surface);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 .profile-avatar-large img {
@@ -53,50 +64,127 @@
     object-fit: cover;
 }
 
-.profile-info {
+.avatar-container-outer {
+    position: relative;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.avatar-ring-svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    transform: rotate(-90deg);
+}
+
+.profile-content-new {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.75rem;
+}
+
+.profile-top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
 }
 
 .profile-nickname {
-    font-size: 2.5rem;
+    font-size: 1.8rem;
     font-weight: 700;
     background: linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.7) 100%);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     margin: 0;
 }
 
-.profile-name-row {
+.profile-header-badges {
     display: flex;
-    align-items: baseline;
-    gap: 1rem;
-    flex-wrap: wrap;
+    gap: 0.5rem;
 }
 
-.profile-mastery-badge {
-    padding: 0.25rem 0.75rem;
-    background: rgba(var(--primary-rgb, 99, 102, 241), 0.15);
-    color: var(--primary);
+.glass-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.8rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 99px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     font-size: 0.85rem;
     font-weight: 600;
-    border: 1px solid rgba(var(--primary-rgb, 99, 102, 241), 0.2);
+    line-height: 1;
+    /* Match line height for better alignment */
 }
 
-.profile-meta-row {
+.badge-icon {
     display: flex;
     align-items: center;
-    gap: 1.5rem;
-    margin-top: 0.5rem;
-    flex-wrap: wrap;
+    justify-content: center;
+    height: 14px;
+    /* Matches SVG height */
 }
 
-.profile-join-date {
-    font-size: 0.85rem;
+.profile-mastery-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.mastery-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+}
+
+.mastery-title {
+    font-size: 0.9rem;
     color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+}
+
+.mastery-percent-num {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--secondary);
+}
+
+.mastery-progress-track {
+    height: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.mastery-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
+    border-radius: 4px;
+    box-shadow: 0 0 12px rgba(var(--secondary-rgb), 0.35);
+    transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.profile-join-meta {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    opacity: 0.7;
+    margin-top: 0.25rem;
 }
 
 .profile-lang-badge {
@@ -111,6 +199,207 @@
     width: fit-content;
     border: 1px solid rgba(255, 255, 255, 0.05);
     cursor: default;
+}
+
+/* New Stats Groups */
+.stats-group-container {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 20px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.stats-group-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.stats-group-header svg {
+    opacity: 0.6;
+}
+
+/* Streak Flex */
+.streak-flex {
+    display: flex;
+    justify-content: space-around;
+    text-align: center;
+}
+
+.streak-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.streak-val {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--text-main);
+    letter-spacing: -1px;
+}
+
+.streak-lbl {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Stats Rows (Time) */
+.stats-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.stat-row-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.stat-row-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.stat-row-item span {
+    color: var(--text-muted);
+    font-size: 1rem;
+}
+
+.stat-row-item strong {
+    color: var(--text-main);
+    font-family: monospace;
+    font-size: 1.1rem;
+}
+
+/* Chart Navigation */
+.chart-nav-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.chart-month-title {
+    text-align: center;
+}
+
+.month-name {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-main);
+    text-transform: capitalize;
+}
+
+.year-name {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.chart-nav-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    padding: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.chart-nav-btn:hover {
+    color: var(--text-main);
+    transform: scale(1.2);
+}
+
+/* Monthly Bar Chart */
+.monthly-bar-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 200px;
+    overflow-x: auto;
+    padding: 20px 0;
+    scrollbar-width: none;
+    /* Hide scrollbar Firefox */
+}
+
+.monthly-bar-chart::-webkit-scrollbar {
+    display: none;
+    /* Hide scrollbar Chrome/Safari */
+}
+
+.bar-wrapper {
+    position: relative;
+    height: 100%;
+    flex: 1;
+    min-width: 25px;
+}
+
+.bar-pillar {
+    position: absolute;
+    bottom: 20px;
+    /* Space for label */
+    left: 4px;
+    right: 4px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    min-height: 2px;
+    transition: height 0.6s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s;
+}
+
+.bar-pillar.active {
+    background: var(--secondary);
+    box-shadow: 0 0 15px rgba(var(--secondary-rgb), 0.4);
+}
+
+.bar-day-label {
+    position: absolute;
+    bottom: -5px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.bar-value-hint {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.65rem;
+    color: var(--text-main);
+    background: rgba(0, 0, 0, 0.4);
+    padding: 2px 4px;
+    border-radius: 4px;
+    white-space: nowrap;
+    opacity: 0.6;
+    transition: opacity 0.2s, bottom 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    pointer-events: none;
+    z-index: 5;
+}
+
+.bar-pillar.active~.bar-value-hint,
+.bar-wrapper:hover .bar-value-hint {
+    opacity: 1;
+}
+
+.bar-wrapper:hover .bar-pillar.active {
+    filter: brightness(1.2);
 }
 
 .stats-grid-container {
@@ -141,17 +430,6 @@
     background: rgba(255, 255, 255, 0.04);
 }
 
-.stat-box-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 0.5rem;
-    font-size: 1.2rem;
-}
-
 .stat-value {
     font-size: 2rem;
     font-weight: 700;
@@ -161,90 +439,6 @@
 .stat-label {
     font-size: 0.9rem;
     color: var(--text-muted);
-}
-
-.charts-row {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 1.5rem;
-    min-height: 350px;
-}
-
-.chart-card {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 24px;
-    padding: 2rem;
-    display: flex;
-    flex-direction: column;
-    position: relative;
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-}
-
-.chart-title {
-    font-size: 1.2rem;
-    font-weight: 600;
-    margin-bottom: 1.5rem;
-    color: var(--text-main);
-}
-
-/* Simple CSS/SVG Charts */
-.activity-chart-svg {
-    width: 100%;
-    height: 100%;
-    overflow: visible;
-}
-
-.progress-circle-container {
-    position: relative;
-    width: 200px;
-    height: 200px;
-    margin: auto;
-}
-
-.progress-circle-svg {
-    transform: rotate(-90deg);
-    width: 100%;
-    height: 100%;
-}
-
-.progress-circle-bg {
-    fill: none;
-    stroke: rgba(255, 255, 255, 0.05);
-    stroke-width: 10;
-}
-
-.progress-circle-fg {
-    fill: none;
-    stroke: var(--secondary);
-    stroke-width: 10;
-    stroke-linecap: round;
-    stroke-dasharray: 565;
-    /* 2 * PI * R (90) */
-    stroke-dashoffset: 565;
-    transition: stroke-dashoffset 1s ease-out;
-}
-
-.progress-stats-center {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    text-align: center;
-}
-
-.progress-percent {
-    font-size: 2.5rem;
-    font-weight: 800;
-    color: var(--secondary);
-}
-
-.progress-label {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    margin-top: -5px;
 }
 
 @media (max-width: 800px) {
@@ -259,56 +453,95 @@
     }
 
     .profile-header-card {
+        padding: 0.75rem 1.5rem 0.75rem 0.75rem;
+        gap: 0.75rem;
         flex-direction: row;
-        /* Horizontal on mobile */
-        text-align: left;
-        gap: 1rem;
-        padding: 1rem;
-        border-radius: 20px;
+        align-items: center;
         margin-bottom: 0.75rem;
-        align-items: center;
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-    }
-
-    .profile-info {
-        gap: 0.15rem;
-    }
-
-    .profile-name-row {
-        gap: 0.5rem;
-        align-items: center;
-    }
-
-    .profile-nickname {
-        font-size: 1.2rem;
-    }
-
-    .profile-mastery-badge {
-        font-size: 0.65rem;
-        padding: 0.1rem 0.4rem;
-    }
-
-    .profile-meta-row {
-        gap: 0.5rem;
-        margin-top: 0.1rem;
-    }
-
-    .profile-lang-badge {
-        padding: 0.2rem 0.4rem;
-        font-size: 0.65rem;
-        border-radius: 6px;
-    }
-
-    .profile-join-date {
-        font-size: 0.65rem;
-        opacity: 0.7;
+        border-radius: 16px;
     }
 
     .profile-avatar-large {
-        width: 65px;
-        height: 65px;
-        border-width: 2px;
+        width: 70px;
+        height: 70px;
+    }
+
+    .avatar-container-outer {
+        padding: 6px;
+    }
+
+    .profile-top-row {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .profile-nickname {
+        font-size: 1.05rem;
+        max-width: 120px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .profile-header-badges {
+        gap: 0.4rem;
+    }
+
+    .glass-badge {
+        padding: 0.2rem 0.5rem;
+        font-size: 0.65rem;
+    }
+
+    .profile-content-new {
+        gap: 0.5rem;
+    }
+
+    .mastery-header-row {
+        gap: 0.5rem;
+    }
+
+    .mastery-percent-num {
+        font-size: 0.95rem;
+    }
+
+    .mastery-title {
+        font-size: 0.65rem;
+    }
+
+    .stats-group-container {
+        padding: 1rem;
+    }
+
+    .stats-group-header {
+        font-size: 0.8rem;
+        margin-bottom: 1rem;
+    }
+
+    .streak-val {
+        font-size: 1.4rem;
+    }
+
+    .streak-lbl {
+        font-size: 0.7rem;
+    }
+
+    .stats-rows {
+        gap: 0.75rem;
+    }
+
+    .stat-row-item span {
+        font-size: 0.85rem;
+    }
+
+    .stat-row-item strong {
+        font-size: 0.95rem;
+    }
+
+    .profile-join-meta {
+        display: none;
+        /* Hide registration date on mobile to save space */
     }
 
     .stats-grid-container {
@@ -349,7 +582,7 @@
     }
 
     .chart-title {
-        font-size: 0.95rem;
+        font-size: 0.85rem;
         margin-bottom: 0.75rem;
     }
 

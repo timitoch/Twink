@@ -220,21 +220,157 @@
     transition: all 0.3s ease;
 }
 
+.global-mode-card {
+    max-width: 500px;
+    margin-top: 2rem;
+}
+
 .study-mode-card:hover {
     border-color: rgba(255, 255, 255, 0.3);
     box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
 }
 
-.study-mode-card .mode-header h3 {
-    font-size: 1.5rem;
-    margin: 0;
-    font-weight: 600;
+.mode-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
 }
 
-.study-mode-card .mode-stats {
-    font-size: 1rem;
-    margin: 1rem 0 2rem 0;
+.mode-icon-container {
+    width: 44px;
+    height: 44px;
+    background: rgba(var(--secondary-rgb), 0.15);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--secondary);
+    transition: all 0.3s ease;
+}
+
+.mode-title-group {
+    flex: 1;
+}
+
+.mode-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--text-main);
+}
+
+.mode-description {
+    font-size: 0.9rem;
     color: var(--text-muted);
+    margin: 0.2rem 0 0 0;
+    line-height: 1.4;
+}
+
+.mode-stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.stats-box {
+    padding: 1rem;
+    border-radius: 18px;
+    text-align: center;
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.02);
+    transition: all 0.3s ease;
+}
+
+.stats-box.due-box {
+    background: rgba(var(--accent-2-rgb), 0.08);
+    border-color: rgba(var(--accent-2-rgb), 0.15);
+}
+
+.stats-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 0.4rem;
+}
+
+.due-box .stats-label {
+    color: var(--accent-2);
+}
+
+.stats-value {
+    font-size: 1.6rem;
+    font-weight: 850;
+    color: var(--text-main);
+    letter-spacing: -0.5px;
+}
+
+.due-box .stats-value {
+    color: var(--accent-2);
+}
+
+.start-session-btn {
+    width: 100%;
+    height: 48px;
+    font-weight: 600;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.75rem;
+    border-radius: 99px;
+    font-size: 1rem;
+}
+
+/* Mobile Compact Mode */
+@media (max-width: 600px) {
+    .study-mode-card {
+        padding: 1.25rem;
+    }
+
+    .mode-header {
+        margin-bottom: 1.25rem;
+        gap: 0.75rem;
+    }
+
+    .mode-icon-container {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+    }
+
+    .mode-title {
+        font-size: 1.15rem;
+    }
+
+    .mode-description {
+        font-size: 0.85rem;
+        display: none;
+        /* Hide description on mobile to save space */
+    }
+
+    .mode-stats-grid {
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .stats-box {
+        padding: 0.6rem;
+        border-radius: 14px;
+    }
+
+    .stats-value {
+        font-size: 1.25rem;
+    }
+
+    .stats-label {
+        font-size: 0.75rem;
+        margin-bottom: 0.2rem;
+    }
+
+    .start-session-btn {
+        height: 44px;
+        font-size: 0.95rem;
+    }
 }
 
 /* Groups Grid - More spacious */
@@ -390,8 +526,8 @@ td {
 .id-cell {
     color: var(--text-muted);
     font-size: 0.8rem;
-    text-align: center;
-    width: 60px;
+    text-align: left;
+    width: 40px;
 }
 
 .info-cell {
@@ -1252,58 +1388,59 @@ td {
         /* Don't interfere with clicks */
     }
 
-    /* 2. Word (Full Width) */
+    /* 2. Active Indicator (Next to Interval) */
     #words-table td:nth-child(2) {
+        width: auto;
+        order: 6;
+        /* Move after stats */
+        margin-top: 0.5rem;
+        margin-left: 0.5rem;
+    }
+
+    /* 3. Word (Full Width) */
+    #words-table td:nth-child(3) {
         width: 100%;
         font-size: 1.15rem;
-        /* Reduced from 1.3rem */
         font-weight: 700;
-        /* Slightly lighter */
         color: var(--text-main);
         order: 1;
         line-height: 1.3;
         padding-right: 4.5rem;
-        /* Space for Action Icons */
     }
 
-    /* 3. Translation (Full Width) */
-    #words-table td:nth-child(3) {
+    /* 4. Translation (Full Width) */
+    #words-table td:nth-child(4) {
         width: 100%;
         font-size: 0.95rem;
-        /* Reduced from 1.1rem */
         color: var(--secondary);
         order: 2;
         margin-bottom: 0.4rem;
         padding-right: 1.5rem;
-        /* Slight padding to avoid touching edge */
     }
 
-    /* 4-5. Info Tags (Auto Width) */
-    #words-table td:nth-child(4),
-    #words-table td:nth-child(5) {
+    /* 5-6. Info Tags (Auto Width) */
+    #words-table td:nth-child(5),
+    #words-table td:nth-child(6) {
         font-size: 0.7rem;
-        /* Slightly smaller */
         color: var(--text-muted);
         background: rgba(255, 255, 255, 0.05);
         padding: 0.15rem 0.5rem;
-        /* Tighter padding */
         border-radius: 5px;
         order: 3;
         margin-right: 0.4rem;
     }
 
-    #words-table td:nth-child(4):empty,
-    #words-table td:nth-child(5):empty {
+    #words-table td:nth-child(5):empty,
+    #words-table td:nth-child(6):empty {
         display: none;
     }
 
-    /* 6-8. Examples (Full Width) */
-    #words-table td:nth-child(6),
+    /* 7-9. Examples (Full Width) */
     #words-table td:nth-child(7),
-    #words-table td:nth-child(8) {
+    #words-table td:nth-child(8),
+    #words-table td:nth-child(9) {
         width: 100%;
         font-size: 0.75rem;
-        /* Smaller examples */
         color: rgba(255, 255, 255, 0.65);
         font-style: italic;
         padding-left: 0.4rem;
@@ -1312,15 +1449,15 @@ td {
         order: 4;
     }
 
-    #words-table td:nth-child(6):empty,
     #words-table td:nth-child(7):empty,
-    #words-table td:nth-child(8):empty {
+    #words-table td:nth-child(8):empty,
+    #words-table td:nth-child(9):empty {
         display: none;
     }
 
-    /* 9-10. Stats (Full Width Container equivalent) */
-    #words-table td:nth-child(9),
-    #words-table td:nth-child(10) {
+    /* 10-11. Stats (Full Width Container equivalent) */
+    #words-table td:nth-child(10),
+    #words-table td:nth-child(11) {
         font-size: 0.75rem;
         color: var(--text-muted);
         order: 5;
@@ -1329,9 +1466,9 @@ td {
         opacity: 0.7;
     }
 
-    /* 11-12. ACTION BUTTONS (Top-Right Corner) */
-    #words-table td:nth-child(11),
-    #words-table td:nth-child(12) {
+    /* 12-13. ACTION BUTTONS (Top-Right Corner) */
+    #words-table td:nth-child(12),
+    #words-table td:nth-child(13) {
         position: absolute;
         top: 0.5rem;
         right: auto;
@@ -1342,31 +1479,31 @@ td {
         padding: 0;
     }
 
-    #words-table td:nth-child(11) {
+    #words-table td:nth-child(12) {
         right: 2.5rem;
         /* Edit button */
     }
 
-    #words-table td:nth-child(12) {
+    #words-table td:nth-child(13) {
         right: 0.5rem;
         /* Delete button */
     }
 
     /* Make buttons smaller on mobile */
-    #words-table td:nth-child(11) button,
-    #words-table td:nth-child(12) button {
+    #words-table td:nth-child(12) button,
+    #words-table td:nth-child(13) button {
         padding: 0.35rem;
         opacity: 0.6;
         transition: opacity 0.2s;
     }
 
-    #words-table td:nth-child(11) button:active,
-    #words-table td:nth-child(12) button:active {
+    #words-table td:nth-child(12) button:active,
+    #words-table td:nth-child(13) button:active {
         opacity: 1;
     }
 
-    #words-table td:nth-child(11) svg,
-    #words-table td:nth-child(12) svg {
+    #words-table td:nth-child(12) svg,
+    #words-table td:nth-child(13) svg {
         width: 16px;
         height: 16px;
     }

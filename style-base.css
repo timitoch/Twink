@@ -9,7 +9,7 @@
     --primary-glow: rgba(255, 255, 255, 0.2);
 
     --secondary: #10b981;
-    /* Green accent for minimal elements */
+    --secondary-rgb: 16, 185, 129;
     --accent-1: #3b82f6;
     --accent-1-rgb: 59, 130, 246;
     --accent-2: #10b981;
@@ -74,7 +74,7 @@
 
 [data-color-scheme="pink-yellow"] {
     --secondary: #ec4899;
-    /* Pink */
+    --secondary-rgb: 236, 72, 153;
     --accent-1: #ec4899;
     --accent-1-rgb: 236, 72, 153;
     --accent-2: #f59e0b;
@@ -102,7 +102,7 @@
 
 [data-color-scheme="purple-orange"] {
     --secondary: #8b5cf6;
-    /* Purple */
+    --secondary-rgb: 139, 92, 246;
     --accent-1: #8b5cf6;
     --accent-1-rgb: 139, 92, 246;
     --accent-2: #f97316;
@@ -130,7 +130,7 @@
 
 [data-color-scheme="red-cyan"] {
     --secondary: #ef4444;
-    /* Red */
+    --secondary-rgb: 239, 68, 68;
     --accent-1: #ef4444;
     --accent-1-rgb: 239, 68, 68;
     --accent-2: #06b6d4;
@@ -158,9 +158,8 @@
 
 [data-color-scheme="midnight-gold"] {
     --secondary: #facc15;
-    /* Golden Accent */
+    --secondary-rgb: 250, 204, 21;
     --accent-1: #1e1b4b;
-    /* Deep Indigo */
     --accent-1-rgb: 30, 27, 75;
     --accent-2: #facc15;
     --accent-2-rgb: 250, 204, 21;
@@ -184,7 +183,7 @@
 
 [data-color-scheme="pure-black"] {
     --secondary: #ffffff;
-    /* White Accent */
+    --secondary-rgb: 255, 255, 255;
     --accent-1: #ffffff;
     --accent-1-rgb: 255, 255, 255;
     --accent-2: #ffffff;
@@ -206,6 +205,7 @@
 
 [data-color-scheme="pure-black"][data-theme="light"] {
     --secondary: #000000;
+    --secondary-rgb: 0, 0, 0;
     --accent-1: #000000;
     --accent-2: #000000;
     --success: #000000;

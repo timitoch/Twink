@@ -8,6 +8,7 @@ class ProfileModule {
         this.viewProfile = null; // Container
         this.statsData = {};
         this.avatarUrl = null;
+        this.chartDate = new Date(); // Current month for chart
     }
 
     init(dbInstance, user, wordsCache) {
@@ -49,14 +50,107 @@ class ProfileModule {
         }
     }
 
+    formatTime(seconds, includeSeconds = true) {
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        const s = seconds % 60;
+
+        if (h > 0) {
+            return `${h}:${m.toString().padStart(2, '0')}${includeSeconds ? ':' + s.toString().padStart(2, '0') : ''}`;
+        }
+        return `${m}:${s.toString().padStart(2, '0')}`;
+    }
+
+    getPeriodSeconds(period) {
+        const now = new Date();
+        let start = new Date();
+
+        switch (period) {
+            case 'week':
+                const day = now.getDay();
+                const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Monday
+                start = new Date(now.setDate(diff));
+                break;
+            case 'month':
+                start = new Date(now.getFullYear(), now.getMonth(), 1);
+                break;
+            case 'year':
+                start = new Date(now.getFullYear(), 0, 1);
+                break;
+            default:
+                return Object.values(this.statsData).reduce((a, b) => a + (typeof b === 'number' ? b : (b.seconds || 0)), 0);
+        }
+
+        start.setHours(0, 0, 0, 0);
+        const startTime = start.getTime();
+
+        return Object.entries(this.statsData).reduce((total, [dateStr, data]) => {
+            const entryTime = new Date(dateStr).getTime();
+            if (entryTime >= startTime) {
+                total += (typeof data === 'number' ? data : (data.seconds || 0));
+            }
+            return total;
+        }, 0);
+    }
+
+    getStreaks() {
+        const dates = Object.keys(this.statsData)
+            .filter(d => (typeof this.statsData[d] === 'number' ? this.statsData[d] : this.statsData[d].seconds) > 0)
+            .sort();
+        if (dates.length === 0) return { current: 0, best: 0 };
+
+        let best = 0;
+        let current = 0;
+        let temp = 0;
+
+        const today = new Date().toISOString().split('T')[0];
+        const yesterdayDate = new Date();
+        yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+        const yesterday = yesterdayDate.toISOString().split('T')[0];
+
+        // Calculate Best
+        for (let i = 0; i < dates.length; i++) {
+            if (i > 0) {
+                const d1 = new Date(dates[i - 1]);
+                const d2 = new Date(dates[i]);
+                const diff = (d2 - d1) / (1000 * 60 * 60 * 24);
+                if (diff === 1) {
+                    temp++;
+                } else {
+                    temp = 1;
+                }
+            } else {
+                temp = 1;
+            }
+            if (temp > best) best = temp;
+        }
+
+        // Calculate Current
+        const lastDate = dates[dates.length - 1];
+        if (lastDate === today || lastDate === yesterday) {
+            temp = 1;
+            for (let i = dates.length - 1; i > 0; i--) {
+                const d1 = new Date(dates[i - 1]);
+                const d2 = new Date(dates[i]);
+                const diff = (d2 - d1) / (1000 * 60 * 60 * 24);
+                if (diff === 1) {
+                    temp++;
+                } else {
+                    break;
+                }
+            }
+            current = temp;
+        }
+
+        return { current, best };
+    }
+
     renderProfile() {
         if (!this.viewProfile) return;
 
-        // Calculate Stats
         const totalWords = this.wordsCache.length;
         let mastered = 0;
-        let learned = 0; // > 0 interval
-
+        let learned = 0;
         this.wordsCache.forEach(w => {
             const p = w.progress_global;
             if (p) {
@@ -65,104 +159,176 @@ class ProfileModule {
             }
         });
 
-        // TIME CALCULATION (Real)
-        const totalSeconds = Object.values(this.statsData).reduce((a, b) => a + b, 0);
-
-        let timeDisplay = "";
-        if (totalSeconds < 60) {
-            timeDisplay = `${totalSeconds} сек`;
-        } else if (totalSeconds < 3600) {
-            timeDisplay = `${Math.floor(totalSeconds / 60)} мин`;
-        } else {
-            timeDisplay = `${(totalSeconds / 3600).toFixed(1)} ч`;
-        }
+        const streaks = this.getStreaks();
+        const timeWeek = this.getPeriodSeconds('week');
+        const timeMonth = this.getPeriodSeconds('month');
+        const timeYear = this.getPeriodSeconds('year');
+        const timeAll = this.getPeriodSeconds('all');
 
         const masteryPercent = totalWords === 0 ? 0 : Math.round((mastered / totalWords) * 100);
 
-        // Chart Data
-        const timeStats = this.getLast7DaysTimeStats();
-
         this.viewProfile.innerHTML = `
             <div class="profile-header-card">
-                <div class="profile-avatar-large">
-                    <img src="${this.getAvatarUrl()}" alt="Profile">
-                </div>
-                <div class="profile-info">
-                    <div class="profile-name-row">
-                        <h2 class="profile-nickname" id="user-nickname-display">${this.user.nickname || 'Пользователь'}</h2>
-                        <div class="profile-mastery-badge">${masteryPercent}% Mastery</div>
+                <div class="avatar-container-outer">
+                    <div class="avatar-ring-svg">
+                        <svg viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="4"></circle>
+                            <circle cx="50" cy="50" r="45" fill="none" stroke="var(--secondary)" stroke-width="4" 
+                                stroke-dasharray="${2 * Math.PI * 45}" 
+                                stroke-dashoffset="${2 * Math.PI * 45 * (1 - masteryPercent / 100)}" 
+                                stroke-linecap="round"
+                                style="transition: stroke-dashoffset 1s ease-out">
+                            </circle>
+                        </svg>
                     </div>
-                    <div class="profile-meta-row">
-                         <div class="profile-lang-badge">
-                            <span>🇩🇪</span>
-                            <span>Немецкий</span>
-                        </div>
-                        <div class="profile-join-date">
-                            <span>На сайте с <strong>${this.getJoinDate()}</strong></span>
-                        </div>
+                    <div class="profile-avatar-large">
+                        <img src="${this.getAvatarUrl()}" alt="Profile">
                     </div>
-                </div>
-            </div>
-
-            <!-- Main Stats Grid -->
-            <div class="stats-grid-container">
-                <div class="stat-box">
-                    <div class="stat-box-icon" style="background: rgba(239, 68, 68, 0.2); color: #f87171;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                    </div>
-                    <div class="stat-value">${timeDisplay}</div>
-                    <div class="stat-label">Время в обучении</div>
                 </div>
                 
-                <div class="stat-box">
-                    <div class="stat-box-icon" style="background: rgba(59, 130, 246, 0.2); color: #60a5fa;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
-                    </div>
-                    <div class="stat-value">${totalWords}</div>
-                    <div class="stat-label">Слов в словаре</div>
-                </div>
-
-                <div class="stat-box">
-                    <div class="stat-box-icon" style="background: rgba(16, 185, 129, 0.2); color: #34d399;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-                    </div>
-                    <div class="stat-value">${mastered}</div>
-                    <div class="stat-label">Полностью освоено</div>
-                </div>
-
-                <div class="stat-box">
-                    <div class="stat-box-icon" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-                    </div>
-                    <div class="stat-value">${learned}</div>
-                    <div class="stat-label">В процессе изучения</div>
-                </div>
-            </div>
-
-            <div class="charts-row">
-                <div class="chart-card">
-                    <div class="chart-title">Время обучения (мин)</div>
-                    <div style="flex: 1; min-height: 0; position: relative;">
-                         ${this.generateTimeBarChart(timeStats)}
-                    </div>
-                </div>
-                <div class="chart-card">
-                    <div class="chart-title">Прогресс слов</div>
-                    <div style="flex: 1; display: flex; align-items: center; justify-content: center;">
-                        <div class="progress-circle-container">
-                            <svg class="progress-circle-svg">
-                                <circle class="progress-circle-bg" cx="100" cy="100" r="90"></circle>
-                                <circle class="progress-circle-fg" cx="100" cy="100" r="90" style="stroke-dashoffset: ${565 - (565 * masteryPercent / 100)}"></circle>
-                            </svg>
-                            <div class="progress-stats-center">
-                                <div class="progress-percent">${masteryPercent}%</div>
-                                <div class="progress-label">Готово</div>
+                <div class="profile-content-new">
+                    <div class="profile-top-row">
+                        <h2 class="profile-nickname">${this.user.nickname || 'Пользователь'}</h2>
+                        <div class="profile-header-badges">
+                            <div class="glass-badge highlight-level" title="Прогресс уровней (освоенные слова):&#10;A1: 500+&#10;A2: 1000+&#10;B1: 2000+&#10;B2: 4000+&#10;C1: 8000+&#10;C2: 16000+">
+                                <span class="badge-icon">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path></svg>
+                                </span>
+                                <span class="badge-text" style="display: flex; align-items: center; gap: 4px;">
+                                    ${this.getLevel(mastered)}
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.6;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                                </span>
+                            </div>
+                            <div class="glass-badge">
+                                <span class="badge-icon">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                                </span>
+                                <span class="badge-text">German</span>
                             </div>
                         </div>
                     </div>
+
+                    <div class="profile-mastery-section">
+                        <div class="mastery-header-row">
+                            <span class="mastery-title">Mastery Level</span>
+                            <span class="mastery-percent-num">${masteryPercent}%</span>
+                        </div>
+                        <div class="mastery-progress-track">
+                            <div class="mastery-progress-fill" style="width: ${masteryPercent}%"></div>
+                        </div>
+                        <div class="profile-join-meta">
+                            На сайте с <strong>${this.getJoinDate()}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Streak Section -->
+            <div class="stats-group-container">
+                <div class="stats-group-header">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                    <span>Streak</span>
+                </div>
+                <div class="streak-flex">
+                    <div class="streak-item">
+                        <div class="streak-val">${streaks.current} DAYS</div>
+                        <div class="streak-lbl">Current</div>
+                    </div>
+                    <div class="streak-item">
+                        <div class="streak-val">${streaks.best} DAYS</div>
+                        <div class="streak-lbl">Best</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total Time Section -->
+            <div class="stats-group-container">
+                <div class="stats-group-header">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="8" y1="21" x2="8" y2="3"></line><line x1="16" y1="21" x2="16" y2="3"></line><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="16" x2="21" y2="16"></line></svg>
+                    <span>Total time</span>
+                </div>
+                <div class="stats-rows">
+                    <div class="stat-row-item"><span>This week</span> <strong>${this.formatTime(timeWeek)}</strong></div>
+                    <div class="stat-row-item"><span>This month</span> <strong>${this.formatTime(timeMonth)}</strong></div>
+                    <div class="stat-row-item"><span>This year</span> <strong>${this.formatTime(timeYear)}</strong></div>
+                    <div class="stat-row-item"><span>All</span> <strong>${this.formatTime(timeAll)}</strong></div>
+                </div>
+            </div>
+
+            <!-- Monthly Chart -->
+            <div class="stats-group-container chart-container-large">
+                <div class="chart-nav-header">
+                    <button onclick="window.ProfileModule.prevMonth()" class="chart-nav-btn">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    </button>
+                    <div class="chart-month-title">
+                        <div class="month-name">${this.chartDate.toLocaleString('ru-RU', { month: 'long' })}</div>
+                        <div class="year-name">${this.chartDate.getFullYear()}</div>
+                    </div>
+                    <button onclick="window.ProfileModule.nextMonth()" class="chart-nav-btn">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </button>
+                </div>
+                <div class="monthly-bar-chart">
+                    ${this.generateMonthlyChart()}
+                </div>
+            </div>
+            
+            <div class="stats-grid-container" style="margin-top: 2rem;">
+                <div class="stat-box">
+                    <div class="stat-value">${totalWords}</div>
+                    <div class="stat-label">Слов в словаре</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value">${mastered}</div>
+                    <div class="stat-label">Полностью освоено</div>
                 </div>
             </div>
         `;
+    }
+
+    prevMonth() {
+        this.chartDate.setMonth(this.chartDate.getMonth() - 1);
+        this.renderProfile();
+    }
+
+    nextMonth() {
+        this.chartDate.setMonth(this.chartDate.getMonth() + 1);
+        this.renderProfile();
+    }
+
+    generateMonthlyChart() {
+        const year = this.chartDate.getFullYear();
+        const month = this.chartDate.getMonth();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+        let maxSeconds = 0;
+        const days = [];
+
+        for (let i = 1; i <= daysInMonth; i++) {
+            const dateKey = `${year}-${(month + 1).toString().padStart(2, '0')}-${i.toString().padStart(2, '0')}`;
+            const data = this.statsData[dateKey];
+            const secs = typeof data === 'number' ? data : (data?.seconds || 0);
+            days.push({ day: i, seconds: secs });
+            if (secs > maxSeconds) maxSeconds = secs;
+        }
+
+        const effectiveMax = maxSeconds > 0 ? maxSeconds : 3600;
+
+        return days.map(d => {
+            // Cap height at 75% to leave room for the label above the tallest bar
+            const heightPct = (d.seconds / effectiveMax) * 75;
+            const timeStr = d.seconds > 0 ? this.formatTime(d.seconds, false) : '';
+            const isActive = d.seconds > 0 ? 'active' : '';
+
+            return `
+                <div class="bar-wrapper">
+                    <div class="bar-pillar ${isActive}" style="height: ${Math.max(heightPct, 1)}%"></div>
+                    <div class="bar-day-label">${d.day}</div>
+                    <div class="bar-value-hint" style="bottom: calc(${heightPct}% + 25px)">${timeStr}</div>
+                </div>
+            `;
+        }).join('');
     }
 
     getAvatarUrl() {
@@ -170,6 +336,16 @@ class ProfileModule {
         if (this.user.photoURL) return this.user.photoURL;
         // Construct SVG avatar if not available
         return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='1' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='0' y='0' width='24' height='24' fill='%231e293b'/%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2' stroke='%23cbd5e1' stroke-width='2'/%3E%3Ccircle cx='12' cy='7' r='4' stroke='%23cbd5e1' stroke-width='2'/%3E%3C/svg%3E`;
+    }
+
+    getLevel(mastered) {
+        if (mastered >= 16000) return 'C2';
+        if (mastered >= 8000) return 'C1';
+        if (mastered >= 4000) return 'B2';
+        if (mastered >= 2000) return 'B1';
+        if (mastered >= 1000) return 'A2';
+        if (mastered >= 500) return 'A1';
+        return 'A0';
     }
 
     getJoinDate() {

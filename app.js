@@ -250,6 +250,8 @@ function switchView(targetView) {
         document.body.classList.add('no-scroll');
     } else {
         document.body.classList.remove('no-scroll');
+        // Stop time tracking when leaving session
+        if (window.StudyModule) window.StudyModule.stopTracking();
     }
 }
 
@@ -360,6 +362,7 @@ firebase.auth().onAuthStateChanged((user) => {
 // Load from localStorage or default
 const defaultColumns = {
     id: true,
+    active: true,
     word: true,
     translation: true,
     info1: true,
@@ -415,15 +418,16 @@ function renderTable(arr) {
         // Let's assume order: ID(0), Word(1), Trans(2), Info1(3), Info2(4), Ex1(5), Ex2(6), Ex3(7), Interval(8), Next(9), Actions(10,11)
         const ths = headRow.querySelectorAll('th');
         if (ths[0]) ths[0].style.display = visibleColumns.id ? '' : 'none';
-        if (ths[1]) ths[1].style.display = visibleColumns.word ? '' : 'none';
-        if (ths[2]) ths[2].style.display = visibleColumns.translation ? '' : 'none';
-        if (ths[3]) ths[3].style.display = visibleColumns.info1 ? '' : 'none';
-        if (ths[4]) ths[4].style.display = visibleColumns.info2 ? '' : 'none';
-        if (ths[5]) ths[5].style.display = visibleColumns.ex1 ? '' : 'none';
-        if (ths[6]) ths[6].style.display = visibleColumns.ex2 ? '' : 'none';
-        if (ths[7]) ths[7].style.display = visibleColumns.ex3 ? '' : 'none';
-        if (ths[8]) ths[8].style.display = visibleColumns.interval ? '' : 'none';
-        if (ths[9]) ths[9].style.display = visibleColumns.nextDate ? '' : 'none';
+        if (ths[1]) ths[1].style.display = visibleColumns.active ? '' : 'none';
+        if (ths[2]) ths[2].style.display = visibleColumns.word ? '' : 'none';
+        if (ths[3]) ths[3].style.display = visibleColumns.translation ? '' : 'none';
+        if (ths[4]) ths[4].style.display = visibleColumns.info1 ? '' : 'none';
+        if (ths[5]) ths[5].style.display = visibleColumns.info2 ? '' : 'none';
+        if (ths[6]) ths[6].style.display = visibleColumns.ex1 ? '' : 'none';
+        if (ths[7]) ths[7].style.display = visibleColumns.ex2 ? '' : 'none';
+        if (ths[8]) ths[8].style.display = visibleColumns.ex3 ? '' : 'none';
+        if (ths[9]) ths[9].style.display = visibleColumns.interval ? '' : 'none';
+        if (ths[10]) ths[10].style.display = visibleColumns.nextDate ? '' : 'none';
     }
 
     arr.forEach(w => {
@@ -434,8 +438,12 @@ function renderTable(arr) {
         const displayStyle = (key) => visibleColumns[key] ? '' : 'display: none;';
 
         // We MUST render all TD elements so nth-child CSS matches. We hide them via style.
+        const isActive = w.progress_global && w.progress_global.isActive;
+        const activeIcon = isActive ? `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="#fbbf24" stroke="#fbbf24" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>` : '';
+
         tr.innerHTML = `
             <td class="id-cell" style="${displayStyle('id')}">${w.id}</td>
+            <td style="${displayStyle('active')}; text-align: center;">${activeIcon}</td>
             <td style="${displayStyle('word')}"><strong>${w.word}</strong></td>
             <td style="${displayStyle('translation')}"><strong>${w.translation}</strong></td>
             <td class="info-cell" style="${displayStyle('info1')}">${w.info1 || ''}</td>

@@ -27,7 +27,8 @@ class StudyModule {
             showStatToday: true,
             masterCard: false,
             masterInterface: false,
-            masterAudio: true
+            masterAudio: true,
+            includeActive: false
         };
 
         // DOM Elements
@@ -94,11 +95,10 @@ class StudyModule {
         // Time Tracking
         this.timer = null;
         this.lastActivity = Date.now();
-        this.idleLimit = 3 * 60 * 1000; // 3 minutes
+        this.idleLimit = 30 * 1000; // 30 seconds
         this.isActiveSession = false;
-        this.sessionStartTime = 0;
-        this.persistedSecondsToday = 0;
         this.userId = null;
+        this.pendingSeconds = 0;
     }
 
     async init(dbInstance, wordsCache) {
@@ -129,22 +129,29 @@ class StudyModule {
         if (this.isActiveSession) return;
         this.isActiveSession = true;
         this.lastActivity = Date.now();
+        this.pendingSeconds = 0;
 
-        // Start Interval
+        if (this.timer) clearInterval(this.timer);
+
         this.timer = setInterval(() => {
             if (!this.isActiveSession || !this.userId) return;
 
             const now = Date.now();
             if (now - this.lastActivity < this.idleLimit) {
                 // User is active
-                this.accumulateTime(1); // Add 1 second
+                this.accumulateTime(1);
             }
         }, 1000);
     }
 
-    stopTracking() {
+    async stopTracking() {
+        if (!this.isActiveSession) return;
         this.isActiveSession = false;
-        if (this.timer) clearInterval(this.timer);
+        if (this.timer) {
+            clearInterval(this.timer);
+            this.timer = null;
+        }
+        await this.flushTime();
     }
 
     async accumulateTime(seconds) {
@@ -193,6 +200,7 @@ class StudyModule {
         this.btnToggleStatTotal = document.getElementById('btn-toggle-stat-total');
         this.btnToggleStatDue = document.getElementById('btn-toggle-stat-due');
         this.btnToggleStatToday = document.getElementById('btn-toggle-stat-today');
+        this.btnToggleIncludeActive = document.getElementById('btn-toggle-include-active');
 
         this.statCardTotal = document.getElementById('stat-card-total');
         this.statCardDue = document.getElementById('stat-card-due');
@@ -271,6 +279,7 @@ class StudyModule {
         setupToggle(this.btnToggleStatTotal, 'showStatTotal');
         setupToggle(this.btnToggleStatDue, 'showStatDue');
         setupToggle(this.btnToggleStatToday, 'showStatToday');
+        setupToggle(this.btnToggleIncludeActive, 'includeActive');
 
         setupToggle(this.btnMasterCard, 'masterCard');
         setupToggle(this.btnMasterInterface, 'masterInterface');
@@ -329,7 +338,13 @@ class StudyModule {
     // --- STATS LOGIC ---
     getWordsForScope(mode, groupIndex) {
         const sorted = [...this.allWordsCache].sort((a, b) => parseInt(a.id) - parseInt(b.id));
-        if (mode === 'global') return sorted;
+
+        if (mode === 'global') {
+            if (this.settings.includeActive) {
+                return sorted;
+            }
+            return sorted.filter(w => !w.progress_global || !w.progress_global.isActive);
+        }
         if (mode === 'groups' && groupIndex != null) {
             return sorted.slice(groupIndex * 100, (groupIndex + 1) * 100);
         }
@@ -639,29 +654,79 @@ class StudyModule {
         }
     }
 
+    saveSessionState() {
+        if (!this.currentSession) return;
+        const key = `study_session_${this.currentSession.mode}_${this.currentSession.groupIndex ?? 'all'}`;
+        const state = {
+            queueIds: this.currentSession.queue.map(w => w.id),
+            currentIndex: this.currentSession.currentIndex,
+            timestamp: Date.now()
+        };
+        localStorage.setItem(key, JSON.stringify(state));
+    }
+
+    clearSessionState(mode, groupIndex) {
+        const key = `study_session_${mode}_${groupIndex ?? 'all'}`;
+        localStorage.removeItem(key);
+    }
+
     // --- SESSION ENGINE ---
     startSession(mode, groupIndex) {
         const now = Date.now();
         const progressKey = 'progress_global';
+        const savedKey = `study_session_${mode}_${groupIndex ?? 'all'}`;
 
-        const scope = this.getWordsForScope(mode, groupIndex);
-        let dueWords = scope.filter(w => !w[progressKey] || w[progressKey].nextDate <= now);
+        let sessionData = null;
+        const savedData = localStorage.getItem(savedKey);
 
-        if (dueWords.length === 0) {
-            alert("Нет слов для повторения!");
-            return;
+        if (savedData) {
+            try {
+                const state = JSON.parse(savedData);
+                const queue = state.queueIds
+                    .map(id => this.allWordsCache.find(w => w.id === id))
+                    .filter(w => !!w);
+
+                if (queue.length > 0 && state.currentIndex < queue.length) {
+                    sessionData = {
+                        mode,
+                        groupIndex,
+                        key: progressKey,
+                        queue: queue,
+                        currentIndex: state.currentIndex,
+                        currentWord: null,
+                        history: []
+                    };
+                }
+            } catch (e) {
+                console.error("Failed to restore session", e);
+            }
         }
 
-        dueWords = this.shuffleArray(dueWords);
-        this.currentSession = {
-            mode,
-            groupIndex,
-            key: progressKey,
-            queue: dueWords,
-            currentIndex: 0,
-            currentWord: null,
-            history: []
-        };
+        if (sessionData) {
+            this.currentSession = sessionData;
+        } else {
+            const scope = this.getWordsForScope(mode, groupIndex);
+            let dueWords = scope.filter(w => !w[progressKey] || w[progressKey].nextDate <= now);
+
+            if (dueWords.length === 0) {
+                alert("Нет слов для повторения!");
+                return;
+            }
+
+            dueWords = this.shuffleArray(dueWords);
+            this.currentSession = {
+                mode,
+                groupIndex,
+                key: progressKey,
+                queue: dueWords,
+                currentIndex: 0,
+                currentWord: null,
+                history: []
+            };
+            this.saveSessionState();
+        }
+
+        const scope = this.getWordsForScope(mode, groupIndex);
         this.updateStatsUI(scope);
 
         // Update Title
@@ -900,6 +965,7 @@ class StudyModule {
         if (!stayOnCurrent) {
             if (this.currentSession.currentIndex >= this.currentSession.queue.length) {
                 this.stopTracking();
+                this.clearSessionState(this.currentSession.mode, this.currentSession.groupIndex);
                 alert("Сессия завершена!");
                 this.currentSession = null;
                 if (window.switchView) window.switchView(this.viewStudy);
@@ -908,6 +974,7 @@ class StudyModule {
             }
             const word = this.currentSession.queue[this.currentSession.currentIndex];
             this.currentSession.currentWord = word;
+            this.saveSessionState();
         }
 
         const word = this.currentSession.currentWord;
@@ -978,12 +1045,28 @@ class StudyModule {
             case 6: nextIntervalDays = 21; break;
         }
 
+        const currentProgress = word[key] || {};
+        let excellentStreak = currentProgress.excellentStreak || 0;
+        let isActive = currentProgress.isActive || false;
+
+        if (rating === 6) {
+            excellentStreak++;
+        } else {
+            excellentStreak = 0;
+        }
+
+        if (excellentStreak >= 3) {
+            isActive = true;
+        }
+
         const nextTimestamp = rating === 1 ? Date.now() + 300000 : Date.now() + (nextIntervalDays * 86400000);
         const newProgress = {
             interval: nextIntervalDays,
             nextDate: nextTimestamp,
             lastRating: rating,
-            lastReviewed: Date.now()
+            lastReviewed: Date.now(),
+            excellentStreak: excellentStreak,
+            isActive: isActive
         };
 
         // Save history for Undo

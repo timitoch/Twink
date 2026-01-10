@@ -237,54 +237,38 @@
                         </div>
 
                         <!-- Global Study Button -->
-                        <div class="study-mode-card" style="max-width: 500px; margin-top: 2rem;">
-                            <div
-                                style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem;">
-                                <div>
-                                    <div
-                                        style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
-                                        <div
-                                            style="width: 40px; height: 40px; background: rgba(99, 102, 241, 0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #818cf8;">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22"
-                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                                stroke-linecap="round" stroke-linejoin="round">
-                                                <circle cx="12" cy="12" r="10"></circle>
-                                                <line x1="2" y1="12" x2="22" y2="12"></line>
-                                                <path
-                                                    d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z">
-                                                </path>
-                                            </svg>
-                                        </div>
-                                        <h3 style="margin:0; font-size: 1.25rem;">Весь список</h3>
-                                    </div>
-                                    <p
-                                        style="color: var(--text-muted); margin: 0; font-size: 0.95rem; line-height: 1.4;">
-                                        Тренировка по всем словам из вашего словаря в случайном порядке.
-                                    </p>
+                        <div class="study-mode-card global-mode-card">
+                            <div class="mode-header">
+                                <div class="mode-icon-container">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <line x1="2" y1="12" x2="22" y2="12"></line>
+                                        <path
+                                            d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z">
+                                        </path>
+                                    </svg>
+                                </div>
+                                <div class="mode-title-group">
+                                    <h3 class="mode-title">Весь список</h3>
+                                    <p class="mode-description">Тренировка по всем словам в случайном порядке.</p>
                                 </div>
                             </div>
 
                             <!-- Stats Grid -->
-                            <div
-                                style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
-                                <div
-                                    style="background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 16px; text-align: center; border: 1px solid var(--border);">
-                                    <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.25rem;">
-                                        Всего</div>
-                                    <div id="dash-total-words" style="font-size: 1.5rem; font-weight: 700;">0</div>
+                            <div class="mode-stats-grid">
+                                <div class="stats-box total-box">
+                                    <div class="stats-label">Всего</div>
+                                    <div id="dash-total-words" class="stats-value">0</div>
                                 </div>
-                                <div
-                                    style="background: rgba(var(--accent-2-rgb, 16, 185, 129), 0.1); padding: 1rem; border-radius: 16px; text-align: center; border: 1px solid rgba(var(--accent-2-rgb, 16, 185, 129), 0.2);">
-                                    <div style="font-size: 0.85rem; color: var(--accent-2); margin-bottom: 0.25rem;">К
-                                        повтору
-                                    </div>
-                                    <div id="global-due-count-lbl"
-                                        style="font-size: 1.5rem; font-weight: 700; color: var(--accent-2);">0</div>
+                                <div class="stats-box due-box">
+                                    <div class="stats-label">К повтору</div>
+                                    <div id="global-due-count-lbl" class="stats-value">0</div>
                                 </div>
                             </div>
 
-                            <button id="btn-start-global" class="btn-primary"
-                                style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 0.5rem; height: 3rem; font-size: 1rem;">
+                            <button id="btn-start-global" class="btn-primary start-session-btn">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
                                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                     stroke-linejoin="round">
@@ -691,6 +675,9 @@
                                     <label class="custom-checkbox secondary"><input type="checkbox" value="id" checked
                                             onchange="toggleColumn('id')"><span
                                             class="checkmark"></span><span>ID</span></label>
+                                    <label class="custom-checkbox secondary"><input type="checkbox" value="active"
+                                            checked onchange="toggleColumn('active')"><span
+                                            class="checkmark"></span><span>Актив</span></label>
                                     <label class="custom-checkbox secondary"><input type="checkbox" value="word" checked
                                             onchange="toggleColumn('word')"><span
                                             class="checkmark"></span><span>Немецкое слово</span></label>
@@ -790,6 +777,14 @@
                             <thead>
                                 <tr>
                                     <th>ID</th>
+                                    <th>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                                            stroke-linecap="round" stroke-linejoin="round"
+                                            title="Активный словарный запас">
+                                            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                                        </svg>
+                                    </th>
                                     <th>Немецкое слово</th>
                                     <th>Перевод</th>
                                     <th>Доп. инфо 1</th>
@@ -1332,6 +1327,14 @@
                             <div class="setting-row">
                                 <span class="setting-label">Пройдено сегодня</span>
                                 <button id="btn-toggle-stat-today" class="toggle-switch-btn active">
+                                    <div class="toggle-thumb"></div>
+                                </button>
+                            </div>
+                            <div class="setting-row">
+                                <span class="setting-label"
+                                    style="opacity: 1; color: var(--secondary); font-weight: 700;">Изучать активные
+                                    слова</span>
+                                <button id="btn-toggle-include-active" class="toggle-switch-btn">
                                     <div class="toggle-thumb"></div>
                                 </button>
                             </div>
