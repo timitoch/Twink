@@ -241,6 +241,45 @@
     }
 }
 
+/* Empty State Styling */
+.empty-state-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    text-align: center;
+    max-width: 600px;
+    margin: 12rem auto;
+    padding: 0 2rem;
+}
+
+.empty-state-icon {
+    width: 64px;
+    height: 64px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+}
+
+@media (max-width: 600px) {
+    .empty-state-card {
+        margin: 6rem auto;
+        padding: 0 1.5rem;
+    }
+
+    .empty-state-card h3 {
+        font-size: 1.15rem !important;
+    }
+
+    .empty-state-card p {
+        font-size: 0.95rem !important;
+        margin-bottom: 1.25rem !important;
+    }
+}
+
 /* Hide mobile settings on desktop */
 .mobile-only-nav-item {
     display: none;

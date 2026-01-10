@@ -451,3 +451,7 @@ input:-webkit-autofill:active {
     position: fixed !important;
     width: 100% !important;
 }
+
+.hidden {
+    display: none !important;
+}

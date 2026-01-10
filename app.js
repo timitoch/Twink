@@ -82,16 +82,30 @@ class WordLabDB {
 
     async resetProgressOnly() {
         if (!this.userId) return;
-        if (confirm("Вы уверены? Это сбросит прогресс изучения для ВСЕХ слов, но сами слова останутся.")) {
+        if (confirm("Вы уверены? Это сбросит прогресс изучения для ВСЕХ слов и обнулит всё время обучения, но сами слова останутся.")) {
             const words = await this.getAllWords();
             const updates = {};
-            const defaultProgress = { interval: 0, nextDate: Date.now(), state: "new" };
+            const defaultProgress = {
+                interval: 0,
+                nextDate: Date.now(),
+                state: "new",
+                excellentStreak: 0,
+                isActive: false,
+                lastRating: null,
+                lastReviewed: null
+            };
             Object.keys(words).forEach(id => {
                 updates[`users/${this.userId}/words/${id}/progress_global`] = defaultProgress;
                 updates[`users/${this.userId}/words/${id}/progress_groups`] = defaultProgress;
             });
+
+            // Also clear stats/daily (Total time)
+            updates[`users/${this.userId}/stats/daily`] = null;
+
             await this.db.ref().update(updates);
-            alert("Прогресс сброшен.");
+            alert("Прогресс и статистика времени сброшены.");
+            // Redirect to profile
+            if (window.switchView) window.switchView(document.getElementById('view-profile'));
         }
     }
 
@@ -100,6 +114,8 @@ class WordLabDB {
         if (confirm("Вы уверены? Это удалит ТИТАНИЧЕСКОЕ количество слов (весь ваш словарь) безвозвратно.")) {
             await this.db.ref(`users/${this.userId}/words`).remove();
             alert("Словарь очищен.");
+            // Redirect to dictionary
+            if (window.switchView) window.switchView(document.getElementById('view-words'));
         }
     }
 
@@ -201,7 +217,7 @@ function updateNavIndicator() {
 }
 window.addEventListener('resize', updateNavIndicator);
 
-function switchView(targetView) {
+async function switchView(targetView) {
     // Hide all views
     [viewProfile, viewImport, viewWords, viewStudy, viewStudySession, viewSettings, viewGroupEdit].forEach(v => v && v.classList.add('hidden'));
     targetView.classList.remove('hidden');
@@ -256,7 +272,14 @@ function switchView(targetView) {
     } else {
         document.body.classList.remove('no-scroll');
         // Stop time tracking when leaving session
-        if (window.StudyModule) window.StudyModule.stopTracking();
+        if (window.StudyModule) {
+            await window.StudyModule.stopTracking(); // Ensure time is saved to DB
+        }
+    }
+
+    // Always refresh profile data when entering the profile view
+    if (targetView === viewProfile && window.ProfileModule) {
+        window.ProfileModule.loadStats();
     }
 }
 
@@ -265,12 +288,7 @@ window.switchView = switchView;
 
 
 // Nav Tab Click Handlers
-if (navTabs.profile) navTabs.profile.onclick = () => {
-    if (window.ProfileModule) {
-        window.ProfileModule.renderProfile();
-        switchView(viewProfile);
-    }
-};
+if (navTabs.profile) navTabs.profile.onclick = () => switchView(viewProfile);
 if (navTabs.study) navTabs.study.onclick = () => {
     if (window.StudyModule) {
         window.StudyModule.renderStudyDashboard();
@@ -411,13 +429,44 @@ function refreshTable() {
 }
 
 function renderTable(arr) {
+    const tableHead = document.querySelector('#words-table thead');
+    const dictToolbar = document.querySelector('.dict-toolbar');
+
+    // Hide toolbar if dictionary is completely empty
+    const dictEmptyView = document.getElementById('dict-empty-state-view');
+    const dictMainContainer = document.getElementById('dict-main-container');
+
+    if (arr.length === 0) {
+        if (dictMainContainer) dictMainContainer.classList.add('hidden');
+        if (dictEmptyView) {
+            dictEmptyView.classList.remove('hidden');
+            dictEmptyView.innerHTML = `
+                <div class="empty-state-card">
+                    <div class="empty-state-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                    </div>
+                    <div>
+                        <h3 style="color: var(--text-main); margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 700;">Здесь пока ничего нет</h3>
+                        <p style="color: var(--text-muted); font-size: 1rem; margin-bottom: 1.5rem;">Добавьте свое первое слово, чтобы начать обучение</p>
+                    </div>
+                    <button onclick="openEditModal()" class="btn-primary" style="width: auto; padding: 0.8rem 2.5rem; font-weight: 600;">Добавить слово</button>
+                </div>
+            `;
+        }
+        return;
+    }
+
+    if (dictMainContainer) dictMainContainer.classList.remove('hidden');
+    if (dictEmptyView) dictEmptyView.classList.add('hidden');
+
+    if (tableHead) tableHead.style.display = '';
     wordsTableBody.innerHTML = '';
 
     // Update Header Visibility
     // We use display:none so nth-child indices in CSS remain consistent for the remaining visible elements?
     // wait, if we use display:none, the element IS still in DOM tree, so nth-child counts it.
     // So our CSS rules targeting nth-child(2) for 'Word' will still work even if ID is hidden.
-    const headRow = document.querySelector('#words-table thead tr');
+    const headRow = document.querySelector('#words-table tr');
     if (headRow) {
         // IDs of headers must match order or be selected by index. 
         // Let's assume order: ID(0), Word(1), Trans(2), Info1(3), Info2(4), Ex1(5), Ex2(6), Ex3(7), Interval(8), Next(9), Actions(10,11)

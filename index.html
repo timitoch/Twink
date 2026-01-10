@@ -220,7 +220,8 @@
 
                 <!-- 2. VIEW: STUDY SELECTOR -->
                 <div id="view-study" class="view-section fade-in">
-                    <div style="max-width: 1400px; margin: 0 auto; width: 100%;">
+                    <div id="study-empty-state-view" class="hidden"></div>
+                    <div id="study-dashboard-main" style="max-width: 1400px; margin: 0 auto; width: 100%;">
                         <div class="section-title">
                             <h2>Режимы обучения</h2>
                         </div>
@@ -630,207 +631,216 @@
                     </div>
                 </div>
                 <div id="view-words" class="view-section hidden">
-                    <!-- Dictionary Toolbar -->
-                    <div class="dict-toolbar"
-                        style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: center; position: relative;">
+                    <div id="dict-empty-state-view" class="hidden"></div>
+                    <div id="dict-main-container">
+                        <!-- Dictionary Toolbar -->
+                        <div class="dict-toolbar"
+                            style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: center; position: relative;">
 
-                        <!-- 1. Search (Longer) -->
-                        <div class="dict-search-wrapper" style="flex: 2; min-width: 300px; position: relative;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round"
-                                style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none;">
-                                <circle cx="11" cy="11" r="8"></circle>
-                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                            </svg>
-                            <input type="text" id="dict-search" placeholder="Поиск..."
-                                style="width: 100%; padding-left: 2.5rem; padding-right: 1rem; border-radius: 10px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-main); height: 42px; outline: none; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
-                        </div>
-
-                        <!-- Mobile Toggle Button (Visible only on mobile via CSS) -->
-                        <button id="dict-mobile-filter-toggle" class="mobile-only-btn"
-                            style="display: none; height: 42px; width: 42px; align-items: center; justify-content: center; border-radius: 10px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-main); cursor: pointer;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round">
-                                <line x1="4" y1="21" x2="4" y2="14"></line>
-                                <line x1="4" y1="10" x2="4" y2="3"></line>
-                                <line x1="12" y1="21" x2="12" y2="12"></line>
-                                <line x1="12" y1="8" x2="12" y2="3"></line>
-                                <line x1="20" y1="21" x2="20" y2="16"></line>
-                                <line x1="20" y1="12" x2="20" y2="3"></line>
-                                <line x1="1" y1="14" x2="7" y2="14"></line>
-                                <line x1="9" y1="8" x2="15" y2="8"></line>
-                                <line x1="17" y1="16" x2="23" y2="16"></line>
-                            </svg>
-                        </button>
-
-                        <!-- Filters Group (Collapsible side-panel on mobile) -->
-                        <div id="dict-filters-group" class="dict-filters-group"
-                            style="display: flex; gap: 1rem; flex: 1; min-width: 300px;">
-
-                            <!-- Mobile Close Button -->
-                            <button id="dict-mobile-filter-close" class="mobile-only-btn"
-                                style="width: 100%; justify-content: flex-end; margin-bottom: 1rem; background: none; border: none; padding: 0; color: var(--text-muted);">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                    stroke-linejoin="round">
-                                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                                </svg>
-                            </button>
-
-                            <!-- Column Filter -->
-                            <div style="flex: 1; min-width: 140px; position: relative;">
-                                <button id="dict-filter-columns-btn"
-                                    style="width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 1rem; border-radius: 10px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-main); height: 42px; cursor: pointer; text-align: left;">
-                                    <span id="columns-btn-label">Столбцы</span>
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                        stroke-linejoin="round">
-                                        <path d="M9 3H5a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z">
-                                        </path>
-                                        <path
-                                            d="M19 3h-4a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z">
-                                        </path>
-                                        <path
-                                            d="M9 13H5a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2z">
-                                        </path>
-                                        <path
-                                            d="M19 13h-4a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2z">
-                                        </path>
-                                    </svg>
-                                </button>
-                                <div id="dict-filter-columns-menu" class="hidden"
-                                    style="position: absolute; top: 110%; left: 0; width: 100%; min-width: 200px; background: rgba(30, 41, 59, 0.95); backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 0.5rem; z-index: 1000; box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.7); display: flex; flex-direction: column; gap: 2px; max-height: 400px; overflow-y: auto;">
-                                    <label class="custom-checkbox secondary"><input type="checkbox" value="id" checked
-                                            onchange="toggleColumn('id')"><span
-                                            class="checkmark"></span><span>ID</span></label>
-                                    <label class="custom-checkbox secondary"><input type="checkbox" value="active"
-                                            checked onchange="toggleColumn('active')"><span
-                                            class="checkmark"></span><span>Актив</span></label>
-                                    <label class="custom-checkbox secondary"><input type="checkbox" value="word" checked
-                                            onchange="toggleColumn('word')"><span
-                                            class="checkmark"></span><span>Немецкое слово</span></label>
-                                    <label class="custom-checkbox secondary"><input type="checkbox" value="translation"
-                                            checked onchange="toggleColumn('translation')"><span
-                                            class="checkmark"></span><span>Перевод</span></label>
-                                    <label class="custom-checkbox secondary"><input type="checkbox" value="info1"
-                                            checked onchange="toggleColumn('info1')"><span
-                                            class="checkmark"></span><span>Доп. инфо 1</span></label>
-                                    <label class="custom-checkbox secondary"><input type="checkbox" value="info2"
-                                            checked onchange="toggleColumn('info2')"><span
-                                            class="checkmark"></span><span>Доп. инфо 2</span></label>
-                                    <label class="custom-checkbox secondary"><input type="checkbox" value="ex1" checked
-                                            onchange="toggleColumn('ex1')"><span class="checkmark"></span><span>Пример
-                                            1</span></label>
-                                    <label class="custom-checkbox secondary"><input type="checkbox" value="ex2" checked
-                                            onchange="toggleColumn('ex2')"><span class="checkmark"></span><span>Пример
-                                            2</span></label>
-                                    <label class="custom-checkbox secondary"><input type="checkbox" value="ex3" checked
-                                            onchange="toggleColumn('ex3')"><span class="checkmark"></span><span>Пример
-                                            3</span></label>
-                                    <label class="custom-checkbox secondary"><input type="checkbox" value="interval"
-                                            checked onchange="toggleColumn('interval')"><span
-                                            class="checkmark"></span><span>Интервал</span></label>
-                                    <label class="custom-checkbox secondary"><input type="checkbox" value="nextDate"
-                                            checked onchange="toggleColumn('nextDate')"><span
-                                            class="checkmark"></span><span>След. повтор</span></label>
-                                </div>
-                            </div>
-
-                            <!-- Interval Filter -->
-                            <div style="flex: 1; min-width: 140px; position: relative;">
-                                <button id="dict-filter-interval-btn"
-                                    style="width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 1rem; border-radius: 10px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-main); height: 42px; cursor: pointer; text-align: left;">
-                                    <span id="interval-btn-label">Интервалы</span>
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                        stroke-linejoin="round">
-                                        <polyline points="6 9 12 15 18 9"></polyline>
-                                    </svg>
-                                </button>
-                                <div id="dict-filter-interval-menu" class="hidden"
-                                    style="position: absolute; top: 110%; left: 0; width: 100%; background: rgba(30, 41, 59, 0.95); backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 0.5rem; z-index: 1000; box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.7); display: flex; flex-direction: column; gap: 2px;">
-                                    <label class="custom-checkbox"><input type="checkbox" value="all" checked><span
-                                            class="checkmark"></span><span>Все</span></label>
-                                    <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 4px 0;"></div>
-                                    <label class="custom-checkbox secondary"><input type="checkbox" value="new"><span
-                                            class="checkmark"></span><span>0 дн (Новые)</span></label>
-                                    <label class="custom-checkbox secondary"><input type="checkbox" value="0"><span
-                                            class="checkmark"></span><span>5 мин</span></label>
-                                    <label class="custom-checkbox secondary"><input type="checkbox" value="1"><span
-                                            class="checkmark"></span><span>1 дн</span></label>
-                                    <label class="custom-checkbox secondary"><input type="checkbox" value="4"><span
-                                            class="checkmark"></span><span>4 дн</span></label>
-                                    <label class="custom-checkbox secondary"><input type="checkbox" value="7"><span
-                                            class="checkmark"></span><span>7 дн</span></label>
-                                    <label class="custom-checkbox secondary"><input type="checkbox" value="12"><span
-                                            class="checkmark"></span><span>12 дн</span></label>
-                                    <label class="custom-checkbox secondary"><input type="checkbox" value="21"><span
-                                            class="checkmark"></span><span>21 дн</span></label>
-                                </div>
-                            </div>
-                        </div>
-
-
-
-                        <!-- Action Buttons -->
-                        <div class="dict-actions" style="display: flex; gap: 0.5rem; flex: 0 0 auto;">
-                            <!-- Add Word -->
-                            <button onclick="window.openEditModal(null)" title="Добавить слово"
-                                style="height: 42px; width: 42px; display: flex; align-items: center; justify-content: center; border-radius: 10px; border: none; background: #ffffff; color: #000000; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                                    fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"
-                                    stroke-linejoin="round">
-                                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                                </svg>
-                            </button>
-
-                            <!-- Export Button -->
-                            <button class="btn-export" onclick="window.exportWordsToExcel()"
-                                title="Скачать таблицу (Excel)"
-                                style="height: 42px; width: 42px; display: flex; align-items: center; justify-content: center; border-radius: 10px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); cursor: pointer; transition: all 0.2s ease;">
+                            <!-- 1. Search (Longer) -->
+                            <div class="dict-search-wrapper" style="flex: 2; min-width: 300px; position: relative;">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
                                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none;">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                </svg>
+                                <input type="text" id="dict-search" placeholder="Поиск..."
+                                    style="width: 100%; padding-left: 2.5rem; padding-right: 1rem; border-radius: 10px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-main); height: 42px; outline: none; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+                            </div>
+
+                            <!-- Mobile Toggle Button (Visible only on mobile via CSS) -->
+                            <button id="dict-mobile-filter-toggle" class="mobile-only-btn"
+                                style="display: none; height: 42px; width: 42px; align-items: center; justify-content: center; border-radius: 10px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-main); cursor: pointer;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                     stroke-linejoin="round">
-                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                    <polyline points="7 10 12 15 17 10"></polyline>
-                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                    <line x1="4" y1="21" x2="4" y2="14"></line>
+                                    <line x1="4" y1="10" x2="4" y2="3"></line>
+                                    <line x1="12" y1="21" x2="12" y2="12"></line>
+                                    <line x1="12" y1="8" x2="12" y2="3"></line>
+                                    <line x1="20" y1="21" x2="20" y2="16"></line>
+                                    <line x1="20" y1="12" x2="20" y2="3"></line>
+                                    <line x1="1" y1="14" x2="7" y2="14"></line>
+                                    <line x1="9" y1="8" x2="15" y2="8"></line>
+                                    <line x1="17" y1="16" x2="23" y2="16"></line>
                                 </svg>
                             </button>
-                        </div>
-                    </div>
 
-                    <div class="table-container wide-table">
-                        <table id="words-table">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                                            stroke-linecap="round" stroke-linejoin="round"
-                                            title="Активный словарный запас">
-                                            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                            <!-- Filters Group (Collapsible side-panel on mobile) -->
+                            <div id="dict-filters-group" class="dict-filters-group"
+                                style="display: flex; gap: 1rem; flex: 1; min-width: 300px;">
+
+                                <!-- Mobile Close Button -->
+                                <button id="dict-mobile-filter-close" class="mobile-only-btn"
+                                    style="width: 100%; justify-content: flex-end; margin-bottom: 1rem; background: none; border: none; padding: 0; color: var(--text-muted);">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                    </svg>
+                                </button>
+
+                                <!-- Column Filter -->
+                                <div style="flex: 1; min-width: 140px; position: relative;">
+                                    <button id="dict-filter-columns-btn"
+                                        style="width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 1rem; border-radius: 10px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-main); height: 42px; cursor: pointer; text-align: left;">
+                                        <span id="columns-btn-label">Столбцы</span>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round">
+                                            <path
+                                                d="M9 3H5a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z">
+                                            </path>
+                                            <path
+                                                d="M19 3h-4a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z">
+                                            </path>
+                                            <path
+                                                d="M9 13H5a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2z">
+                                            </path>
+                                            <path
+                                                d="M19 13h-4a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2z">
+                                            </path>
                                         </svg>
-                                    </th>
-                                    <th>Немецкое слово</th>
-                                    <th>Перевод</th>
-                                    <th>Доп. инфо 1</th>
-                                    <th>Доп. инфо 2</th>
-                                    <th>Пример 1</th>
-                                    <th>Пример 2</th>
-                                    <th>Пример 3</th>
-                                    <th>Интервал</th>
-                                    <th>След. повтор</th>
-                                    <th></th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-                            <tbody id="words-table-body"></tbody>
-                        </table>
+                                    </button>
+                                    <div id="dict-filter-columns-menu" class="hidden"
+                                        style="position: absolute; top: 110%; left: 0; width: 100%; min-width: 200px; background: rgba(30, 41, 59, 0.95); backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 0.5rem; z-index: 1000; box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.7); display: flex; flex-direction: column; gap: 2px; max-height: 400px; overflow-y: auto;">
+                                        <label class="custom-checkbox secondary"><input type="checkbox" value="id"
+                                                checked onchange="toggleColumn('id')"><span
+                                                class="checkmark"></span><span>ID</span></label>
+                                        <label class="custom-checkbox secondary"><input type="checkbox" value="active"
+                                                checked onchange="toggleColumn('active')"><span
+                                                class="checkmark"></span><span>Актив</span></label>
+                                        <label class="custom-checkbox secondary"><input type="checkbox" value="word"
+                                                checked onchange="toggleColumn('word')"><span
+                                                class="checkmark"></span><span>Немецкое слово</span></label>
+                                        <label class="custom-checkbox secondary"><input type="checkbox"
+                                                value="translation" checked onchange="toggleColumn('translation')"><span
+                                                class="checkmark"></span><span>Перевод</span></label>
+                                        <label class="custom-checkbox secondary"><input type="checkbox" value="info1"
+                                                checked onchange="toggleColumn('info1')"><span
+                                                class="checkmark"></span><span>Доп. инфо 1</span></label>
+                                        <label class="custom-checkbox secondary"><input type="checkbox" value="info2"
+                                                checked onchange="toggleColumn('info2')"><span
+                                                class="checkmark"></span><span>Доп. инфо 2</span></label>
+                                        <label class="custom-checkbox secondary"><input type="checkbox" value="ex1"
+                                                checked onchange="toggleColumn('ex1')"><span
+                                                class="checkmark"></span><span>Пример
+                                                1</span></label>
+                                        <label class="custom-checkbox secondary"><input type="checkbox" value="ex2"
+                                                checked onchange="toggleColumn('ex2')"><span
+                                                class="checkmark"></span><span>Пример
+                                                2</span></label>
+                                        <label class="custom-checkbox secondary"><input type="checkbox" value="ex3"
+                                                checked onchange="toggleColumn('ex3')"><span
+                                                class="checkmark"></span><span>Пример
+                                                3</span></label>
+                                        <label class="custom-checkbox secondary"><input type="checkbox" value="interval"
+                                                checked onchange="toggleColumn('interval')"><span
+                                                class="checkmark"></span><span>Интервал</span></label>
+                                        <label class="custom-checkbox secondary"><input type="checkbox" value="nextDate"
+                                                checked onchange="toggleColumn('nextDate')"><span
+                                                class="checkmark"></span><span>След. повтор</span></label>
+                                    </div>
+                                </div>
+
+                                <!-- Interval Filter -->
+                                <div style="flex: 1; min-width: 140px; position: relative;">
+                                    <button id="dict-filter-interval-btn"
+                                        style="width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 1rem; border-radius: 10px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-main); height: 42px; cursor: pointer; text-align: left;">
+                                        <span id="interval-btn-label">Интервалы</span>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="6 9 12 15 18 9"></polyline>
+                                        </svg>
+                                    </button>
+                                    <div id="dict-filter-interval-menu" class="hidden"
+                                        style="position: absolute; top: 110%; left: 0; width: 100%; background: rgba(30, 41, 59, 0.95); backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 0.5rem; z-index: 1000; box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.7); display: flex; flex-direction: column; gap: 2px;">
+                                        <label class="custom-checkbox"><input type="checkbox" value="all" checked><span
+                                                class="checkmark"></span><span>Все</span></label>
+                                        <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 4px 0;">
+                                        </div>
+                                        <label class="custom-checkbox secondary"><input type="checkbox"
+                                                value="new"><span class="checkmark"></span><span>0 дн
+                                                (Новые)</span></label>
+                                        <label class="custom-checkbox secondary"><input type="checkbox" value="0"><span
+                                                class="checkmark"></span><span>5 мин</span></label>
+                                        <label class="custom-checkbox secondary"><input type="checkbox" value="1"><span
+                                                class="checkmark"></span><span>1 дн</span></label>
+                                        <label class="custom-checkbox secondary"><input type="checkbox" value="4"><span
+                                                class="checkmark"></span><span>4 дн</span></label>
+                                        <label class="custom-checkbox secondary"><input type="checkbox" value="7"><span
+                                                class="checkmark"></span><span>7 дн</span></label>
+                                        <label class="custom-checkbox secondary"><input type="checkbox" value="12"><span
+                                                class="checkmark"></span><span>12 дн</span></label>
+                                        <label class="custom-checkbox secondary"><input type="checkbox" value="21"><span
+                                                class="checkmark"></span><span>21 дн</span></label>
+                                    </div>
+                                </div>
+                            </div>
+
+
+
+                            <!-- Action Buttons -->
+                            <div class="dict-actions" style="display: flex; gap: 0.5rem; flex: 0 0 auto;">
+                                <!-- Add Word -->
+                                <button onclick="window.openEditModal(null)" title="Добавить слово"
+                                    style="height: 42px; width: 42px; display: flex; align-items: center; justify-content: center; border-radius: 10px; border: none; background: #ffffff; color: #000000; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                                    </svg>
+                                </button>
+
+                                <!-- Export Button -->
+                                <button class="btn-export" onclick="window.exportWordsToExcel()"
+                                    title="Скачать таблицу (Excel)"
+                                    style="height: 42px; width: 42px; display: flex; align-items: center; justify-content: center; border-radius: 10px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); cursor: pointer; transition: all 0.2s ease;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                        <polyline points="7 10 12 15 17 10"></polyline>
+                                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="table-container wide-table">
+                            <table id="words-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                                                stroke-linecap="round" stroke-linejoin="round"
+                                                title="Активный словарный запас">
+                                                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                                            </svg>
+                                        </th>
+                                        <th>Немецкое слово</th>
+                                        <th>Перевод</th>
+                                        <th>Доп. инфо 1</th>
+                                        <th>Доп. инфо 2</th>
+                                        <th>Пример 1</th>
+                                        <th>Пример 2</th>
+                                        <th>Пример 3</th>
+                                        <th>Интервал</th>
+                                        <th>След. повтор</th>
+                                        <th></th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="words-table-body"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 

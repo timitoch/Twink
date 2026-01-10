@@ -40,6 +40,8 @@ class StudyModule {
         this.globalDueCountLbl = document.getElementById('global-due-count-lbl');
         this.btnStartGlobal = document.getElementById('btn-start-global');
         this.groupsList = document.getElementById('groups-list');
+        this.studyDashboardMain = document.getElementById('study-dashboard-main');
+        this.studyEmptyStateView = document.getElementById('study-empty-state-view');
 
         // Group Editor
         this.groupWordsList = document.getElementById('group-words-list');
@@ -444,7 +446,29 @@ class StudyModule {
 
     // --- STUDY DASHBOARD ---
     renderStudyDashboard() {
-        if (!this.allWordsCache.length) return;
+        if (!this.allWordsCache || this.allWordsCache.length === 0) {
+            if (this.studyDashboardMain) this.studyDashboardMain.classList.add('hidden');
+            if (this.studyEmptyStateView) {
+                this.studyEmptyStateView.classList.remove('hidden');
+                this.studyEmptyStateView.innerHTML = `
+                <div class="empty-state-card">
+                    <div class="empty-state-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                    </div>
+                    <div>
+                        <h3 style="color: var(--text-main); margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 700;">Здесь пока ничего нет</h3>
+                        <p style="color: var(--text-muted); font-size: 1rem; margin-bottom: 1.5rem;">Добавьте свое первое слово, чтобы начать обучение</p>
+                    </div>
+                    <button onclick="if(window.openEditModal) window.openEditModal()" class="btn-primary" style="width: auto; padding: 0.8rem 2.5rem; font-weight: 600;">Добавить слово</button>
+                </div>
+            `;
+            }
+            return;
+        }
+
+        if (this.studyDashboardMain) this.studyDashboardMain.classList.remove('hidden');
+        if (this.studyEmptyStateView) this.studyEmptyStateView.classList.add('hidden');
+
         const now = Date.now();
         const sortedWords = [...this.allWordsCache].sort((a, b) => parseInt(a.id) - parseInt(b.id));
 
