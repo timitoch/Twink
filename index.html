@@ -377,6 +377,11 @@
                                     style="font-weight: 600; color: var(--text-main);">0</span>
                             </div>
 
+                            <!-- Debug Timer (Temporary) -->
+                            <div id="debug-session-timer"
+                                style="font-family: monospace; font-size: 0.85rem; color: var(--secondary); background: rgba(var(--secondary-rgb), 0.1); padding: 2px 8px; border-radius: 6px; font-weight: 600;">
+                                00:00</div>
+
                             <!-- Button remains in top bar -->
                             <button id="btn-session-settings" class="btn-square icon-btn" title="Настройки">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
@@ -498,9 +503,34 @@
                             <h2>Импорт слов</h2>
                         </div>
 
-                        <!-- Drop Zone (Top) -->
                         <!-- Drop Zone -->
-                        <div class="import-panel" id="drop-zone"
+                        <div class="import-drop-zone desktop-only" id="drop-zone"
+                            onclick="document.getElementById('excel-file-input').click()"
+                            style="margin-top: 0; margin-bottom: 3rem;">
+                            <div
+                                style="width: 80px; height: 80px; background: rgba(99, 102, 241, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem auto; color: var(--primary);">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="17 8 12 3 7 8"></polyline>
+                                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                                </svg>
+                            </div>
+                            <h3 style="font-size: 1.25rem; margin-bottom: 0.5rem; color: var(--text-main);">Нажмите для
+                                выбора файла</h3>
+                            <p style="color: var(--text-muted); margin-bottom: 2rem;">или перетащите таблицу (.xlsx) в
+                                эту область</p>
+
+                            <input type="file" id="excel-file-input" accept=".xlsx, .xls" style="display: none;">
+
+                            <div id="import-status-desktop"
+                                style="margin-top: 1.5rem; min-height: 24px; font-weight: 500;">
+                            </div>
+                        </div>
+
+                        <!-- Mobile Version -->
+                        <div class="import-panel mobile-only"
                             onclick="document.getElementById('excel-file-input').click()">
                             <div class="import-panel-content">
                                 <div class="import-icon-box">
@@ -514,18 +544,15 @@
                                 </div>
                                 <div class="import-text-box">
                                     <h3 style="margin:0; font-size: 1.1rem; color: var(--text-main);">Выбрать файл</h3>
-                                    <p class="desktop-only-inline"
-                                        style="color: var(--text-muted); margin: 0.2rem 0 0 0; font-size: 0.85rem;">или
-                                        перетащите .xlsx сюда</p>
-                                    <p class="mobile-only-inline"
-                                        style="color: var(--text-muted); margin: 0.2rem 0 0 0; font-size: 0.85rem;">
+                                    <p style="color: var(--text-muted); margin: 0.2rem 0 0 0; font-size: 0.85rem;">
                                         Нажмите, чтобы загрузить .xlsx</p>
                                 </div>
                             </div>
-                            <input type="file" id="excel-file-input" accept=".xlsx, .xls" style="display: none;">
-                            <div id="import-status" style="margin-top: 1rem; min-height: 20px; font-size: 0.9rem;">
-                            </div>
+                            <div id="import-status-mobile"
+                                style="margin-top: 1rem; min-height: 20px; font-size: 0.9rem;"></div>
                         </div>
+
+                        <div id="import-status" class="hidden"></div>
 
                         <!-- Instruction Section (Bottom) -->
                         <div style="margin-top: 2rem;">
@@ -555,32 +582,46 @@
 
                                     <!-- Desktop Table -->
                                     <div class="import-guide-table-wrapper desktop-only">
-                                        <table class="import-guide-table">
-                                            <thead>
-                                                <tr>
-                                                    <th style="width: 50px;">A</th>
-                                                    <th>B: Слово</th>
-                                                    <th>C: Перевод</th>
-                                                    <th>D: Инфо</th>
-                                                    <th>E: Инфо2</th>
-                                                    <th>F: Пример 1</th>
-                                                    <th>G: Пример 2</th>
-                                                    <th>H: Пример 3</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    <td style="color: var(--text-muted);">101</td>
-                                                    <td style="color: var(--text-main); font-weight: 500;">Apfel</td>
-                                                    <td>Яблоко</td>
-                                                    <td><i>сущ.</i></td>
-                                                    <td><i>м.р.</i></td>
-                                                    <td style="color: var(--text-main);">Ich esse einen Apfel.</td>
-                                                    <td>-</td>
-                                                    <td>-</td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
+                                        <div style="width: 100%; overflow-x: auto;">
+                                            <table class="import-guide-table" style="width: 100%;">
+                                                <thead>
+                                                    <tr>
+                                                        <th style="width: 50px;">A</th>
+                                                        <th>B: Слово</th>
+                                                        <th>C: Перевод</th>
+                                                        <th>D: Инфо</th>
+                                                        <th>E: Инфо2</th>
+                                                        <th>F: Пример 1</th>
+                                                        <th>G: Пример 2</th>
+                                                        <th>H: Пример 3</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td style="color: var(--text-muted);">101</td>
+                                                        <td style="color: var(--text-main); font-weight: 500;">Apfel
+                                                        </td>
+                                                        <td>Яблоко</td>
+                                                        <td><i>сущ.</i></td>
+                                                        <td><i>м.р.</i></td>
+                                                        <td style="color: var(--text-main);">Ich esse einen Apfel.</td>
+                                                        <td>-</td>
+                                                        <td>-</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td style="color: var(--text-muted);">102</td>
+                                                        <td style="color: var(--text-main); font-weight: 500;">Buch</td>
+                                                        <td>Книга</td>
+                                                        <td><i>сущ.</i></td>
+                                                        <td><i>ср.р.</i></td>
+                                                        <td style="color: var(--text-main);">Das Buch ist interessant.
+                                                        </td>
+                                                        <td>Ich lese ein Buch.</td>
+                                                        <td>-</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
                                     </div>
 
                                     <!-- Mobile Card List -->
@@ -592,7 +633,7 @@
                                         <div class="guide-mobile-item"><span>E</span> Инфо 2 (род, тип)</div>
                                         <div class="guide-mobile-item"><span>F</span> Пример 1</div>
                                         <div class="guide-mobile-item"><span>G</span> Пример 2</div>
-                                        <div class="guide-mobile-item"><span>H</span> Прммер 3</div>
+                                        <div class="guide-mobile-item"><span>H</span> Пример 3</div>
                                     </div>
                                 </div>
                             </div>
@@ -1354,6 +1395,10 @@
         </div>
     </div>
     <script src="https://code.responsivevoice.org/responsivevoice.js?key=i8NuynN8"></script>
+    <script src="profile.js"></script>
+    <script src="study.js"></script>
+    <script src="settings.js"></script>
+    <script src="app.js"></script>
 </body>
 
 </html>

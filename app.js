@@ -744,7 +744,14 @@ toLoginBtn.onclick = () => { registerScreen.classList.add('hidden'); loginScreen
 if (excelFileInput) {
     excelFileInput.onchange = async (e) => {
         const f = e.target.files[0]; if (!f) return;
-        importStatus.textContent = 'Importing...';
+        const statusElements = [
+            document.getElementById('import-status'),
+            document.getElementById('import-status-desktop'),
+            document.getElementById('import-status-mobile')
+        ].filter(el => el);
+
+        statusElements.forEach(el => el.textContent = 'Importing...');
+
         try {
             const data = await new Promise((res, rej) => {
                 const r = new FileReader();
@@ -752,8 +759,15 @@ if (excelFileInput) {
                 r.onerror = rej; r.readAsArrayBuffer(f);
             });
             const s = await db.processSmartImport(data);
-            importStatus.innerHTML = `<span style="color: var(--success);">✔ Импорт завершен: Добавлено: ${s.created}, Обновлено: ${s.updated}, Удалено: ${s.deleted}</span>`;
-        } catch (err) { console.error(err); importStatus.textContent = err.message; }
+            const msg = `<span style="color: var(--success);">✔ Импорт завершен: Добавлено: ${s.created}, Обновлено: ${s.updated}, Удалено: ${s.deleted}</span>`;
+            statusElements.forEach(el => {
+                el.innerHTML = msg;
+                el.classList.remove('hidden');
+            });
+        } catch (err) {
+            console.error(err);
+            statusElements.forEach(el => el.textContent = err.message);
+        }
         excelFileInput.value = '';
     };
 }

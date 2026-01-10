@@ -99,6 +99,8 @@ class StudyModule {
         this.isActiveSession = false;
         this.userId = null;
         this.pendingSeconds = 0;
+        this.todayTotalSeconds = 0; // Cumulative total for today
+        this.lastTickTimestamp = 0;
     }
 
     async init(dbInstance, wordsCache) {
@@ -123,13 +125,39 @@ class StudyModule {
         ['mousemove', 'keydown', 'click', 'touchstart'].forEach(evt => {
             document.addEventListener(evt, () => this.lastActivity = Date.now());
         });
+
+        // Load today's base time
+        if (this.userId) {
+            const dateKey = new Date().toISOString().split('T')[0];
+            const ref = this.db.db.ref(`users/${this.userId}/stats/daily/${dateKey}`);
+            ref.on('value', (snap) => {
+                const val = snap.val() || 0;
+                // Only update if we aren't currently tracking (to avoid jumps)
+                // or if the DB value is significantly ahead
+                if (!this.isActiveSession) {
+                    this.todayTotalSeconds = val;
+                }
+            });
+        }
+
+        // Visibility Change listener to stop counting when backgrounded
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') {
+                this.stopTracking();
+            } else {
+                // Return to app: if we are in study session view, restart tracking
+                if (this.viewStudySession && !this.viewStudySession.classList.contains('hidden') && this.currentSession) {
+                    this.startTracking();
+                }
+            }
+        });
     }
 
     startTracking() {
         if (this.isActiveSession) return;
         this.isActiveSession = true;
         this.lastActivity = Date.now();
-        this.pendingSeconds = 0;
+        this.lastTickTimestamp = Date.now();
 
         if (this.timer) clearInterval(this.timer);
 
@@ -137,11 +165,18 @@ class StudyModule {
             if (!this.isActiveSession || !this.userId) return;
 
             const now = Date.now();
+            const deltaMs = now - this.lastTickTimestamp;
+            this.lastTickTimestamp = now;
+
+            // Only count if user was active recently (prevent counting while locked/idle)
             if (now - this.lastActivity < this.idleLimit) {
-                // User is active
-                this.accumulateTime(1);
+                const deltaSec = deltaMs / 1000;
+                this.accumulateTime(deltaSec);
+                this.updateTimerUI();
             }
         }, 1000);
+
+        this.updateTimerUI();
     }
 
     async stopTracking() {
@@ -155,32 +190,52 @@ class StudyModule {
     }
 
     async accumulateTime(seconds) {
-        // We write to DB every ~10s or accumulate locally?
-        // Writing every second is too much. Let's write every 10s or just keep local state and flush.
-        // For simplicity and robustness against close, let's simple "add" transactionally or throttle write.
-        // Implementation: Add to local variable, sync to DB every 30s.
-
-        if (!this.pendingSeconds) this.pendingSeconds = 0;
+        if (isNaN(seconds)) return;
+        this.todayTotalSeconds += seconds;
         this.pendingSeconds += seconds;
 
+        // Flush to DB roughly every 10 seconds to avoid data loss on crash/exit
         if (this.pendingSeconds >= 10) {
             await this.flushTime();
         }
     }
 
     async flushTime() {
-        if (!this.pendingSeconds || this.pendingSeconds === 0) return;
+        if (this.pendingSeconds <= 0) return;
         if (!this.userId) return;
+
+        const toAdd = Math.floor(this.pendingSeconds);
+        // Keep the fractional part for the next flush
+        this.pendingSeconds -= toAdd;
+
+        if (toAdd <= 0) return;
 
         const dateKey = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
         const ref = this.db.db.ref(`users/${this.userId}/stats/daily/${dateKey}`);
 
         // Transaction to increment
-        await ref.transaction((currentVal) => {
-            return (currentVal || 0) + this.pendingSeconds;
-        });
+        try {
+            await ref.transaction((currentVal) => {
+                return (currentVal || 0) + toAdd;
+            });
+        } catch (e) {
+            console.error("Flush time error:", e);
+        }
+    }
 
-        this.pendingSeconds = 0;
+    updateTimerUI() {
+        const el = document.getElementById('debug-session-timer');
+        if (!el) return;
+        const total = Math.floor(this.todayTotalSeconds);
+        const h = Math.floor(total / 3600);
+        const m = Math.floor((total % 3600) / 60);
+        const s = total % 60;
+
+        if (h > 0) {
+            el.textContent = `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        } else {
+            el.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        }
     }
 
     updateWordsCache(wordsCache) {
