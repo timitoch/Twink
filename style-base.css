@@ -437,3 +437,11 @@ input:-webkit-autofill:active {
 .filter-option-item:hover {
     background: rgba(255, 255, 255, 0.1);
 }
+
+/* Helper to disable body scroll on mobile session */
+.no-scroll {
+    overflow: hidden !important;
+    height: 100vh !important;
+    position: fixed !important;
+    width: 100% !important;
+}

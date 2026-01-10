@@ -244,8 +244,9 @@ function switchView(targetView) {
     // Move the liquid glass indicator
     setTimeout(updateNavIndicator, 0);
 
-    // Disable scroll on Study view for mobile
-    if (targetView === viewStudy || targetView === viewStudySession) {
+    // Disable scroll on Study SESSION (cards) view for mobile
+    // Keep scroll on Study (mode selector) view
+    if (targetView === viewStudySession) {
         document.body.classList.add('no-scroll');
     } else {
         document.body.classList.remove('no-scroll');
