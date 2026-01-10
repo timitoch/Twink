@@ -2,7 +2,7 @@
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 0.75rem;
+    gap: 0.05rem;
     /* Even tighter gap */
     margin-top: 0;
     width: 100%;
@@ -11,7 +11,7 @@
 
 .app-logo {
     text-align: center;
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.75rem;
 }
 
 .app-logo h1 {
@@ -28,16 +28,13 @@
     font-weight: 500;
 }
 
-#login-screen,
-#register-screen {
-    /* Styles handled by class */
-}
+
 
 /* Form Styles */
 .form-group {
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
+    gap: 0.05rem;
     /* Tighter gap between label and input */
     position: relative;
     width: 100%;
@@ -56,7 +53,7 @@ input.glass-input {
     background: rgba(255, 255, 255, 0.05) !important;
     /* Force transparency logic */
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
+    border-radius: 99px;
     padding: 0.9rem 1.2rem;
     color: var(--text-main);
     width: 100%;
@@ -90,7 +87,7 @@ input.glass-input::placeholder {
 
 /* Auth Buttons */
 .auth-container .btn-primary {
-    margin-top: 1rem;
+    margin-top: 0.1rem;
     font-size: 1rem;
     padding: 0.9rem;
     border-radius: 9999px;
@@ -102,7 +99,7 @@ input.glass-input::placeholder {
 /* Bottom Switcher */
 .auth-switch {
     text-align: center;
-    margin-top: 1.5rem;
+    margin-top: 0.75rem;
     font-size: 0.9rem;
     color: var(--text-muted);
 }
@@ -132,7 +129,7 @@ input.glass-input::placeholder {
 
 .app-logo {
     text-align: center;
-    margin-bottom: 2rem;
+    margin-bottom: 0.75rem;
 }
 
 .app-logo h1 {
@@ -150,16 +147,13 @@ input.glass-input::placeholder {
 }
 
 /* Container Override - Transparent & Centered */
-#login-screen,
-#register-screen {
-    /* Glass card styles are applied by class, just ensure positioning */
-}
+
 
 /* Form Styles */
 .form-group {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.05rem;
     position: relative;
 }
 
@@ -176,7 +170,7 @@ input.glass-input::placeholder {
 input.glass-input {
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
+    border-radius: 99px;
     padding: 1rem 1.2rem;
     color: var(--text-main);
     width: 100%;
@@ -211,10 +205,10 @@ input.glass-input::placeholder {
 /* Auth Buttons */
 .auth-container .btn-primary {
     /* Inherits global pill style */
-    margin-top: 1rem;
+    margin-top: 0.1rem;
     font-size: 1rem;
     padding: 1rem;
-    border-radius: 14px;
+    border-radius: 99px;
     font-weight: 600;
     letter-spacing: 0.02em;
 }
@@ -222,7 +216,7 @@ input.glass-input::placeholder {
 /* Bottom Switcher */
 .auth-switch {
     text-align: center;
-    margin-top: 1.5rem;
+    margin-top: 0.75rem;
     font-size: 0.9rem;
     color: var(--text-muted);
 }
@@ -252,7 +246,7 @@ input.glass-input::placeholder {
 
 .app-logo {
     text-align: center;
-    margin-bottom: 2rem;
+    margin-bottom: 0.75rem;
 }
 
 .app-logo h1 {
@@ -284,7 +278,7 @@ input.glass-input::placeholder {
 .form-group {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.05rem;
 }
 
 .form-group label {
@@ -297,7 +291,7 @@ input {
     background: rgba(255, 255, 255, 0.05);
     /* Very slight tint */
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: 99px;
     /* Slightly squarer than pill buttons, as per image input typically */
     padding: 0.9rem 1rem;
     color: var(--text-main);
@@ -323,14 +317,14 @@ input:focus {
 /* Auth Buttons */
 .auth-container .btn-primary {
     /* Inherits global pill style */
-    margin-top: 1rem;
+    margin-top: 0.2rem;
     font-size: 1rem;
 }
 
 /* Bottom Switcher */
 .auth-switch {
     text-align: center;
-    margin-top: 2rem;
+    margin-top: 1rem;
     font-size: 0.85rem;
     color: var(--text-muted);
 }

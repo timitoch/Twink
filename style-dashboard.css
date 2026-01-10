@@ -59,6 +59,11 @@
     /* Keep the 'liquid' inside */
 }
 
+[data-theme="light"] .main-nav {
+    background: rgba(0, 0, 0, 0.03);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
 .nav-indicator {
     position: absolute;
     background: #ffffff;
@@ -68,6 +73,12 @@
     transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
     pointer-events: none;
     border: 2px solid rgba(255, 255, 255, 0.4);
+}
+
+[data-theme="light"] .nav-indicator {
+    background: #000000;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    border: 2px solid rgba(0, 0, 0, 0.1);
 }
 
 .nav-tab {
@@ -106,6 +117,20 @@
     font-weight: 700;
 }
 
+[data-theme="light"] .nav-tab {
+    color: rgba(0, 0, 0, 0.6);
+    mix-blend-mode: normal;
+}
+
+[data-theme="light"] .nav-tab:hover {
+    color: #000000;
+}
+
+[data-theme="light"] .nav-tab.active {
+    color: #ffffff;
+    /* White text on black indicator */
+}
+
 /* Mobile responsive nav */
 @media (max-width: 600px) {
     .dashboard-header {
@@ -135,10 +160,9 @@
         -webkit-backdrop-filter: blur(25px) saturate(180%) contrast(105%) brightness(85%);
         border: 1px solid rgba(255, 255, 255, 0.2);
         box-shadow:
-            0 8px 32px rgba(0, 0, 0, 0.4),
-            inset 0 1px 0 rgba(255, 255, 255, 0.3),
-            inset 0 -1px 0 rgba(0, 0, 0, 0.2);
-        overflow: hidden;
+            0 12px 40px rgba(0, 0, 0, 0.15),
+            inset 0 1px 0 rgba(255, 255, 255, 0.5);
+        border: 1px solid rgba(0, 0, 0, 0.1);
     }
 
     .main-nav::before {
@@ -827,7 +851,7 @@ td {
     color: #fca5a5;
     border: 1px solid var(--error);
     padding: 0.5rem 1rem;
-    border-radius: 8px;
+    border-radius: 99px;
     cursor: pointer;
 }
 
@@ -853,7 +877,7 @@ td {
     align-items: center;
     gap: 0.75rem;
     padding: 0.85rem 1rem;
-    border-radius: 12px;
+    border-radius: 99px;
     background: transparent;
     border: none;
     color: var(--text-muted);
@@ -926,7 +950,7 @@ td {
 .settings-group .btn-danger-outline.small {
     padding: 0.7rem 1.5rem !important;
     font-size: 0.9rem !important;
-    border-radius: 10px;
+    border-radius: 99px !important;
     cursor: pointer;
     width: 280px !important;
     /* Unified width */
@@ -984,42 +1008,63 @@ td {
     flex: 1;
     padding: 1rem;
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: 99px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
-    transition: all 0.2s;
-    font-weight: 500;
+    gap: 0.6rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-weight: 600;
+    font-size: 0.9rem;
+    position: relative;
+    overflow: hidden;
 }
 
-[data-theme="light"] .theme-btn[data-set-theme="dark"] {
-    background: #0f172a;
-    color: #f8fafc;
-}
-
-[data-theme="light"] .theme-btn[data-set-theme="light"] {
-    background: #ffffff;
-    color: #1e293b;
-}
-
-/* Default Dark Mode Styles for buttons */
 .theme-btn[data-set-theme="dark"] {
-    background: #0f172a;
-    color: #f8fafc;
+    background: #000000;
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.1);
 }
 
 .theme-btn[data-set-theme="light"] {
-    background: #f8fafc;
-    color: #1e293b;
+    background: #ffffff;
+    color: #000000;
+    border-color: rgba(0, 0, 0, 0.05);
+}
+
+.theme-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.theme-btn.active[data-set-theme="dark"] {
+    border-color: #ffffff;
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.15), inset 0 0 10px rgba(255, 255, 255, 0.05);
+}
+
+.theme-btn.active[data-set-theme="light"] {
+    border-color: #000000;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.theme-btn i,
+.theme-btn svg {
+    font-size: 1.1rem;
+    transition: transform 0.3s ease;
+}
+
+.theme-btn:hover i,
+.theme-btn:hover svg {
+    transform: rotate(15deg) scale(1.1);
 }
 
 /* Color Scheme Buttons */
 .color-scheme-btn {
     background: rgba(255, 255, 255, 0.03);
     border: 2px solid var(--border);
-    border-radius: 16px;
+    border-radius: 20px;
+    /* Capsule shape for color squares */
     padding: 1rem;
     cursor: pointer;
     transition: all 0.3s ease;

@@ -419,8 +419,8 @@
 .session-settings-glass-overlay {
     position: absolute;
     inset: 0;
-    z-index: 1000;
-    /* Over everything in the session */
+    z-index: 1100;
+    /* Over everything in the session and the header */
     display: flex;
     align-items: center;
     justify-content: center;

@@ -218,7 +218,7 @@ function switchView(targetView) {
     const globalHeader = document.getElementById('global-header');
 
     // Header Logic
-    if (targetView === viewGroupEdit || targetView === viewStudySession) {
+    if (targetView === viewGroupEdit) {
         if (globalHeader) globalHeader.classList.add('hidden');
         if (groupEditHeader && targetView === viewGroupEdit) {
             groupEditHeader.classList.remove('hidden');

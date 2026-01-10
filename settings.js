@@ -7,6 +7,7 @@ class SettingsModule {
         this.settingsAvatarPreview = document.getElementById('settings-avatar-preview');
         this.settingsAvatarPlaceholder = document.getElementById('settings-avatar-placeholder');
         this.avatarInput = document.getElementById('avatar-input');
+        this.btnDeleteAvatar = document.getElementById('btn-delete-avatar');
         this.headerNickname = document.getElementById('header-nickname');
         this.MAX_AVATAR_SIZE_BYTES = 2 * 1024 * 1024; // 2MB
     }
@@ -42,21 +43,36 @@ class SettingsModule {
         document.querySelectorAll('.theme-btn').forEach(btn => {
             if (btn.getAttribute('data-set-theme') === theme) {
                 btn.classList.add('active');
-                btn.style.borderColor = 'var(--primary)';
-                btn.style.boxShadow = '0 0 0 2px var(--primary-glow)';
             } else {
                 btn.classList.remove('active');
-                btn.style.borderColor = 'var(--border)';
-                btn.style.boxShadow = 'none';
             }
         });
+        this.updatePureSchemeLabel(theme);
+    }
+
+    updatePureSchemeLabel(theme) {
+        const textElem = document.getElementById('scheme-text-pure-black');
+        const previewElem = document.getElementById('scheme-preview-pure-black');
+        if (textElem && previewElem) {
+            if (theme === 'light') {
+                textElem.textContent = 'Чистый белый';
+                previewElem.style.background = '#ffffff';
+                previewElem.style.borderColor = 'rgba(0,0,0,0.1)';
+            } else {
+                textElem.textContent = 'Чистый черный';
+                previewElem.style.background = '#000000';
+                previewElem.style.borderColor = 'rgba(255,255,255,0.2)';
+            }
+        }
     }
 
     // --- COLOR SCHEME LOGIC ---
     initColorScheme() {
         const savedScheme = localStorage.getItem('colorScheme') || 'default';
+        const savedTheme = localStorage.getItem('theme') || 'dark';
         document.documentElement.setAttribute('data-color-scheme', savedScheme);
         this.updateColorSchemeButtons(savedScheme);
+        this.updatePureSchemeLabel(savedTheme);
 
         document.querySelectorAll('.color-scheme-btn').forEach(btn => {
             btn.onclick = () => {
@@ -140,6 +156,9 @@ class SettingsModule {
                     this.settingsAvatarPreview.style.display = 'block';
                     if (this.settingsAvatarPlaceholder) this.settingsAvatarPlaceholder.style.display = 'none';
                 }
+                if (this.btnDeleteAvatar) this.btnDeleteAvatar.style.display = 'block';
+            } else {
+                this.resetAvatarUI();
             }
         });
 
@@ -184,6 +203,7 @@ class SettingsModule {
                     const userId = firebase.auth().currentUser.uid;
                     this.db.db.ref('users/' + userId + '/avatar').set(base64String).then(() => {
                         console.log("Avatar saved!");
+                        if (this.btnDeleteAvatar) this.btnDeleteAvatar.style.display = 'block';
                     }).catch(err => {
                         console.error("Error saving avatar:", err);
                         alert("Ошибка сохранения аватара.");
@@ -191,6 +211,36 @@ class SettingsModule {
                 };
                 reader.readAsDataURL(file);
             };
+        }
+
+        if (this.btnDeleteAvatar) {
+            this.btnDeleteAvatar.onclick = async () => {
+                if (confirm("Удалить фото профиля?")) {
+                    try {
+                        const userId = firebase.auth().currentUser.uid;
+                        await this.db.db.ref('users/' + userId + '/avatar').remove();
+                        this.resetAvatarUI();
+                    } catch (err) {
+                        console.error("Error deleting avatar:", err);
+                        alert("Ошибка при удалении аватара.");
+                    }
+                }
+            };
+        }
+    }
+
+    resetAvatarUI() {
+        const defaultAvatar = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E";
+        if (this.headerAvatarImg) this.headerAvatarImg.src = defaultAvatar;
+        if (this.settingsAvatarPreview) {
+            this.settingsAvatarPreview.src = "";
+            this.settingsAvatarPreview.style.display = 'none';
+        }
+        if (this.settingsAvatarPlaceholder) {
+            this.settingsAvatarPlaceholder.style.display = 'flex';
+        }
+        if (this.btnDeleteAvatar) {
+            this.btnDeleteAvatar.style.display = 'none';
         }
     }
 
