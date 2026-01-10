@@ -499,27 +499,31 @@
                         </div>
 
                         <!-- Drop Zone (Top) -->
-                        <div class="import-drop-zone" id="drop-zone"
-                            onclick="document.getElementById('excel-file-input').click()"
-                            style="margin-top: 0; margin-bottom: 3rem;">
-                            <div
-                                style="width: 80px; height: 80px; background: rgba(99, 102, 241, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem auto; color: var(--primary);">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24"
-                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                    stroke-linejoin="round">
-                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                    <polyline points="17 8 12 3 7 8"></polyline>
-                                    <line x1="12" y1="3" x2="12" y2="15"></line>
-                                </svg>
+                        <!-- Drop Zone -->
+                        <div class="import-panel" id="drop-zone"
+                            onclick="document.getElementById('excel-file-input').click()">
+                            <div class="import-panel-content">
+                                <div class="import-icon-box">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                        <polyline points="17 8 12 3 7 8"></polyline>
+                                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                                    </svg>
+                                </div>
+                                <div class="import-text-box">
+                                    <h3 style="margin:0; font-size: 1.1rem; color: var(--text-main);">Выбрать файл</h3>
+                                    <p class="desktop-only-inline"
+                                        style="color: var(--text-muted); margin: 0.2rem 0 0 0; font-size: 0.85rem;">или
+                                        перетащите .xlsx сюда</p>
+                                    <p class="mobile-only-inline"
+                                        style="color: var(--text-muted); margin: 0.2rem 0 0 0; font-size: 0.85rem;">
+                                        Нажмите, чтобы загрузить .xlsx</p>
+                                </div>
                             </div>
-                            <h3 style="font-size: 1.25rem; margin-bottom: 0.5rem; color: var(--text-main);">Нажмите для
-                                выбора файла</h3>
-                            <p style="color: var(--text-muted); margin-bottom: 2rem;">или перетащите таблицу (.xlsx) в
-                                эту область</p>
-
                             <input type="file" id="excel-file-input" accept=".xlsx, .xls" style="display: none;">
-
-                            <div id="import-status" style="margin-top: 1.5rem; min-height: 24px; font-weight: 500;">
+                            <div id="import-status" style="margin-top: 1rem; min-height: 20px; font-size: 0.9rem;">
                             </div>
                         </div>
 
@@ -543,18 +547,15 @@
                                 </h3>
                             </div>
 
-                            <div
-                                style="background: rgba(255, 255, 255, 0.02); border-radius: 16px; border: 1px solid var(--border); overflow: hidden;">
-                                <div style="padding: 1.5rem;">
-                                    <p
-                                        style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; margin-bottom: 1.5rem;">
-                                        Убедитесь, что данные в файле расположены в следующем порядке (A-H). Заголовки
-                                        необязательны.
+                            <div class="import-guide-card">
+                                <div class="import-guide-padding">
+                                    <p class="import-guide-text">
+                                        Данные должны располагаться в колонках A-H. Заголовки необязательны.
                                     </p>
 
-                                    <div style="width: 100%; overflow-x: auto;">
-                                        <!-- Removed table-layout: fixed to allow auto sizing based on content -->
-                                        <table class="import-guide-table" style="width: 100%;">
+                                    <!-- Desktop Table -->
+                                    <div class="import-guide-table-wrapper desktop-only">
+                                        <table class="import-guide-table">
                                             <thead>
                                                 <tr>
                                                     <th style="width: 50px;">A</th>
@@ -578,18 +579,20 @@
                                                     <td>-</td>
                                                     <td>-</td>
                                                 </tr>
-                                                <tr>
-                                                    <td style="color: var(--text-muted);">102</td>
-                                                    <td style="color: var(--text-main); font-weight: 500;">Buch</td>
-                                                    <td>Книга</td>
-                                                    <td><i>сущ.</i></td>
-                                                    <td><i>ср.р.</i></td>
-                                                    <td style="color: var(--text-main);">Das Buch ist interessant.</td>
-                                                    <td>Ich lese ein Buch.</td>
-                                                    <td>-</td>
-                                                </tr>
                                             </tbody>
                                         </table>
+                                    </div>
+
+                                    <!-- Mobile Card List -->
+                                    <div class="import-guide-mobile-list mobile-only">
+                                        <div class="guide-mobile-item"><span>A</span> ID (необязательно)</div>
+                                        <div class="guide-mobile-item"><span>B</span> Немецкое слово</div>
+                                        <div class="guide-mobile-item"><span>C</span> Перевод</div>
+                                        <div class="guide-mobile-item"><span>D</span> Доп. информация</div>
+                                        <div class="guide-mobile-item"><span>E</span> Инфо 2 (род, тип)</div>
+                                        <div class="guide-mobile-item"><span>F</span> Пример 1</div>
+                                        <div class="guide-mobile-item"><span>G</span> Пример 2</div>
+                                        <div class="guide-mobile-item"><span>H</span> Прммер 3</div>
                                     </div>
                                 </div>
                             </div>
