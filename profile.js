@@ -151,11 +151,13 @@ class ProfileModule {
         const totalWords = this.wordsCache.length;
         let mastered = 0;
         let learned = 0;
+        let activeCount = 0;
         this.wordsCache.forEach(w => {
             const p = w.progress_global;
             if (p) {
                 if (p.interval >= 12) mastered++;
                 if (p.interval > 0) learned++;
+                if (p.isActive) activeCount++;
             }
         });
 
@@ -190,9 +192,9 @@ class ProfileModule {
                     <div class="profile-top-row">
                         <h2 class="profile-nickname">${this.user.nickname || 'Пользователь'}</h2>
                         <div class="profile-header-badges">
-                            <div class="glass-badge highlight-level" title="Прогресс уровней (освоенные слова):&#10;A1: 500+&#10;A2: 1000+&#10;B1: 2000+&#10;B2: 4000+&#10;C1: 8000+&#10;C2: 16000+">
+                            <div class="glass-badge highlight-level" title="Прогресс уровней (идеальные слова):&#10;A1: 500+&#10;A2: 1000+&#10;B1: 2000+&#10;B2: 4000+&#10;C1: 8000+&#10;C2: 16000+">
                                 <span class="badge-icon">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path></svg>
+                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path></svg>
                                 </span>
                                 <span class="badge-text" style="display: flex; align-items: center; gap: 4px;">
                                     ${this.getLevel(mastered)}
@@ -280,8 +282,18 @@ class ProfileModule {
                     <div class="stat-label">Слов в словаре</div>
                 </div>
                 <div class="stat-box">
+                    <div class="stat-value" style="color: var(--secondary);">${activeCount}</div>
+                    <div class="stat-label" style="display:flex; align-items:center; justify-content:flex-start; gap:4px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--secondary); opacity: 0.8;"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+                        Активные слова
+                    </div>
+                </div>
+                <div class="stat-box">
                     <div class="stat-value">${mastered}</div>
-                    <div class="stat-label">Полностью освоено</div>
+                    <div class="stat-label" style="display:flex; align-items:center; justify-content:flex-start; gap:4px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--secondary); opacity: 0.8;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                        Идеально
+                    </div>
                 </div>
             </div>
         `;

@@ -78,17 +78,7 @@ input.glass-input::placeholder {
     opacity: 0.5;
 }
 
-/* Fix Autofill Background - Force it to match input bg using box-shadow inset */
-input:-webkit-autofill,
-input:-webkit-autofill:hover,
-input:-webkit-autofill:focus,
-input:-webkit-autofill:active {
-    -webkit-box-shadow: 0 0 0 30px #0f172a inset !important;
-    /* Matches --bg-main typical color */
-    -webkit-text-fill-color: white !important;
-    caret-color: white;
-    transition: background-color 5000s ease-in-out 0s;
-}
+
 
 .status-message {
     text-align: center;
@@ -208,16 +198,7 @@ input.glass-input::placeholder {
     opacity: 0.5;
 }
 
-/* Remove Autofill Yellow Background */
-input:-webkit-autofill,
-input:-webkit-autofill:hover,
-input:-webkit-autofill:focus,
-input:-webkit-autofill:active {
-    -webkit-box-shadow: 0 0 0 30px #1e293b inset !important;
-    /* Matches generic dark bg, might need var(--surface) but hex is safer for shadow */
-    -webkit-text-fill-color: white !important;
-    transition: background-color 5000s ease-in-out 0s;
-}
+
 
 .status-message {
     text-align: center;

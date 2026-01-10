@@ -208,19 +208,8 @@
 
             <!-- Group Edit Header (Hidden by default, shown when viewing group) -->
             <header id="group-edit-header" class="dashboard-header hidden">
-                <div
-                    style="width: 100%; max-width: 1000px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 1rem;">
-                    <button id="btn-back-to-study" class="btn-icon" title="Назад"
-                        style="width: 40px; height: 40px; border-radius: 12px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="19" y1="12" x2="5" y2="12"></line>
-                            <polyline points="12 19 5 12 12 5"></polyline>
-                        </svg>
-                    </button>
-                    <!-- Spacer if needed for centering, but flex space-between handles left/right well -->
-                    <button id="btn-save-group" class="btn-primary btn-compact"
-                        style="width: auto; padding: 0.5rem 1.5rem;">Готово</button>
+                <div class="group-edit-nav">
+                    <button id="btn-save-group" class="btn-primary btn-compact">Готово</button>
                 </div>
             </header>
 
@@ -362,8 +351,8 @@
 
                         <div class="session-actions-right"
                             style="display: flex; align-items: center; gap: 1rem; position: relative;">
-                            <!-- Mastered Info -->
-                            <div class="session-mastered-info"
+                            <!-- Perfect Info -->
+                            <div class="session-mastered-info" title="Идеально"
                                 style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-muted); font-size: 0.9rem;">
                                 <!-- Hollow Star Icon -->
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
@@ -641,8 +630,6 @@
                     </div>
                 </div>
                 <div id="view-words" class="view-section hidden">
-                    <!-- Title removed for cleaner look -->
-
                     <!-- Dictionary Toolbar -->
                     <div class="dict-toolbar"
                         style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: center; position: relative;">
@@ -1142,10 +1129,9 @@
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
                                         fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                         stroke-linejoin="round">
-                                        <polyline points="3 6 5 6 21 6"></polyline>
-                                        <path
-                                            d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
-                                        </path>
+                                        <path d="M3 6h18"></path>
+                                        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                                        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
                                     </svg>
                                 </button>
                                 <button type="button" id="close-modal-btn" class="btn-icon text-muted" title="Закрыть">

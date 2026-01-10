@@ -218,10 +218,15 @@ function switchView(targetView) {
     const globalHeader = document.getElementById('global-header');
 
     // Header Logic
-    globalHeader.classList.remove('hidden');
-    if (targetView === viewGroupEdit) {
-        if (groupEditHeader) groupEditHeader.classList.remove('hidden');
+    if (targetView === viewGroupEdit || targetView === viewStudySession) {
+        if (globalHeader) globalHeader.classList.add('hidden');
+        if (groupEditHeader && targetView === viewGroupEdit) {
+            groupEditHeader.classList.remove('hidden');
+        } else if (groupEditHeader) {
+            groupEditHeader.classList.add('hidden');
+        }
     } else {
+        if (globalHeader) globalHeader.classList.remove('hidden');
         if (groupEditHeader) groupEditHeader.classList.add('hidden');
     }
 
@@ -439,7 +444,7 @@ function renderTable(arr) {
 
         // We MUST render all TD elements so nth-child CSS matches. We hide them via style.
         const isActive = w.progress_global && w.progress_global.isActive;
-        const activeIcon = isActive ? `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="#fbbf24" stroke="#fbbf24" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>` : '';
+        const activeIcon = isActive ? `<div class="active-badge"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="var(--secondary)" stroke="var(--secondary)" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg></div>` : '';
 
         tr.innerHTML = `
             <td class="id-cell" style="${displayStyle('id')}">${w.id}</td>
@@ -465,10 +470,9 @@ function renderTable(arr) {
             <td style="text-align:center;">
                 <button class="btn-icon btn-delete" data-id="${w.id}" title="Удалить">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="3 6 5 6 21 6"></polyline>
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                        <line x1="10" y1="11" x2="10" y2="17"></line>
-                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                        <path d="M3 6h18"></path>
+                        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
                     </svg>
                 </button>
             </td>`;

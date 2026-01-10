@@ -194,6 +194,27 @@
     .mobile-only-nav-item {
         display: flex !important;
     }
+
+    /* Swap Dictionary and Study tabs on mobile */
+    #nav-profile-btn {
+        order: 1;
+    }
+
+    #nav-dictionary-btn {
+        order: 2;
+    }
+
+    #nav-study-btn {
+        order: 3;
+    }
+
+    #nav-import-btn {
+        order: 4;
+    }
+
+    #nav-settings-mobile-btn {
+        order: 5;
+    }
 }
 
 /* Hide mobile settings on desktop */
@@ -551,6 +572,18 @@ td {
     font-size: 0.75rem;
     white-space: nowrap;
     display: inline-block;
+}
+
+.active-badge {
+    background: #111827;
+    /* Dark background from the screenshot */
+    padding: 0.2rem;
+    border-radius: 5px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
 }
 
 .btn-delete {
@@ -1280,14 +1313,17 @@ td {
     /* Convert sidebar to horizontal scrollable tabs */
     .settings-sidebar {
         flex-direction: row !important;
+        width: 100%;
         overflow-x: auto;
+        overflow-y: hidden;
         -webkit-overflow-scrolling: touch;
         scrollbar-width: none;
-        padding: 0 0 1rem 0 !important;
+        padding: 0.5rem 0.25rem !important;
         border-right: none !important;
         border-bottom: 1px solid var(--border);
-        margin-bottom: 1.5rem;
-        gap: 0.5rem !important;
+        margin-bottom: 1rem;
+        gap: 0.4rem !important;
+        display: flex !important;
     }
 
     .settings-sidebar::-webkit-scrollbar {
