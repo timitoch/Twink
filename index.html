@@ -22,9 +22,29 @@
 
 <body>
 
+    <!-- Loading Screen - Pure Minimalist -->
+    <div id="loading-screen"
+        style="position: fixed; inset: 0; background: #000000; z-index: 9999; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+        <!-- Simple Blurry Spinner -->
+        <div style="width: 60px; height: 60px; animation: spin 1s linear infinite; position: relative;">
+            <!-- Ball 1 -->
+            <div
+                style="position: absolute; top: 0; left: 24px; width: 12px; height: 12px; background: #fff; border-radius: 50%; filter: blur(1px); box-shadow: 0 0 10px rgba(255,255,255,0.5);">
+            </div>
+            <!-- Ball 2 -->
+            <div
+                style="position: absolute; bottom: 0; right: 0; width: 12px; height: 12px; background: #fff; border-radius: 50%; filter: blur(1px); opacity: 0.7; box-shadow: 0 0 10px rgba(255,255,255,0.3);">
+            </div>
+            <!-- Ball 3 -->
+            <div
+                style="position: absolute; bottom: 0; left: 0; width: 12px; height: 12px; background: #fff; border-radius: 50%; filter: blur(1px); opacity: 0.4; box-shadow: 0 0 10px rgba(255,255,255,0.1);">
+            </div>
+        </div>
+    </div>
+
     <div class="app-container">
         <!-- Auth Screens (Unchanged) -->
-        <div id="login-screen" class="glass-card fade-in"
+        <div id="login-screen" class="glass-card fade-in hidden"
             style="max-width: 500px; margin: 15vh auto; padding: 2.5rem 3rem;">
             <div class="app-logo" style="margin-bottom: 2rem;">
                 <h1>Вход</h1><span>Личный словарь</span>
@@ -446,8 +466,8 @@
                         <!-- btn-reveal removed -->
                         <div id="rating-buttons" class="rating-grid-2 hidden">
                             <!-- Row 1 -->
-                            <button class="btn-rate rate-btn-1" data-rating="1">Не помню<br><span>5
-                                    минут</span></button>
+                            <button class="btn-rate rate-btn-1" data-rating="1">Не помню<br><span>1
+                                    час</span></button>
                             <button class="btn-rate rate-btn-2" data-rating="2">С трудом<br><span>1 день</span></button>
                             <!-- Row 2 -->
                             <button class="btn-rate rate-btn-3" data-rating="3">Частично<br><span>4 дня</span></button>
@@ -767,7 +787,7 @@
                                                 value="new"><span class="checkmark"></span><span>0 дн
                                                 (Новые)</span></label>
                                         <label class="custom-checkbox secondary"><input type="checkbox" value="0"><span
-                                                class="checkmark"></span><span>5 мин</span></label>
+                                                class="checkmark"></span><span>1 час</span></label>
                                         <label class="custom-checkbox secondary"><input type="checkbox" value="1"><span
                                                 class="checkmark"></span><span>1 дн</span></label>
                                         <label class="custom-checkbox secondary"><input type="checkbox" value="4"><span

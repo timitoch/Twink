@@ -322,16 +322,16 @@ if (navSettingsMobileBtn) {
 
 
 // --- AUTH ---
+let isInitialLoad = true;
+const loadingScreen = document.getElementById('loading-screen');
+
 firebase.auth().onAuthStateChanged((user) => {
     if (user) {
-        loginScreen.classList.add('hidden');
-        registerScreen.classList.add('hidden');
-        dashboardScreen.classList.remove('hidden');
-
         // Reset state
         allWordsCache = [];
 
         // LOAD DATA
+        let isFirstDataLoad = true;
         db.subscribeToWords(w => {
             if (!w) {
                 allWordsCache = [];
@@ -354,15 +354,37 @@ firebase.auth().onAuthStateChanged((user) => {
                 window.StudyModule.renderStudyDashboard();
             }
             if (!viewWords.classList.contains('hidden')) renderTable(allWordsCache);
+
+            // On first data load, show the dashboard and hide loading screen
+            if (isFirstDataLoad) {
+                isFirstDataLoad = false;
+
+                // Hide auth screens
+                loginScreen.classList.add('hidden');
+                registerScreen.classList.add('hidden');
+
+                // Show dashboard
+                dashboardScreen.classList.remove('hidden');
+
+                // Set default view
+                switchView(viewStudy);
+
+                // Hide loading screen
+                if (loadingScreen) {
+                    loadingScreen.style.opacity = '0';
+                    loadingScreen.style.transition = 'opacity 0.3s ease';
+                    setTimeout(() => {
+                        loadingScreen.style.display = 'none';
+                    }, 300);
+                }
+
+                isInitialLoad = false;
+            }
         });
 
-        // Set default view
-        switchView(viewStudy);
-
-        // Initialize StudyModule
+        // Initialize modules (but don't render until data is loaded)
         if (window.StudyModule) {
             window.StudyModule.init(db, allWordsCache);
-            window.StudyModule.renderStudyDashboard();
         }
 
         // Initialize Settings Module
@@ -376,8 +398,18 @@ firebase.auth().onAuthStateChanged((user) => {
             window.ProfileModule.init(db, user, allWordsCache);
         }
     } else {
+        // Not logged in
         dashboardScreen.classList.add('hidden');
         loginScreen.classList.remove('hidden');
+
+        // Hide loading screen
+        if (loadingScreen) {
+            loadingScreen.style.opacity = '0';
+            loadingScreen.style.transition = 'opacity 0.3s ease';
+            setTimeout(() => {
+                loadingScreen.style.display = 'none';
+            }, 300);
+        }
     }
 });
 
@@ -431,13 +463,17 @@ function refreshTable() {
 function renderTable(arr) {
     const tableHead = document.querySelector('#words-table thead');
     const dictToolbar = document.querySelector('.dict-toolbar');
-
-    // Hide toolbar if dictionary is completely empty
     const dictEmptyView = document.getElementById('dict-empty-state-view');
     const dictMainContainer = document.getElementById('dict-main-container');
 
-    if (arr.length === 0) {
+    // Проверяем: словарь полностью пуст или просто поиск ничего не нашёл
+    const isDictionaryEmpty = allWordsCache.length === 0;
+    const isSearchEmpty = arr.length === 0 && !isDictionaryEmpty;
+
+    if (isDictionaryEmpty) {
+        // Словарь полностью пуст - скрываем всё
         if (dictMainContainer) dictMainContainer.classList.add('hidden');
+        if (dictToolbar) dictToolbar.classList.add('hidden');
         if (dictEmptyView) {
             dictEmptyView.classList.remove('hidden');
             dictEmptyView.innerHTML = `
@@ -456,6 +492,39 @@ function renderTable(arr) {
         return;
     }
 
+    if (isSearchEmpty) {
+        // Поиск не дал результатов - показываем сообщение, но оставляем toolbar видимым
+        if (dictToolbar) dictToolbar.classList.remove('hidden');
+        if (dictMainContainer) {
+            dictMainContainer.classList.remove('hidden');
+            // Скрываем таблицу, показываем сообщение
+            wordsTableBody.innerHTML = '';
+            if (tableHead) tableHead.style.display = 'none';
+        }
+        if (dictEmptyView) {
+            dictEmptyView.classList.remove('hidden');
+            dictEmptyView.innerHTML = `
+                <div class="empty-state-card">
+                    <div class="empty-state-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="m21 21-4.35-4.35"></path>
+                            <line x1="11" y1="8" x2="11" y2="14"></line>
+                            <line x1="8" y1="11" x2="14" y2="11"></line>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 style="color: var(--text-main); margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 700;">По вашему запросу ничего не найдено</h3>
+                        <p style="color: var(--text-muted); font-size: 1rem;">Попробуйте изменить параметры поиска или фильтры</p>
+                    </div>
+                </div>
+            `;
+        }
+        return;
+    }
+
+    // Есть результаты - показываем таблицу
+    if (dictToolbar) dictToolbar.classList.remove('hidden');
     if (dictMainContainer) dictMainContainer.classList.remove('hidden');
     if (dictEmptyView) dictEmptyView.classList.add('hidden');
 
@@ -495,6 +564,10 @@ function renderTable(arr) {
         const isActive = w.progress_global && w.progress_global.isActive;
         const activeIcon = isActive ? `<div class="active-badge"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="var(--secondary)" stroke="var(--secondary)" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg></div>` : '';
 
+        // Interval display logic: show "1 час" for interval 0, otherwise "{interval} дн."
+        const intervalValue = w.progress_global?.interval || 0;
+        const intervalDisplay = intervalValue === 0 ? '1 час' : `${intervalValue} дн.`;
+
         tr.innerHTML = `
             <td class="id-cell" style="${displayStyle('id')}">${w.id}</td>
             <td style="${displayStyle('active')}; text-align: center;">${activeIcon}</td>
@@ -505,7 +578,7 @@ function renderTable(arr) {
             <td class="example-cell" style="${displayStyle('ex1')}">${w.ex1 || ''}</td>
             <td class="example-cell" style="${displayStyle('ex2')}">${w.ex2 || ''}</td>
             <td class="example-cell" style="${displayStyle('ex3')}">${w.ex3 || ''}</td>
-            <td style="${displayStyle('interval')}"><span class="level-badge">${w.progress_global?.interval || 0} дн.</span></td>
+            <td style="${displayStyle('interval')}"><span class="level-badge">${intervalDisplay}</span></td>
             <td class="date-info" style="${displayStyle('nextDate')}">${d}</td>
             
             <td style="text-align:center;">

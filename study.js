@@ -1154,7 +1154,7 @@ class StudyModule {
             isActive = true;
         }
 
-        const nextTimestamp = rating === 1 ? Date.now() + 300000 : Date.now() + (nextIntervalDays * 86400000);
+        const nextTimestamp = rating === 1 ? Date.now() + 3600000 : Date.now() + (nextIntervalDays * 86400000);
         const newProgress = {
             interval: nextIntervalDays,
             nextDate: nextTimestamp,
