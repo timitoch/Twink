@@ -130,7 +130,7 @@ class StudyModule {
 
         // Load today's base time
         if (this.userId) {
-            const dateKey = new Date().toISOString().split('T')[0];
+            const dateKey = DateUtils.getLogicalDateKey();
             const ref = this.db.db.ref(`users/${this.userId}/stats/daily/${dateKey}`);
             ref.on('value', (snap) => {
                 const val = snap.val() || 0;
@@ -212,7 +212,7 @@ class StudyModule {
 
         if (toAdd <= 0) return;
 
-        const dateKey = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        const dateKey = DateUtils.getLogicalDateKey(); // YYYY-MM-DD
         const ref = this.db.db.ref(`users/${this.userId}/stats/daily/${dateKey}`);
 
         // Transaction to increment
@@ -258,6 +258,7 @@ class StudyModule {
         this.btnToggleStatDue = document.getElementById('btn-toggle-stat-due');
         this.btnToggleStatToday = document.getElementById('btn-toggle-stat-today');
         this.btnToggleIncludeActive = document.getElementById('btn-toggle-include-active');
+        this.btnToggleVoice = document.getElementById('btn-toggle-voice');
 
         this.statCardTotal = document.getElementById('stat-card-total');
         this.statCardDue = document.getElementById('stat-card-due');
@@ -279,8 +280,7 @@ class StudyModule {
         this.btnToggleAudioTranslation = document.getElementById('btn-toggle-audio-translation');
 
         if (this.btnMasterAudio) {
-            this.btnMasterAudio.onclick = (e) => {
-                e.preventDefault(); e.stopPropagation();
+            this.btnMasterAudio.onclick = () => {
                 this.settings.audio = !this.settings.audio;
                 this.settings.masterAudio = this.settings.audio;
                 if (!this.settings.audio) this.stopAudio();
@@ -290,8 +290,7 @@ class StudyModule {
         }
 
         if (this.btnQuickToggleAudio) {
-            this.btnQuickToggleAudio.onclick = (e) => {
-                e.preventDefault(); e.stopPropagation();
+            this.btnQuickToggleAudio.onclick = () => {
                 this.settings.audio = !this.settings.audio;
                 this.settings.masterAudio = this.settings.audio;
                 if (!this.settings.audio) this.stopAudio();
@@ -302,13 +301,10 @@ class StudyModule {
 
         const setupToggle = (btn, settingsKey) => {
             if (btn) {
-                btn.onclick = (e) => {
-                    e.preventDefault(); e.stopPropagation();
+                btn.onclick = () => {
                     this.settings[settingsKey] = !this.settings[settingsKey];
                     btn.classList.toggle('active', this.settings[settingsKey]);
                     if (!this.settings[settingsKey]) {
-                        // If specific item disabled and we only had one item or its currently speaking, stop
-                        // For simplicity, just cancel if anything is disabled to be sure
                         this.stopAudio();
                     }
                     this.updateElementsVisibility();
@@ -340,6 +336,16 @@ class StudyModule {
 
         setupToggle(this.btnMasterCard, 'masterCard');
         setupToggle(this.btnMasterInterface, 'masterInterface');
+
+        // Handle Voice Toggle
+        if (this.btnToggleVoice && window.VoiceControl) {
+            this.btnToggleVoice.onclick = () => {
+                const isActive = window.VoiceControl.toggle();
+                this.btnToggleVoice.classList.toggle('active', isActive);
+                console.log('Voice control toggled:', isActive);
+            };
+            window.VoiceControl.btnToggle = this.btnToggleVoice;
+        }
 
         // Handle Settings Menu Dropdown
         const btnSettings = document.getElementById('btn-session-settings');
@@ -410,7 +416,7 @@ class StudyModule {
 
     updateStatsUI(words) {
         const now = Date.now();
-        const startOfToday = new Date().setHours(0, 0, 0, 0);
+        const startOfToday = DateUtils.getLogicalDayStart();
         let total = 0, due = 0, learnedToday = 0, mastered = 0;
 
         words.forEach(w => {
@@ -831,6 +837,12 @@ class StudyModule {
     initSessionControls() {
         if (this.btnExitSession) {
             this.btnExitSession.onclick = () => {
+                // Always stop voice recognition on exit
+                if (window.VoiceControl) {
+                    window.VoiceControl.stop();
+                    if (this.btnToggleVoice) this.btnToggleVoice.classList.remove('active');
+                }
+
                 if (!this.currentSession) {
                     this.stopTracking();
                     if (window.switchView) window.switchView(this.viewStudy);

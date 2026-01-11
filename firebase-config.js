@@ -14,3 +14,16 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const database = firebase.database();
+
+// Utility for shifting the "logical day" by 6 hours (new day starts at 6:00 AM)
+window.DateUtils = {
+    getLogicalDateKey: (date = new Date()) => {
+        const d = new Date(date.getTime() - 6 * 60 * 60 * 1000);
+        return d.toISOString().split('T')[0];
+    },
+    getLogicalDayStart: (date = new Date()) => {
+        const d = new Date(date.getTime() - 6 * 60 * 60 * 1000);
+        d.setHours(6, 0, 0, 0);
+        return d.getTime();
+    }
+};

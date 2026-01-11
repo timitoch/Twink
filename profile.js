@@ -62,31 +62,29 @@ class ProfileModule {
     }
 
     getPeriodSeconds(period) {
-        const now = new Date();
-        let start = new Date();
+        const logicalNow = new Date(Date.now() - 6 * 60 * 60 * 1000);
+        let startLogical = new Date(logicalNow);
 
         switch (period) {
             case 'week':
-                const day = now.getDay();
-                const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Monday
-                start = new Date(now.setDate(diff));
+                const day = logicalNow.getDay();
+                const diff = logicalNow.getDate() - day + (day === 0 ? -6 : 1); // Monday
+                startLogical.setDate(diff);
                 break;
             case 'month':
-                start = new Date(now.getFullYear(), now.getMonth(), 1);
+                startLogical.setDate(1);
                 break;
             case 'year':
-                start = new Date(now.getFullYear(), 0, 1);
+                startLogical.setMonth(0, 1);
                 break;
             default:
                 return Object.values(this.statsData).reduce((a, b) => a + (typeof b === 'number' ? b : (b.seconds || 0)), 0);
         }
 
-        start.setHours(0, 0, 0, 0);
-        const startTime = start.getTime();
+        const startKey = startLogical.toISOString().split('T')[0];
 
         return Object.entries(this.statsData).reduce((total, [dateStr, data]) => {
-            const entryTime = new Date(dateStr).getTime();
-            if (entryTime >= startTime) {
+            if (dateStr >= startKey) {
                 total += (typeof data === 'number' ? data : (data.seconds || 0));
             }
             return total;
@@ -103,8 +101,8 @@ class ProfileModule {
         let current = 0;
         let temp = 0;
 
-        const today = new Date().toISOString().split('T')[0];
-        const yesterdayDate = new Date();
+        const today = DateUtils.getLogicalDateKey();
+        const yesterdayDate = new Date(Date.now() - 6 * 60 * 60 * 1000);
         yesterdayDate.setDate(yesterdayDate.getDate() - 1);
         const yesterday = yesterdayDate.toISOString().split('T')[0];
 
@@ -369,11 +367,11 @@ class ProfileModule {
 
     getLast7DaysTimeStats() {
         const days = [];
-        const today = new Date();
+        const logicalToday = new Date(Date.now() - 6 * 60 * 60 * 1000);
         // Generate last 7 days keys
         for (let i = 6; i >= 0; i--) {
-            const d = new Date(today);
-            d.setDate(today.getDate() - i);
+            const d = new Date(logicalToday);
+            d.setDate(logicalToday.getDate() - i);
             const dateKey = d.toISOString().split('T')[0];
             const seconds = this.statsData[dateKey] || 0;
 

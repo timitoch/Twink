@@ -1235,10 +1235,27 @@
                 <div class="card-edit-content"
                     style="display: flex; flex-direction: column; gap: 0rem; padding: 1rem 2rem; overflow-y: auto; flex: 1;">
 
+                    <div class="setting-row">
+                        <span class="setting-label" style="font-weight: 600; color: var(--secondary);">Голосовое
+                            управление</span>
+                        <button type="button" id="btn-toggle-voice" class="toggle-switch-btn">
+                            <div class="toggle-thumb"></div>
+                        </button>
+                    </div>
+
+                    <div class="setting-row">
+                        <span class="setting-label" style="font-weight: 600;">Изучать активные слова</span>
+                        <button type="button" id="btn-toggle-include-active" class="toggle-switch-btn">
+                            <div class="toggle-thumb"></div>
+                        </button>
+                    </div>
+
+                    <div style="height: 1px; background: rgba(255,255,255,0.05); margin: 0.8rem 0;"></div>
+
                     <!-- Main Settings -->
                     <div class="setting-row">
                         <span class="setting-label">Настройка озвучки</span>
-                        <button id="btn-master-toggle-audio" class="toggle-switch-btn active">
+                        <button type="button" id="btn-master-toggle-audio" class="toggle-switch-btn active">
                             <div class="toggle-thumb"></div>
                         </button>
                     </div>
@@ -1373,20 +1390,13 @@
                             </div>
                             <div class="setting-row">
                                 <span class="setting-label">Пройдено сегодня</span>
-                                <button id="btn-toggle-stat-today" class="toggle-switch-btn active">
-                                    <div class="toggle-thumb"></div>
-                                </button>
-                            </div>
-                            <div class="setting-row">
-                                <span class="setting-label"
-                                    style="opacity: 1; color: var(--secondary); font-weight: 700;">Изучать активные
-                                    слова</span>
-                                <button id="btn-toggle-include-active" class="toggle-switch-btn">
+                                <button type="button" id="btn-toggle-stat-today" class="toggle-switch-btn active">
                                     <div class="toggle-thumb"></div>
                                 </button>
                             </div>
                         </div>
                     </div>
+
 
                     <div style="margin-top: 1.5rem; display: flex; justify-content: center; padding-bottom: 0.5rem;">
                         <button type="button" class="btn-primary"
@@ -1398,6 +1408,7 @@
         </div>
     </div>
     <script src="https://code.responsivevoice.org/responsivevoice.js?key=i8NuynN8"></script>
+    <script src="voice-control.js"></script>
     <script src="profile.js"></script>
     <script src="study.js"></script>
     <script src="settings.js"></script>
