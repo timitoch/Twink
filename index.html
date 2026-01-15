@@ -228,7 +228,17 @@
 
             <!-- Group Edit Header (Hidden by default, shown when viewing group) -->
             <header id="group-edit-header" class="dashboard-header hidden">
-                <div class="group-edit-nav">
+                <div class="group-edit-nav" style="justify-content: space-between;">
+                    <button id="btn-back-to-study" class="btn-icon" title="Назад">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="19" y1="12" x2="5" y2="12"></line>
+                            <polyline points="12 19 5 12 12 5"></polyline>
+                        </svg>
+                    </button>
+                    <button id="btn-delete-folder" class="btn-danger-outline small hidden" style="border-radius: 99px;">
+                        Удалить папку
+                    </button>
                     <button id="btn-save-group" class="btn-primary btn-compact">Готово</button>
                 </div>
             </header>

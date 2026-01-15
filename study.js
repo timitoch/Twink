@@ -48,6 +48,7 @@ class StudyModule {
         this.groupWordsList = document.getElementById('group-words-list');
         this.btnBackToStudy = document.getElementById('btn-back-to-study');
         this.btnSaveGroup = document.getElementById('btn-save-group');
+        this.btnDeleteFolder = document.getElementById('btn-delete-folder');
 
         // Session UI
         this.btnExitSession = document.getElementById('btn-exit-session');
@@ -528,6 +529,11 @@ class StudyModule {
         this.addDraftCard();
         this.renderFolderDraft();
 
+        // Hide Delete Button
+        if (this.btnDeleteFolder) {
+            this.btnDeleteFolder.classList.add('hidden');
+        }
+
         // Update Save Button Listener
         if (this.btnSaveGroup) {
             this.btnSaveGroup.onclick = () => this.saveDraftFolder();
@@ -538,6 +544,19 @@ class StudyModule {
                 this.renderStudyDashboard();
                 if (window.switchView) window.switchView(this.viewStudy);
             };
+        }
+    }
+
+    async deleteFolder(folderId) {
+        if (!confirm('Вы уверены, что хотите удалить эту папку? Слова останутся в общем словаре.')) return;
+
+        try {
+            await this.db.db.ref(`users/${this.userId}/folders/${folderId}`).remove();
+            this.renderStudyDashboard();
+            if (window.switchView) window.switchView(this.viewStudy);
+        } catch (e) {
+            console.error(e);
+            alert('Ошибка при удалении папки');
         }
     }
 
@@ -581,6 +600,12 @@ class StudyModule {
         }
 
         this.renderFolderDraft();
+
+        // Show and Bind Delete Button
+        if (this.btnDeleteFolder) {
+            this.btnDeleteFolder.classList.remove('hidden');
+            this.btnDeleteFolder.onclick = () => this.deleteFolder(folderId);
+        }
 
         // Update Save Button Listener
         if (this.btnSaveGroup) {
