@@ -4,6 +4,7 @@ class StudyModule {
     constructor() {
         this.db = null;
         this.allWordsCache = [];
+        this.foldersCache = [];
         this.currentSession = null;
         this.settings = {
             audio: true,
@@ -141,6 +142,17 @@ class StudyModule {
                 }
             });
         }
+
+        // Subscribe to Folders
+        this.db.subscribeToFolders((folders) => {
+            this.foldersCache = folders ? Object.values(folders) : [];
+            if (!this.viewStudy.classList.contains('hidden')) {
+                this.renderStudyDashboard();
+            }
+        });
+
+        // Initialize Folder Modal
+        this.initFolderCreation();
 
         // Visibility Change listener to stop counting when backgrounded
         document.addEventListener('visibilitychange', () => {
@@ -411,6 +423,12 @@ class StudyModule {
         if (mode === 'groups' && groupIndex != null) {
             return sorted.slice(groupIndex * 100, (groupIndex + 1) * 100);
         }
+        if (mode === 'folder' && groupIndex != null) {
+            // groupIndex here is the folderId
+            const folder = this.foldersCache.find(f => f.id === groupIndex);
+            if (!folder || !folder.wordIds) return [];
+            return sorted.filter(w => folder.wordIds.includes(w.id));
+        }
         return [];
     }
 
@@ -450,6 +468,401 @@ class StudyModule {
         return array;
     }
 
+    // --- FOLDERS LOGIC ---
+    initFolderCreation() {
+        return;
+        /*
+        const form = document.getElementById('create-folder-form');
+        const modal = document.getElementById('create-folder-modal');
+        if (form) {
+            form.onsubmit = async (e) => {
+                e.preventDefault();
+                const nameInput = document.getElementById('folder-name-input');
+                const countInput = document.getElementById('folder-count-input');
+        
+                const name = nameInput.value.trim();
+                const count = parseInt(countInput.value);
+        
+                if (!name || isNaN(count) || count < 1) return;
+        
+                // Create Logic: Select random words
+                // Copy IDs
+                const allIds = this.allWordsCache.map(w => w.id);
+                // Shuffle
+                for (let i = allIds.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [allIds[i], allIds[j]] = [allIds[j], allIds[i]];
+                }
+                const selectedIds = allIds.slice(0, count);
+        
+                const folder = {
+                    id: 'folder_' + Date.now(),
+                    name: name,
+                    wordIds: selectedIds,
+                    createdAt: Date.now()
+                };
+        
+                await this.db.saveFolder(folder);
+        
+                modal.classList.add('hidden');
+                nameInput.value = '';
+                countInput.value = '';
+                    };
+                }
+                */
+    }
+
+    openFolderCreator() {
+        if (window.switchView) window.switchView(this.viewGroupEdit);
+
+        // Reset Inputs
+        const nameInput = document.getElementById('group-name-input');
+        const descInput = document.getElementById('group-desc-input');
+        if (nameInput) nameInput.value = '';
+        if (descInput) descInput.value = '';
+
+        this.editingMode = 'new_folder';
+        this.folderDraftState = [];
+
+        // Start with one empty card
+        this.addDraftCard();
+        this.renderFolderDraft();
+
+        // Update Save Button Listener
+        if (this.btnSaveGroup) {
+            this.btnSaveGroup.onclick = () => this.saveDraftFolder();
+        }
+        // Update Back Button Listener
+        if (this.btnBackToStudy) {
+            this.btnBackToStudy.onclick = () => {
+                this.renderStudyDashboard();
+                if (window.switchView) window.switchView(this.viewStudy);
+            };
+        }
+    }
+
+    openFolderEditor(folderId) {
+        if (window.switchView) window.switchView(this.viewGroupEdit);
+
+        const folder = this.foldersCache.find(f => f.id === folderId);
+        if (!folder) return; // Should not happen
+
+        // Reset Inputs
+        const nameInput = document.getElementById('group-name-input');
+        const descInput = document.getElementById('group-desc-input');
+        if (nameInput) nameInput.value = folder.name || '';
+        if (descInput) descInput.value = folder.desc || '';
+
+        this.editingMode = 'edit_folder';
+        this.currentFolderId = folderId;
+        this.folderDraftState = [];
+
+        // Load words
+        if (folder.wordIds) {
+            folder.wordIds.forEach(id => {
+                const w = this.allWordsCache.find(word => word.id === id);
+                if (w) {
+                    this.folderDraftState.push({
+                        id: w.id, // Keep ID for updates
+                        word: w.word,
+                        translation: w.translation,
+                        info1: w.info1,
+                        info2: w.info2,
+                        ex1: w.ex1,
+                        ex2: w.ex2
+                    });
+                }
+            });
+        }
+
+        // Ensure at least one empty card if empty
+        if (this.folderDraftState.length === 0) {
+            this.addDraftCard();
+        }
+
+        this.renderFolderDraft();
+
+        // Update Save Button Listener
+        if (this.btnSaveGroup) {
+            this.btnSaveGroup.onclick = () => this.saveDraftFolder();
+        }
+
+        // Update Back To Study
+        if (this.btnBackToStudy) {
+            this.btnBackToStudy.onclick = () => {
+                this.renderStudyDashboard();
+                if (window.switchView) window.switchView(this.viewStudy);
+            };
+        }
+    }
+
+    addDraftCard() {
+        this.folderDraftState.push({
+            id: null,
+            word: '',
+            translation: '',
+            info1: '',
+            info2: '',
+            ex1: '',
+            ex2: ''
+        });
+        this.renderFolderDraft();
+    }
+
+    renderFolderDraft() {
+        this.groupWordsList.innerHTML = '';
+        this.folderDraftState.forEach((w, index) => {
+            const div = document.createElement('div');
+            div.className = 'word-edit-card';
+            div.innerHTML = `
+                <div class="card-header-mini">
+                    <span class="card-num">
+                        ${index + 1}
+                    </span>
+                    <div class="card-actions-mini">
+                        <button class="btn-icon btn-delete text-muted" title="Delete">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M3 6h18"></path>
+                                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-edit-content">
+                    <div class="term-col">
+                        <div class="field-group">
+                            <label>Слово</label>
+                            <input type="text" class="input-stealth input-main" value="${w.word}" data-field="word" data-idx="${index}" style="padding-left: 1rem; font-weight: 600;">
+                        </div>
+                        <div class="field-group">
+                            <label>Определение</label>
+                            <input type="text" class="input-stealth input-main" value="${w.translation}" data-field="translation" data-idx="${index}" style="padding-left: 1rem; font-weight: 600;">
+                        </div>
+                    </div>
+                    
+                    <div class="def-col">
+                         <div class="field-group">
+                             <label>Доп. инфо</label>
+                             <input type="text" class="input-stealth input-sub" value="${w.info1 || ''}" data-field="info1" data-idx="${index}" style="padding-left: 1rem; font-weight: 500; color: #ffffff; opacity: 1; font-size: 0.9rem;">
+                        </div>
+                         <div class="field-group">
+                             <input type="text" class="input-stealth input-sub" value="${w.info2 || ''}" data-field="info2" data-idx="${index}" style="padding-left: 1rem; font-weight: 500; color: #ffffff; opacity: 1; font-size: 0.9rem;">
+                        </div>
+                         <div class="field-group">
+                             <label>Примеры</label>
+                             <input type="text" class="input-stealth input-sub" value="${w.ex1 || ''}" data-field="ex1" data-idx="${index}" style="padding-left: 1rem; font-weight: 500; color: #ffffff; opacity: 1; font-size: 0.9rem;">
+                        </div>
+                         <div class="field-group">
+                             <input type="text" class="input-stealth input-sub" value="${w.ex2 || ''}" data-field="ex2" data-idx="${index}" style="padding-left: 1rem; font-weight: 500; color: #ffffff; opacity: 1; font-size: 0.9rem;">
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Bind inputs to local state
+            div.querySelectorAll('input').forEach(input => {
+                input.oninput = (e) => {
+                    const field = e.target.dataset.field;
+                    const idx = e.target.dataset.idx;
+                    // Check if exists
+                    if (this.folderDraftState[idx]) {
+                        this.folderDraftState[idx][field] = e.target.value;
+                    }
+                };
+            });
+
+            // Bind Delete (Remove from local state)
+            div.querySelector('.btn-delete').onclick = () => {
+                this.folderDraftState.splice(index, 1);
+                this.renderFolderDraft();
+            };
+
+            this.groupWordsList.appendChild(div);
+        });
+
+        // Add Plus Button at the bottom
+        const btnAdd = document.createElement('button');
+        btnAdd.className = 'btn-icon';
+        btnAdd.style.width = '100%';
+        btnAdd.style.marginTop = '1rem';
+        btnAdd.style.padding = '1rem';
+        btnAdd.style.border = '1px dashed var(--border)';
+        btnAdd.style.borderRadius = '12px';
+        btnAdd.style.color = 'var(--text-muted)';
+        btnAdd.style.justifyContent = 'center';
+        btnAdd.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;
+
+        btnAdd.onclick = () => this.addDraftCard();
+        this.groupWordsList.appendChild(btnAdd);
+    }
+
+    async saveDraftFolder() {
+        const nameInput = document.getElementById('group-name-input');
+        const descInput = document.getElementById('group-desc-input');
+        const name = nameInput ? (nameInput.value.trim() || 'Новая папка') : 'Новая папка';
+
+        // Filter valid words
+        const validWords = this.folderDraftState.filter(w => w.word.trim() && w.translation.trim());
+
+        if (validWords.length === 0) {
+            alert("Добавьте хотя бы одно слово.");
+            return;
+        }
+
+        // Generate IDs and format for DB
+        const newWordIds = [];
+        const updates = {};
+
+        // Find max ID
+        let currentMaxId = 0;
+        this.allWordsCache.forEach(w => {
+            const id = parseInt(w.id);
+            if (!isNaN(id) && id > currentMaxId) currentMaxId = id;
+        });
+
+        validWords.forEach(w => {
+            let id = w.id;
+            if (!id) {
+                // New Word
+                currentMaxId++;
+                id = String(currentMaxId);
+            }
+
+            newWordIds.push(id);
+
+            updates[`users/${this.userId}/words/${id}`] = {
+                id: id,
+                word: w.word,
+                translation: w.translation,
+                info1: w.info1,
+                info2: w.info2,
+                ex1: w.ex1,
+                ex2: w.ex2,
+                progress_global: w.progress_global || { interval: 0, nextDate: Date.now(), state: "new" },
+                progress_groups: w.progress_groups || { interval: 0, nextDate: Date.now(), state: "new" }
+            };
+        });
+
+        // Determine Folder ID
+        let folderId = (this.editingMode === 'edit_folder' && this.currentFolderId)
+            ? this.currentFolderId
+            : 'folder_' + Date.now();
+
+        // Create/Update Folder Object
+        const folder = {
+            id: folderId,
+            name: name,
+            desc: descInput ? descInput.value : '',
+            wordIds: newWordIds,
+            createdAt: (this.editingMode === 'edit_folder' && this.currentFolderId)
+                ? (this.foldersCache.find(f => f.id === folderId)?.createdAt || Date.now())
+                : Date.now()
+        };
+        updates[`users/${this.userId}/folders/${folderId}`] = folder;
+
+        // Batch Update
+        await this.db.db.ref().update(updates);
+
+        // Reset and Exit
+        this.renderStudyDashboard();
+        if (window.switchView) window.switchView(this.viewStudy);
+    }
+
+    renderFolders() {
+        const container = document.getElementById('folders-list');
+        if (!container) return;
+        container.innerHTML = '';
+
+        if (!this.foldersCache || this.foldersCache.length === 0) {
+            container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 2rem;">Нет созданных папок</div>';
+            return;
+        }
+
+        const now = Date.now();
+
+        this.foldersCache.forEach(folder => {
+            // Get words objects
+            const folderWords = this.allWordsCache.filter(w => folder.wordIds && folder.wordIds.includes(w.id));
+            if (folderWords.length === 0) return; // Skip empty/broken folders? Or show empty.
+
+            const due = folderWords.filter(w => !w.progress_global || w.progress_global.nextDate <= now);
+            const learned = folderWords.filter(w => w.progress_global && w.progress_global.interval >= 12);
+
+            const card = document.createElement('div');
+            card.className = due.length === 0 ? 'group-card completed' : 'group-card';
+            card.style.cursor = 'pointer';
+
+            card.innerHTML = `
+            <div style="display: flex; flex-direction: column; gap: 1rem; width: 100%; position: relative;">
+                <!-- Header -->
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                    <div style="flex: 1; min-width: 0; padding-right: 1rem;">
+                        <h3 style="margin: 0; font-size: 1.4rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${folder.name}">${folder.name}</h3>
+                         <div style="font-size: 0.8rem; color: var(--text-muted); opacity: 0.6; margin-top:0.2rem;">
+                            Создано вручную
+                        </div>
+                    </div>
+                    
+                    <button class="btn-icon btn-edit-folder" style="color: var(--text-muted); padding: 0.5rem;" title="Редактировать папку">
+                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="8" y1="6" x2="21" y2="6"></line>
+                            <line x1="8" y1="12" x2="21" y2="12"></line>
+                            <line x1="8" y1="18" x2="21" y2="18"></line>
+                            <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                            <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                            <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- Stats Grid -->
+                <div class="group-stats-grid">
+                    <div class="group-stat-item">
+                        <div class="group-stat-value" style="color: var(--text-main);">${folderWords.length}</div>
+                        <div class="group-stat-label">Всего</div>
+                    </div>
+                    <div class="group-stat-item">
+                        <div class="group-stat-value" style="color: ${due.length > 0 ? 'var(--accent-2)' : 'rgba(255,255,255,0.3)'};">${due.length}</div>
+                        <div class="group-stat-label">К повтору</div>
+                    </div>
+                    <div class="group-stat-item">
+                        <div class="group-stat-value" style="color: ${learned.length > 0 ? 'var(--secondary)' : 'rgba(255,255,255,0.3)'};">${learned.length}</div>
+                        <div class="group-stat-label" style="display:flex; justify-content:center; align-items:center; gap:4px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--secondary); opacity: 0.8;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                            Идеально
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Progress Bar -->
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 0.75rem; color: var(--text-muted);">Прогресс</span>
+                        <span style="font-size: 0.75rem; font-weight: 600; color: var(--secondary);">${Math.round(learned.length / folderWords.length * 100)}%</span>
+                    </div>
+                    <div style="height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden;">
+                        <div style="height: 100%; width: ${learned.length / folderWords.length * 100}%; background: linear-gradient(90deg, var(--secondary), var(--accent-bright)); border-radius: 3px; transition: width 0.3s ease;"></div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+            card.onclick = () => this.startSession('folder', folder.id);
+
+            // Bind Edit
+            const btnEdit = card.querySelector('.btn-edit-folder');
+            if (btnEdit) {
+                btnEdit.onclick = (e) => {
+                    e.stopPropagation();
+                    this.openFolderEditor(folder.id);
+                };
+            }
+
+            container.appendChild(card);
+        });
+    }
+
     // --- STUDY DASHBOARD ---
     renderStudyDashboard() {
         if (!this.allWordsCache || this.allWordsCache.length === 0) {
@@ -457,17 +870,17 @@ class StudyModule {
             if (this.studyEmptyStateView) {
                 this.studyEmptyStateView.classList.remove('hidden');
                 this.studyEmptyStateView.innerHTML = `
-                <div class="empty-state-card">
-                    <div class="empty-state-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
-                    </div>
-                    <div>
-                        <h3 style="color: var(--text-main); margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 700;">Здесь пока ничего нет</h3>
-                        <p style="color: var(--text-muted); font-size: 1rem; margin-bottom: 1.5rem;">Добавьте свое первое слово, чтобы начать обучение</p>
-                    </div>
-                    <button onclick="if(window.openEditModal) window.openEditModal()" class="btn-primary" style="width: auto; padding: 0.8rem 2.5rem; font-weight: 600;">Добавить слово</button>
-                </div>
-            `;
+        <div class="empty-state-card">
+            <div class="empty-state-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+            </div>
+            <div>
+                <h3 style="color: var(--text-main); margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 700;">Здесь пока ничего нет</h3>
+                <p style="color: var(--text-muted); font-size: 1rem; margin-bottom: 1.5rem;">Добавьте свое первое слово, чтобы начать обучение</p>
+            </div>
+            <button onclick="if(window.openEditModal) window.openEditModal()" class="btn-primary" style="width: auto; padding: 0.8rem 2.5rem; font-weight: 600;">Добавить слово</button>
+        </div>
+    `;
             }
             return;
         }
@@ -485,6 +898,9 @@ class StudyModule {
         if (dashTotalWords) dashTotalWords.textContent = sortedWords.length;
 
         this.btnStartGlobal.onclick = () => this.startSession('global', null);
+
+        // Render Folders
+        this.renderFolders();
 
         if (this.groupsList) {
             this.groupsList.innerHTML = '';
@@ -509,59 +925,59 @@ class StudyModule {
                 card.style.cursor = 'pointer';
 
                 card.innerHTML = `
-                    <div style="display: flex; flex-direction: column; gap: 1rem; width: 100%; position: relative;">
-                        <!-- Header -->
-                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
-                            <div style="flex: 1; min-width: 0; padding-right: 1rem;">
-                                <h3 style="margin: 0; font-size: 1.4rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${groupTitle}">${groupTitle}</h3>
-                                 <div style="font-size: 0.8rem; color: var(--text-muted); opacity: 0.6; margin-top:0.2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                                    ${subTitle}
-                                </div>
-                            </div>
-                            
-                            <button class="btn-icon" style="color: var(--text-muted); padding: 0.5rem;" onclick="event.stopPropagation(); window.StudyModule.openGroupEditor(${idx})" title="Редактировать список">
-                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <line x1="8" y1="6" x2="21" y2="6"></line>
-                                    <line x1="8" y1="12" x2="21" y2="12"></line>
-                                    <line x1="8" y1="18" x2="21" y2="18"></line>
-                                    <line x1="3" y1="6" x2="3.01" y2="6"></line>
-                                    <line x1="3" y1="12" x2="3.01" y2="12"></line>
-                                    <line x1="3" y1="18" x2="3.01" y2="18"></line>
-                                </svg>
-                            </button>
-                        </div>
-                        
-                        <!-- Stats Grid -->
-                        <div class="group-stats-grid">
-                            <div class="group-stat-item">
-                                <div class="group-stat-value" style="color: var(--text-main);">${chunk.length}</div>
-                                <div class="group-stat-label">Всего</div>
-                            </div>
-                            <div class="group-stat-item">
-                                <div class="group-stat-value" style="color: ${due.length > 0 ? 'var(--accent-2)' : 'rgba(255,255,255,0.3)'};">${due.length}</div>
-                                <div class="group-stat-label">К повтору</div>
-                            </div>
-                            <div class="group-stat-item">
-                                <div class="group-stat-value" style="color: ${learned.length > 0 ? 'var(--secondary)' : 'rgba(255,255,255,0.3)'};">${learned.length}</div>
-                                <div class="group-stat-label" style="display:flex; justify-content:center; align-items:center; gap:4px;">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--secondary); opacity: 0.8;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-                                    Идеально
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Progress Bar -->
-                        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <span style="font-size: 0.75rem; color: var(--text-muted);">Прогресс</span>
-                                <span style="font-size: 0.75rem; font-weight: 600; color: var(--secondary);">${Math.round(learned.length / chunk.length * 100)}%</span>
-                            </div>
-                            <div style="height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden;">
-                                <div style="height: 100%; width: ${learned.length / chunk.length * 100}%; background: linear-gradient(90deg, var(--secondary), var(--accent-bright)); border-radius: 3px; transition: width 0.3s ease;"></div>
-                            </div>
+            <div style="display: flex; flex-direction: column; gap: 1rem; width: 100%; position: relative;">
+                <!-- Header -->
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                    <div style="flex: 1; min-width: 0; padding-right: 1rem;">
+                        <h3 style="margin: 0; font-size: 1.4rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${groupTitle}">${groupTitle}</h3>
+                         <div style="font-size: 0.8rem; color: var(--text-muted); opacity: 0.6; margin-top:0.2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            ${subTitle}
                         </div>
                     </div>
-                `;
+                    
+                    <button class="btn-icon" style="color: var(--text-muted); padding: 0.5rem;" onclick="event.stopPropagation(); window.StudyModule.openGroupEditor(${idx})" title="Редактировать список">
+                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="8" y1="6" x2="21" y2="6"></line>
+                            <line x1="8" y1="12" x2="21" y2="12"></line>
+                            <line x1="8" y1="18" x2="21" y2="18"></line>
+                            <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                            <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                            <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- Stats Grid -->
+                <div class="group-stats-grid">
+                    <div class="group-stat-item">
+                        <div class="group-stat-value" style="color: var(--text-main);">${chunk.length}</div>
+                        <div class="group-stat-label">Всего</div>
+                    </div>
+                    <div class="group-stat-item">
+                        <div class="group-stat-value" style="color: ${due.length > 0 ? 'var(--accent-2)' : 'rgba(255,255,255,0.3)'};">${due.length}</div>
+                        <div class="group-stat-label">К повтору</div>
+                    </div>
+                    <div class="group-stat-item">
+                        <div class="group-stat-value" style="color: ${learned.length > 0 ? 'var(--secondary)' : 'rgba(255,255,255,0.3)'};">${learned.length}</div>
+                        <div class="group-stat-label" style="display:flex; justify-content:center; align-items:center; gap:4px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--secondary); opacity: 0.8;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                            Идеально
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Progress Bar -->
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 0.75rem; color: var(--text-muted);">Прогресс</span>
+                        <span style="font-size: 0.75rem; font-weight: 600; color: var(--secondary);">${Math.round(learned.length / chunk.length * 100)}%</span>
+                    </div>
+                    <div style="height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden;">
+                        <div style="height: 100%; width: ${learned.length / chunk.length * 100}%; background: linear-gradient(90deg, var(--secondary), var(--accent-bright)); border-radius: 3px; transition: width 0.3s ease;"></div>
+                    </div>
+                </div>
+            </div>
+        `;
 
                 card.onclick = () => this.startSession('groups', idx);
                 this.groupsList.appendChild(card);
@@ -572,6 +988,8 @@ class StudyModule {
     // --- GROUP EDITOR ---
     openGroupEditor(groupIndex) {
         if (window.switchView) window.switchView(this.viewGroupEdit);
+        this.editingMode = 'group_edit';
+
         const chunk = this.getWordsForScope('groups', groupIndex);
 
         const groupKey = `group_meta_${groupIndex}`;
@@ -580,12 +998,14 @@ class StudyModule {
         const nameInput = document.getElementById('group-name-input');
         const descInput = document.getElementById('group-desc-input');
 
-        nameInput.value = savedMeta.name || `Группа ${groupIndex + 1}`;
         descInput.value = savedMeta.desc || '';
 
         const saveMeta = () => {
-            localStorage.setItem(groupKey, JSON.stringify({ name: nameInput.value, desc: descInput.value }));
+            if (this.editingMode === 'group_edit') {
+                localStorage.setItem(groupKey, JSON.stringify({ name: nameInput.value, desc: descInput.value }));
+            }
         };
+        // Unbind previous listeners to avoid duplicates if re-opened
         nameInput.onblur = saveMeta;
         descInput.onblur = saveMeta;
 
@@ -609,54 +1029,51 @@ class StudyModule {
             const div = document.createElement('div');
             div.className = 'word-edit-card';
             div.innerHTML = `
-                <div class="card-header-mini">
-                    <span class="card-num">
-                        ${index + 1}
-                        <span style="opacity: 0.3; font-size: 0.8em; margin-left: 10px; font-weight: normal;">#${w.id}</span>
-                    </span>
-                    <div class="card-actions-mini">
-                        <button class="btn-icon btn-delete text-muted" title="Delete">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M3 6h18"></path>
-                                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-                            </svg>
-                        </button>
-                    </div>
+        <div class="card-header-mini">
+            <span class="card-num">
+                ${index + 1}
+                <span style="opacity: 0.3; font-size: 0.8em; margin-left: 10px; font-weight: normal;">#${w.id}</span>
+            </span>
+            <div class="card-actions-mini">
+                <button class="btn-icon btn-delete text-muted" title="Delete">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 6h18"></path>
+                        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div class="card-edit-content">
+            <div class="term-col">
+                <div class="field-group">
+                    <label>Слово</label>
+                    <input type="text" class="input-stealth input-main" value="${w.word}" data-field="word" data-id="${w.id}" style="padding-left: 1rem; font-weight: 600;">
                 </div>
-                <div class="card-edit-content">
-                    <div class="term-col">
-                        <div class="field-group">
-                            <input type="text" class="input-stealth input-main" value="${w.word}" data-field="word" data-id="${w.id}">
-                        </div>
-                         <div class="field-group">
-                             <label>Доп. инфо</label>
-                             <input type="text" class="input-stealth input-sub" value="${w.info1 || ''}" placeholder="Info 1" data-field="info1" data-id="${w.id}">
-                        </div>
-                         <div class="field-group">
-                             <input type="text" class="input-stealth input-sub" value="${w.info2 || ''}" placeholder="Info 2" data-field="info2" data-id="${w.id}">
-                        </div>
-                         <div class="field-group">
-                             <label>Примеры</label>
-                             <input type="text" class="input-stealth input-sub" value="${w.ex1 || ''}" placeholder="Beispiel 1" data-field="ex1" data-id="${w.id}">
-                        </div>
-                         <div class="field-group">
-                             <input type="text" class="input-stealth input-sub" value="${w.ex2 || ''}" placeholder="Beispiel 2" data-field="ex2" data-id="${w.id}">
-                        </div>
-                    </div>
-                    
-                    <div class="def-col">
-                        <div class="field-group">
-                            <label>Определение</label>
-                            <input type="text" class="input-stealth input-main" value="${w.translation}" data-field="translation" data-id="${w.id}">
-                        </div>
-                         <div class="field-group">
-                             <label>Скрытые заметки</label>
-                             <input type="text" class="input-stealth input-sub" value="${w.ex3 || ''}" placeholder="Заметка..." data-field="ex3" data-id="${w.id}">
-                        </div>
-                    </div>
+                 <div class="field-group">
+                    <label>Определение</label>
+                    <input type="text" class="input-stealth input-main" value="${w.translation}" data-field="translation" data-id="${w.id}" style="padding-left: 1rem; font-weight: 600;">
                 </div>
-            `;
+            </div>
+            
+            <div class="def-col">
+                 <div class="field-group">
+                     <label>Доп. инфо</label>
+                     <input type="text" class="input-stealth input-sub" value="${w.info1 || ''}" data-field="info1" data-id="${w.id}" style="padding-left: 1rem; font-weight: 500; color: #ffffff; opacity: 1; font-size: 0.9rem;">
+                </div>
+                 <div class="field-group">
+                     <input type="text" class="input-stealth input-sub" value="${w.info2 || ''}" data-field="info2" data-id="${w.id}" style="padding-left: 1rem; font-weight: 500; color: #ffffff; opacity: 1; font-size: 0.9rem;">
+                </div>
+                 <div class="field-group">
+                     <label>Примеры</label>
+                     <input type="text" class="input-stealth input-sub" value="${w.ex1 || ''}" data-field="ex1" data-id="${w.id}" style="padding-left: 1rem; font-weight: 500; color: #ffffff; opacity: 1; font-size: 0.9rem;">
+                </div>
+                 <div class="field-group">
+                     <input type="text" class="input-stealth input-sub" value="${w.ex2 || ''}" data-field="ex2" data-id="${w.id}" style="padding-left: 1rem; font-weight: 500; color: #ffffff; opacity: 1; font-size: 0.9rem;">
+                </div>
+            </div>
+        </div>
+    `;
 
             div.querySelectorAll('input').forEach(input => {
                 input.onblur = async (e) => {

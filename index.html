@@ -288,6 +288,23 @@
                             </button>
                         </div>
 
+                        <div class="section-title"
+                            style="margin-top: 2rem; display: flex; justify-content: space-between; align-items: center;">
+                            <h2>Папки</h2>
+                            <button class="btn-secondary small" onclick="window.StudyModule.openFolderCreator()">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                                Создать папку
+                            </button>
+                        </div>
+                        <div id="folders-list" class="groups-grid">
+                            <!-- Folders injected here -->
+                        </div>
+
                         <div class="section-title" style="margin-top: 2rem;">
                             <h2>По группам</h2>
                         </div>
@@ -1185,39 +1202,31 @@
                             <div class="term-col">
                                 <!-- MAIN TERM -->
                                 <div class="field-group">
+                                    <label>Слово</label>
                                     <input type="text" class="input-stealth input-main" id="edit-word" required>
                                 </div>
-                                <!-- EXAMPLES / EXTRA -->
-                                <div class="field-group">
-                                    <label>Доп. инфо</label>
-                                    <input type="text" class="input-stealth input-sub" id="edit-info1"
-                                        placeholder="Info 1">
-                                </div>
-                                <div class="field-group">
-                                    <input type="text" class="input-stealth input-sub" id="edit-info2"
-                                        placeholder="Info 2">
-                                </div>
-                                <div class="field-group">
-                                    <label>Примеры</label>
-                                    <input type="text" class="input-stealth input-sub" id="edit-ex1"
-                                        placeholder="Beispiel 1">
-                                </div>
-                                <div class="field-group">
-                                    <input type="text" class="input-stealth input-sub" id="edit-ex2"
-                                        placeholder="Beispiel 2">
-                                </div>
-                            </div>
-
-                            <div class="def-col">
                                 <!-- DEFINITION -->
                                 <div class="field-group">
                                     <label>Определение</label>
                                     <input type="text" class="input-stealth input-main" id="edit-translation" required>
                                 </div>
+                            </div>
+
+                            <div class="def-col">
+                                <!-- EXAMPLES / EXTRA -->
                                 <div class="field-group">
-                                    <label>Скрытые заметки</label>
-                                    <input type="text" class="input-stealth input-sub" id="edit-ex3"
-                                        placeholder="Заметка...">
+                                    <label>Доп. инфо</label>
+                                    <input type="text" class="input-stealth input-sub" id="edit-info1">
+                                </div>
+                                <div class="field-group">
+                                    <input type="text" class="input-stealth input-sub" id="edit-info2">
+                                </div>
+                                <div class="field-group">
+                                    <label>Примеры</label>
+                                    <input type="text" class="input-stealth input-sub" id="edit-ex1">
+                                </div>
+                                <div class="field-group">
+                                    <input type="text" class="input-stealth input-sub" id="edit-ex2">
                                 </div>
                             </div>
                         </div>
@@ -1225,6 +1234,7 @@
                 </form>
             </div>
         </div>
+    </div>
     </div>
     <script src="firebase-config.js"></script>
     <script src="settings.js"></script>

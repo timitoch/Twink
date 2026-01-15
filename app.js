@@ -40,8 +40,7 @@ const editInputs = {
     info1: document.getElementById('edit-info1'),
     info2: document.getElementById('edit-info2'),
     ex1: document.getElementById('edit-ex1'),
-    ex2: document.getElementById('edit-ex2'),
-    ex3: document.getElementById('edit-ex3')
+    ex2: document.getElementById('edit-ex2')
 };
 
 // --- STATE ---
@@ -185,6 +184,22 @@ class WordLabDB {
         });
         if (Object.keys(updates).length > 0) await this.db.ref().update(updates);
         return stats;
+    }
+
+    // --- FOLDERS ---
+    subscribeToFolders(callback) {
+        if (!this.userId) return;
+        this.db.ref(`users/${this.userId}/folders`).on('value', snap => callback(snap.val()));
+    }
+
+    async saveFolder(folder) {
+        if (!this.userId || !folder.id) return;
+        await this.db.ref(`users/${this.userId}/folders/${folder.id}`).set(folder);
+    }
+
+    async deleteFolder(folderId) {
+        if (!this.userId) return;
+        await this.db.ref(`users/${this.userId}/folders/${folderId}`).remove();
     }
 }
 const db = new WordLabDB();
@@ -716,7 +731,6 @@ function openEditModal(w = null) {
         editInputs.info2.value = w.info2 || '';
         editInputs.ex1.value = w.ex1 || '';
         editInputs.ex2.value = w.ex2 || '';
-        editInputs.ex3.value = w.ex3 || '';
 
         // Update modal header
         const wordIndex = allWordsCache.findIndex(word => word.id === w.id);
@@ -735,7 +749,6 @@ function openEditModal(w = null) {
         editInputs.info2.value = '';
         editInputs.ex1.value = '';
         editInputs.ex2.value = '';
-        editInputs.ex3.value = '';
 
         const modalNumber = document.getElementById('edit-modal-number');
         const modalId = document.getElementById('edit-modal-id');
@@ -781,8 +794,7 @@ editForm.onsubmit = async (e) => {
         info1: editInputs.info1.value,
         info2: editInputs.info2.value,
         ex1: editInputs.ex1.value,
-        ex2: editInputs.ex2.value,
-        ex3: editInputs.ex3.value
+        ex2: editInputs.ex2.value
     };
 
     if (isNew) {
@@ -820,7 +832,7 @@ deleteWordBtn.onclick = async () => {
         const backupData = {
             word: editInputs.word.value, translation: editInputs.translation.value,
             info1: editInputs.info1.value, info2: editInputs.info2.value,
-            ex1: editInputs.ex1.value, ex2: editInputs.ex2.value, ex3: editInputs.ex3.value,
+            ex1: editInputs.ex1.value, ex2: editInputs.ex2.value,
             id: id
         };
 
