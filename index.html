@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-theme="dark" data-color-scheme="pure-black">
 
 <head>
     <meta charset="UTF-8">
@@ -151,9 +151,8 @@
                 <div class="header-left">
                     <div id="header-profile" class="header-profile" title="Профиль">
                         <div class="header-avatar-container">
-                            <img id="header-avatar-img"
-                                src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E"
-                                alt="Avatar">
+                            <span id="header-avatar-initial" class="avatar-initial"></span>
+                            <img id="header-avatar-img" src="" alt="Avatar" class="hidden">
                         </div>
                         <span id="header-nickname">User</span>
                     </div>
@@ -1069,7 +1068,7 @@
 
                                         <div class="color-scheme-selector"
                                             style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-top: 1rem;">
-                                            <button class="color-scheme-btn active" data-color-scheme="default">
+                                            <button class="color-scheme-btn" data-color-scheme="default">
                                                 <div class="scheme-preview"
                                                     style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
                                                     <div
@@ -1122,7 +1121,7 @@
                                                 <span style="font-size: 0.85rem; font-weight: 500;">Индиго-Золото</span>
                                             </button>
 
-                                            <button class="color-scheme-btn" data-color-scheme="pure-black">
+                                            <button class="color-scheme-btn active" data-color-scheme="pure-black">
                                                 <div class="scheme-preview"
                                                     style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
                                                     <div id="scheme-preview-pure-black"

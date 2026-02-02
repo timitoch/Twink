@@ -184,7 +184,8 @@ class ProfileModule {
                         </svg>
                     </div>
                     <div class="profile-avatar-large">
-                        <img src="${this.getAvatarUrl()}" alt="Profile">
+                        <span class="avatar-initial" style="font-size: clamp(1.5rem, 5vw, 3rem);">${(this.user.nickname || 'U').charAt(0).toUpperCase()}</span>
+                        <img src="${this.avatarUrl || ''}" alt="Profile" onerror="this.style.display='none'">
                     </div>
                 </div>
                 

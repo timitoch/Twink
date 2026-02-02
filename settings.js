@@ -4,8 +4,9 @@ class SettingsModule {
     constructor() {
         this.db = null;
         this.headerAvatarImg = document.getElementById('header-avatar-img');
+        this.headerAvatarInitial = document.getElementById('header-avatar-initial');
         this.settingsAvatarPreview = document.getElementById('settings-avatar-preview');
-        this.settingsAvatarPlaceholder = document.getElementById('settings-avatar-placeholder');
+        this.settingsAvatarInitial = document.getElementById('settings-avatar-initial');
         this.avatarInput = document.getElementById('avatar-input');
         this.btnDeleteAvatar = document.getElementById('btn-delete-avatar');
         this.headerNickname = document.getElementById('header-nickname');
@@ -68,7 +69,7 @@ class SettingsModule {
 
     // --- COLOR SCHEME LOGIC ---
     initColorScheme() {
-        const savedScheme = localStorage.getItem('colorScheme') || 'default';
+        const savedScheme = localStorage.getItem('colorScheme') || 'pure-black';
         const savedTheme = localStorage.getItem('theme') || 'dark';
         document.documentElement.setAttribute('data-color-scheme', savedScheme);
         this.updateColorSchemeButtons(savedScheme);
@@ -147,30 +148,39 @@ class SettingsModule {
 
     // --- AVATAR LOGIC ---
     loadAvatar(userId) {
-        this.db.db.ref('users/' + userId + '/avatar').once('value').then(snap => {
-            const avatarBase64 = snap.val();
-            if (avatarBase64) {
-                if (this.headerAvatarImg) this.headerAvatarImg.src = avatarBase64;
-                if (this.settingsAvatarPreview) {
-                    this.settingsAvatarPreview.src = avatarBase64;
-                    this.settingsAvatarPreview.style.display = 'block';
-                    if (this.settingsAvatarPlaceholder) this.settingsAvatarPlaceholder.style.display = 'none';
-                }
-                if (this.btnDeleteAvatar) this.btnDeleteAvatar.style.display = 'block';
-            } else {
-                this.resetAvatarUI();
-            }
-        });
-
+        // Fetch nickname first to have initials ready
         this.db.db.ref('users/' + userId + '/nickname').once('value').then(snap => {
             const name = snap.val() || "User";
             if (this.headerNickname) this.headerNickname.textContent = name;
             const userNicknameDisplay = document.getElementById('user-nickname-display');
             if (userNicknameDisplay) userNicknameDisplay.textContent = name;
 
+            // Update initials
+            const initial = name.charAt(0).toUpperCase();
+            if (this.headerAvatarInitial) this.headerAvatarInitial.textContent = initial;
+            if (this.settingsAvatarInitial) this.settingsAvatarInitial.textContent = initial;
+
             // Update input
             const nickInput = document.getElementById('settings-nickname');
             if (nickInput) nickInput.value = name;
+
+            // Now fetch avatar
+            return this.db.db.ref('users/' + userId + '/avatar').once('value');
+        }).then(snap => {
+            const avatarBase64 = snap.val();
+            if (avatarBase64) {
+                if (this.headerAvatarImg) {
+                    this.headerAvatarImg.src = avatarBase64;
+                    this.headerAvatarImg.classList.remove('hidden');
+                }
+                if (this.settingsAvatarPreview) {
+                    this.settingsAvatarPreview.src = avatarBase64;
+                    this.settingsAvatarPreview.style.display = 'block';
+                }
+                if (this.btnDeleteAvatar) this.btnDeleteAvatar.style.display = 'block';
+            } else {
+                this.resetAvatarUI();
+            }
         });
     }
 
@@ -230,18 +240,23 @@ class SettingsModule {
     }
 
     resetAvatarUI() {
-        const defaultAvatar = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E";
-        if (this.headerAvatarImg) this.headerAvatarImg.src = defaultAvatar;
+        if (this.headerAvatarImg) {
+            this.headerAvatarImg.src = "";
+            this.headerAvatarImg.classList.add('hidden');
+        }
         if (this.settingsAvatarPreview) {
             this.settingsAvatarPreview.src = "";
             this.settingsAvatarPreview.style.display = 'none';
         }
-        if (this.settingsAvatarPlaceholder) {
-            this.settingsAvatarPlaceholder.style.display = 'flex';
-        }
         if (this.btnDeleteAvatar) {
             this.btnDeleteAvatar.style.display = 'none';
         }
+
+        // Refresh initials
+        const name = this.headerNickname ? this.headerNickname.textContent : "User";
+        const initial = (name || "U").charAt(0).toUpperCase();
+        if (this.headerAvatarInitial) this.headerAvatarInitial.textContent = initial;
+        if (this.settingsAvatarInitial) this.settingsAvatarInitial.textContent = initial;
     }
 
     // --- PROFILE ACTIONS ---
@@ -251,6 +266,12 @@ class SettingsModule {
             const userNicknameDisplay = document.getElementById('user-nickname-display');
             if (userNicknameDisplay) userNicknameDisplay.textContent = nick;
             if (this.headerNickname) this.headerNickname.textContent = nick;
+
+            // Update initials immediately
+            const initial = nick.charAt(0).toUpperCase();
+            if (this.headerAvatarInitial) this.headerAvatarInitial.textContent = initial;
+            if (this.settingsAvatarInitial) this.settingsAvatarInitial.textContent = initial;
+
             alert("Никнейм изменен.");
             return true;
         });
