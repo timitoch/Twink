@@ -1832,6 +1832,14 @@ class StudyModule {
         this.playDeSequence(word);
 
         setTimeout(() => {
+            const transLen = word.translation.length;
+            if (transLen > 40) {
+                this.cardTranslation.style.fontSize = '1.3rem';
+            } else if (transLen > 25) {
+                this.cardTranslation.style.fontSize = '1.45rem';
+            } else {
+                this.cardTranslation.style.fontSize = '1.6rem';
+            }
             this.cardTranslation.textContent = word.translation;
         }, 400);
 

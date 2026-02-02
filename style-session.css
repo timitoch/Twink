@@ -213,7 +213,8 @@
 }
 
 .card-face h2 {
-    font-size: 2rem;
+    font-size: 1.6rem;
+    /* Reduced from 2rem to be less overwhelming */
 }
 
 .sub-text {
@@ -224,7 +225,9 @@
 }
 
 .examples {
-    margin: 0;
+    margin-top: 0.8rem;
+    /* Small gap between text and examples */
+    margin-bottom: 0;
     width: 100%;
     text-align: left;
 }
@@ -237,6 +240,11 @@
     font-size: 0.9rem;
     color: var(--text-muted);
     border-left: 3px solid var(--primary);
+}
+
+.examples p:last-child {
+    margin-bottom: 0;
+    /* Prevent extra space at the bottom of the card */
 }
 
 .highlight {
