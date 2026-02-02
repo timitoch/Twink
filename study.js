@@ -29,7 +29,9 @@ class StudyModule {
             masterCard: false,
             masterInterface: false,
             masterAudio: true,
-            includeActive: false
+            includeActive: false,
+            genderColors: false,
+            genderCardBackground: false
         };
 
         // DOM Elements
@@ -272,6 +274,8 @@ class StudyModule {
         this.btnToggleStatToday = document.getElementById('btn-toggle-stat-today');
         this.btnToggleIncludeActive = document.getElementById('btn-toggle-include-active');
         this.btnToggleVoice = document.getElementById('btn-toggle-voice');
+        this.btnToggleGenderColors = document.getElementById('btn-toggle-gender-colors');
+        this.btnToggleGenderCardBackground = document.getElementById('btn-toggle-gender-card-bg');
 
         this.statCardTotal = document.getElementById('stat-card-total');
         this.statCardDue = document.getElementById('stat-card-due');
@@ -346,6 +350,8 @@ class StudyModule {
         setupToggle(this.btnToggleStatDue, 'showStatDue');
         setupToggle(this.btnToggleStatToday, 'showStatToday');
         setupToggle(this.btnToggleIncludeActive, 'includeActive');
+        setupToggle(this.btnToggleGenderColors, 'genderColors');
+        setupToggle(this.btnToggleGenderCardBackground, 'genderCardBackground');
 
         setupToggle(this.btnMasterCard, 'masterCard');
         setupToggle(this.btnMasterInterface, 'masterInterface');
@@ -382,15 +388,20 @@ class StudyModule {
     }
 
     updateElementsVisibility() {
-        if (this.cardWord) this.cardWord.style.display = this.settings.showWord ? 'block' : 'none';
-        if (this.cardInfo1) this.cardInfo1.style.display = this.settings.showInfo1 ? 'block' : 'none';
-        if (this.cardInfo2) this.cardInfo2.style.display = this.settings.showInfo2 ? 'block' : 'none';
+        if (this.cardWord) this.cardWord.style.display = (this.settings.showWord && this.cardWord.textContent.trim()) ? 'block' : 'none';
+        if (this.cardInfo1) this.cardInfo1.style.display = (this.settings.showInfo1 && this.cardInfo1.textContent.trim()) ? 'block' : 'none';
+        if (this.cardInfo2) this.cardInfo2.style.display = (this.settings.showInfo2 && this.cardInfo2.textContent.trim()) ? 'block' : 'none';
 
         if (this.cardExamples) {
             const exs = this.cardExamples.querySelectorAll('p');
-            if (exs.length >= 1) exs[0].style.display = this.settings.showEx1 ? 'block' : 'none';
-            if (exs.length >= 2) exs[1].style.display = this.settings.showEx2 ? 'block' : 'none';
-            if (exs.length >= 3) exs[2].style.display = this.settings.showEx3 ? 'block' : 'none';
+            let hasVisibleEx = false;
+            exs.forEach((p, i) => {
+                const settingKey = `showEx${i + 1}`;
+                const isVisible = this.settings[settingKey] && p.textContent.replace('•', '').trim().length > 0;
+                p.style.display = isVisible ? 'block' : 'none';
+                if (isVisible) hasVisibleEx = true;
+            });
+            this.cardExamples.style.display = hasVisibleEx ? 'block' : 'none';
         }
 
         if (this.progressContainer) this.progressContainer.style.display = this.settings.showProgress ? 'block' : 'none';
@@ -445,7 +456,8 @@ class StudyModule {
 
             if (!prog.nextDate || prog.nextDate <= now) due++;
             if (prog.lastReviewed && prog.lastReviewed >= startOfToday) learnedToday++;
-            if (prog.interval && prog.interval >= 12) mastered++;
+            // Mastered: interval >= 12 AND not overdue
+            if (prog.interval && prog.interval >= 12 && prog.nextDate > now) mastered++;
         });
 
         if (this.totalWordsCount) this.totalWordsCount.textContent = total;
@@ -812,7 +824,8 @@ class StudyModule {
             if (folderWords.length === 0) return; // Skip empty/broken folders? Or show empty.
 
             const due = folderWords.filter(w => !w.progress_global || w.progress_global.nextDate <= now);
-            const learned = folderWords.filter(w => w.progress_global && w.progress_global.interval >= 12);
+            // Mastered: interval >= 12 AND not overdue
+            const learned = folderWords.filter(w => w.progress_global && w.progress_global.interval >= 12 && w.progress_global.nextDate > now);
 
             const card = document.createElement('div');
             card.className = due.length === 0 ? 'group-card completed' : 'group-card';
@@ -922,6 +935,109 @@ class StudyModule {
         const dashTotalWords = document.getElementById('dash-total-words');
         if (dashTotalWords) dashTotalWords.textContent = sortedWords.length;
 
+        // --- LAST OPENED CARD LOGIC ---
+        const lastCard = document.getElementById('last-opened-card');
+        const lastMetaStr = localStorage.getItem('last_opened_session');
+
+        if (lastCard) {
+            let isValid = false;
+            let title = '';
+            let mode = '';
+            let groupIndex = null;
+            let folderOrGroupWords = [];
+
+            if (lastMetaStr) {
+                try {
+                    const meta = JSON.parse(lastMetaStr);
+                    mode = meta.mode;
+                    groupIndex = meta.groupIndex;
+
+                    if (mode === 'folder') {
+                        // Ensure folders are loaded.
+                        const folder = (this.foldersCache || []).find(f => f.id === groupIndex);
+                        if (folder) {
+                            title = folder.name;
+                            folderOrGroupWords = this.allWordsCache.filter(w => folder.wordIds && folder.wordIds.includes(w.id));
+                            isValid = true;
+                        }
+                    } else if (mode === 'groups') {
+                        const idx = parseInt(groupIndex);
+                        const chunkSize = 100;
+                        const startX = idx * chunkSize;
+                        if (startX < sortedWords.length) {
+                            const groupKey = `group_meta_${idx}`;
+                            const groupMeta = JSON.parse(localStorage.getItem(groupKey) || '{}');
+                            title = groupMeta.name || `Группа ${idx + 1}`;
+                            folderOrGroupWords = sortedWords.slice(startX, startX + chunkSize);
+                            isValid = true;
+                        }
+                    }
+                } catch (e) {
+                    console.error("Error parsing last opened session", e);
+                }
+            }
+
+            if (isValid) {
+                lastCard.classList.remove('hidden');
+
+                // Stats Logic
+                const total = folderOrGroupWords.length;
+                const due = folderOrGroupWords.filter(w => !w.progress_global || w.progress_global.nextDate <= now).length;
+                const mastered = folderOrGroupWords.filter(w => w.progress_global && w.progress_global.interval >= 12 && w.progress_global.nextDate > now).length;
+                const progressPct = total === 0 ? 0 : Math.round((mastered / total) * 100);
+
+                // UI References
+                const titleEl = document.getElementById('last-opened-title');
+                const statTotalEl = document.getElementById('last-opened-stat-total');
+                const statDueEl = document.getElementById('last-opened-stat-due');
+                const statLearnedEl = document.getElementById('last-opened-stat-learned');
+                const progressTextEl = document.getElementById('last-opened-progress-text');
+                const progressBarEl = document.getElementById('last-opened-progress-bar');
+                const btnContinue = document.getElementById('btn-continue-last');
+                const btnEdit = document.getElementById('btn-edit-last-opened');
+
+                // Update UI
+                if (titleEl) titleEl.textContent = title;
+                if (statTotalEl) statTotalEl.textContent = total;
+                if (statDueEl) {
+                    statDueEl.textContent = due;
+                    statDueEl.style.color = due > 0 ? 'var(--accent-2)' : 'rgba(255,255,255,0.3)';
+                }
+                if (statLearnedEl) {
+                    statLearnedEl.textContent = mastered;
+                    statLearnedEl.style.color = mastered > 0 ? 'var(--secondary)' : 'rgba(255,255,255,0.3)';
+                }
+
+                if (progressTextEl) progressTextEl.textContent = `${progressPct}%`;
+                if (progressBarEl) progressBarEl.style.width = `${progressPct}%`;
+
+                // Handle Completed State (Green)
+                if (due === 0) {
+                    lastCard.classList.add('completed');
+                } else {
+                    lastCard.classList.remove('completed');
+                }
+
+                // Bind Buttons
+                if (btnContinue) {
+                    btnContinue.onclick = () => this.startSession(mode, groupIndex);
+                }
+
+                if (btnEdit) {
+                    btnEdit.onclick = (e) => {
+                        e.stopPropagation();
+                        if (mode === 'folder') {
+                            this.openFolderEditor(groupIndex);
+                        } else if (mode === 'groups') {
+                            this.openGroupEditor(parseInt(groupIndex));
+                        }
+                    };
+                }
+            } else {
+                lastCard.classList.add('hidden');
+            }
+        }
+
         this.btnStartGlobal.onclick = () => this.startSession('global', null);
 
         // Render Folders
@@ -937,7 +1053,8 @@ class StudyModule {
                 const startX = i * chunkSize;
                 const chunk = sortedWords.slice(startX, startX + chunkSize);
                 const due = chunk.filter(w => !w.progress_global || w.progress_global.nextDate <= now);
-                const learned = chunk.filter(w => w.progress_global && w.progress_global.interval >= 12);
+                // Mastered: interval >= 12 AND not overdue
+                const learned = chunk.filter(w => w.progress_global && w.progress_global.interval >= 12 && w.progress_global.nextDate > now);
 
                 const groupKey = `group_meta_${i}`;
                 const meta = JSON.parse(localStorage.getItem(groupKey) || '{}');
@@ -1203,6 +1320,16 @@ class StudyModule {
 
     // --- SESSION ENGINE ---
     startSession(mode, groupIndex) {
+        // Save Last Opened Context (if folder or groups)
+        if (mode === 'folder' || mode === 'groups') {
+            const meta = {
+                mode,
+                groupIndex,
+                timestamp: Date.now()
+            };
+            localStorage.setItem('last_opened_session', JSON.stringify(meta));
+        }
+
         const now = Date.now();
         const progressKey = 'progress_global';
         const savedKey = `study_session_${mode}_${groupIndex ?? 'all'}`;
@@ -1353,6 +1480,7 @@ class StudyModule {
         document.querySelectorAll('.btn-rate').forEach(btn => {
             btn.onclick = async (e) => {
                 e.stopPropagation();
+                if (this.ratingButtons) this.ratingButtons.style.pointerEvents = 'none'; // Prevent double-click
                 let target = e.target;
                 while (!target.classList.contains('btn-rate')) target = target.parentElement;
                 await this.processCardResult(parseInt(target.dataset.rating));
@@ -1498,6 +1626,38 @@ class StudyModule {
         }
     }
 
+    getGenderColor(word) {
+        // Check if the word starts with an article
+        const wordLower = word.toLowerCase().trim();
+
+        // Check for feminine: die
+        if (wordLower.startsWith('die ')) {
+            return {
+                base: '#ff69b4',           // Hot pink for feminine
+                background: 'rgba(255, 105, 180, 0.08)'  // Very subtle pink background
+            };
+        }
+
+        // Check for masculine: der
+        if (wordLower.startsWith('der ')) {
+            return {
+                base: '#4a9eff',           // Blue for masculine
+                background: 'rgba(74, 158, 255, 0.08)'   // Very subtle blue background
+            };
+        }
+
+        // Check for neuter: das
+        if (wordLower.startsWith('das ')) {
+            return {
+                base: '#e6c200',           // Muted yellow for neuter (less bright)
+                background: 'rgba(230, 194, 0, 0.08)'    // Very subtle yellow background
+            };
+        }
+
+        // No article found, return null
+        return null;
+    }
+
     showNextCard(stayOnCurrent = false) {
         if (!stayOnCurrent) {
             if (this.currentSession.currentIndex >= this.currentSession.queue.length) {
@@ -1530,8 +1690,6 @@ class StudyModule {
 
         this.flashcard.classList.remove('is-flipped');
 
-        this.cardWord.textContent = word.word;
-
         // Initial base size with slight reduction for very long words (width-based heuristic)
         const len = word.word.length;
         if (len > 30) {
@@ -1540,6 +1698,66 @@ class StudyModule {
             this.cardWord.style.fontSize = '1.6rem';
         } else {
             this.cardWord.style.fontSize = '1.8rem';
+        }
+
+        // Apply gender-based color if enabled
+        if (this.settings.genderColors) {
+            const genderColors = this.getGenderColor(word.word);
+            if (genderColors) {
+                // Check if word contains comma (e.g., "die Katze, die Katzen")
+                if (word.word.includes(',')) {
+                    const commaIndex = word.word.indexOf(',');
+                    const beforeComma = word.word.substring(0, commaIndex);
+                    const afterComma = word.word.substring(commaIndex); // includes comma
+
+                    // Clear any existing content and styles
+                    this.cardWord.textContent = '';
+                    this.cardWord.style.color = '';
+                    this.cardWord.innerHTML = '';
+
+                    // Create colored span for first part only
+                    const coloredSpan = document.createElement('span');
+                    coloredSpan.style.color = genderColors.base;
+                    coloredSpan.textContent = beforeComma;
+
+                    // Create default colored text node for comma and after
+                    const defaultText = document.createTextNode(afterComma);
+
+                    // Append both
+                    this.cardWord.appendChild(coloredSpan);
+                    this.cardWord.appendChild(defaultText);
+                } else {
+                    // No comma, apply base color to entire word
+                    this.cardWord.innerHTML = '';
+                    this.cardWord.textContent = word.word;
+                    this.cardWord.style.color = genderColors.base;
+                }
+
+                // Apply subtle background color to the card ONLY if separate setting is enabled
+                if (this.flashcard) {
+                    if (this.settings.genderCardBackground) {
+                        this.flashcard.style.background = `linear-gradient(135deg, ${genderColors.background}, rgba(255,255,255,0.02))`;
+                    } else {
+                        this.flashcard.style.background = '';
+                    }
+                }
+            } else {
+                // Reset to default if no gender article found
+                this.cardWord.innerHTML = '';
+                this.cardWord.textContent = word.word;
+                this.cardWord.style.color = '';
+                if (this.flashcard) {
+                    this.flashcard.style.background = '';
+                }
+            }
+        } else {
+            // Reset to default if feature is disabled
+            this.cardWord.innerHTML = '';
+            this.cardWord.textContent = word.word;
+            this.cardWord.style.color = '';
+            if (this.flashcard) {
+                this.flashcard.style.background = '';
+            }
         }
 
         this.cardInfo1.textContent = word.info1 || '';
@@ -1565,6 +1783,7 @@ class StudyModule {
         }, 400);
 
         this.ratingButtons.classList.remove('hidden');
+        this.ratingButtons.style.pointerEvents = 'auto';
     }
 
     async processCardResult(rating) {

@@ -157,14 +157,22 @@ class WordLabDB {
             };
             const dbPath = `users/${this.userId}/words/${id}`;
             if (existingIds.has(id)) {
-                updates[`${dbPath}/word`] = wordData.word;
-                updates[`${dbPath}/translation`] = wordData.translation;
-                updates[`${dbPath}/info1`] = wordData.info1;
-                updates[`${dbPath}/info2`] = wordData.info2;
-                updates[`${dbPath}/ex1`] = wordData.ex1;
-                updates[`${dbPath}/ex2`] = wordData.ex2;
-                updates[`${dbPath}/ex3`] = wordData.ex3;
-                stats.updated++;
+                // Check if anything actually changed
+                const existing = existingWords[id];
+                let hasChanges = false;
+
+                // Helper to normalize for comparison (treat null/undefined as empty string)
+                const norm = (val) => String(val || "").trim();
+
+                if (norm(existing.word) !== wordData.word) { updates[`${dbPath}/word`] = wordData.word; hasChanges = true; }
+                if (norm(existing.translation) !== wordData.translation) { updates[`${dbPath}/translation`] = wordData.translation; hasChanges = true; }
+                if (norm(existing.info1) !== wordData.info1) { updates[`${dbPath}/info1`] = wordData.info1; hasChanges = true; }
+                if (norm(existing.info2) !== wordData.info2) { updates[`${dbPath}/info2`] = wordData.info2; hasChanges = true; }
+                if (norm(existing.ex1) !== wordData.ex1) { updates[`${dbPath}/ex1`] = wordData.ex1; hasChanges = true; }
+                if (norm(existing.ex2) !== wordData.ex2) { updates[`${dbPath}/ex2`] = wordData.ex2; hasChanges = true; }
+                if (norm(existing.ex3) !== wordData.ex3) { updates[`${dbPath}/ex3`] = wordData.ex3; hasChanges = true; }
+
+                if (hasChanges) stats.updated++;
             } else {
                 const defaultProgress = { interval: 0, nextDate: Date.now(), state: "new" };
                 updates[dbPath] = {
@@ -176,12 +184,9 @@ class WordLabDB {
                 stats.created++;
             }
         }
-        existingIds.forEach(id => {
-            if (!newIdsInFile.has(id)) {
-                updates[`users/${this.userId}/words/${id}`] = null;
-                stats.deleted++;
-            }
-        });
+        // Deletion logic removed to support safe partial imports.
+        // Words not present in the import file are preserved.
+
         if (Object.keys(updates).length > 0) await this.db.ref().update(updates);
         return stats;
     }
@@ -570,7 +575,27 @@ function renderTable(arr) {
 
     arr.forEach(w => {
         const tr = document.createElement('tr');
-        const d = w.progress_global && w.progress_global.nextDate ? new Date(w.progress_global.nextDate).toLocaleDateString() : '-';
+
+        // Check for overdue
+        const now = Date.now();
+        const nextDate = w.progress_global?.nextDate;
+        const isOverdue = nextDate && nextDate <= now;
+
+        // Date Display
+        // If overdue, show '-' as requested ("сбрасываться и не писаться")
+        // Otherwise show formatted date
+        const d = (nextDate && !isOverdue) ? new Date(nextDate).toLocaleDateString() : '-';
+
+        // Interval Display
+        // If overdue, show '0 дн.'
+        // Else use existing logic
+        let intervalDisplay;
+        if (isOverdue) {
+            intervalDisplay = '0 дн.';
+        } else {
+            const intervalValue = w.progress_global?.interval || 0;
+            intervalDisplay = intervalValue === 0 ? '1 час' : `${intervalValue} дн.`;
+        }
 
         // Helper for style
         const displayStyle = (key) => visibleColumns[key] ? '' : 'display: none;';
@@ -578,10 +603,6 @@ function renderTable(arr) {
         // We MUST render all TD elements so nth-child CSS matches. We hide them via style.
         const isActive = w.progress_global && w.progress_global.isActive;
         const activeIcon = isActive ? `<div class="active-badge"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="var(--secondary)" stroke="var(--secondary)" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg></div>` : '';
-
-        // Interval display logic: show "1 час" for interval 0, otherwise "{interval} дн."
-        const intervalValue = w.progress_global?.interval || 0;
-        const intervalDisplay = intervalValue === 0 ? '1 час' : `${intervalValue} дн.`;
 
         tr.innerHTML = `
             <td class="id-cell" style="${displayStyle('id')}">${w.id}</td>

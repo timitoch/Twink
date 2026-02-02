@@ -256,46 +256,137 @@
                             <h2>Режимы обучения</h2>
                         </div>
 
-                        <!-- Global Study Button -->
-                        <div class="study-mode-card global-mode-card">
-                            <div class="mode-header">
-                                <div class="mode-icon-container">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
+                        <!-- Study Modes Grid -->
+                        <div class="study-modes-grid">
+                            <!-- Global Study Button -->
+                            <div class="study-mode-card global-mode-card">
+                                <div class="mode-header">
+                                    <div class="mode-icon-container">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <line x1="2" y1="12" x2="22" y2="12"></line>
+                                            <path
+                                                d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z">
+                                            </path>
+                                        </svg>
+                                    </div>
+                                    <div class="mode-title-group">
+                                        <h3 class="mode-title">Весь список</h3>
+                                        <p class="mode-description">Тренировка по всем словам в случайном порядке.</p>
+                                    </div>
+                                </div>
+
+                                <!-- Stats Grid -->
+                                <div class="mode-stats-grid">
+                                    <div class="stats-box total-box">
+                                        <div class="stats-label">Всего</div>
+                                        <div id="dash-total-words" class="stats-value">0</div>
+                                    </div>
+                                    <div class="stats-box due-box">
+                                        <div class="stats-label">К повтору</div>
+                                        <div id="global-due-count-lbl" class="stats-value">0</div>
+                                    </div>
+                                </div>
+
+                                <button id="btn-start-global" class="btn-primary start-session-btn">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
                                         fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                         stroke-linejoin="round">
-                                        <circle cx="12" cy="12" r="10"></circle>
-                                        <line x1="2" y1="12" x2="22" y2="12"></line>
-                                        <path
-                                            d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z">
-                                        </path>
+                                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
                                     </svg>
-                                </div>
-                                <div class="mode-title-group">
-                                    <h3 class="mode-title">Весь список</h3>
-                                    <p class="mode-description">Тренировка по всем словам в случайном порядке.</p>
-                                </div>
+                                    Начать тренировку
+                                </button>
                             </div>
 
-                            <!-- Stats Grid -->
-                            <div class="mode-stats-grid">
-                                <div class="stats-box total-box">
-                                    <div class="stats-label">Всего</div>
-                                    <div id="dash-total-words" class="stats-value">0</div>
-                                </div>
-                                <div class="stats-box due-box">
-                                    <div class="stats-label">К повтору</div>
-                                    <div id="global-due-count-lbl" class="stats-value">0</div>
-                                </div>
-                            </div>
+                            <!-- Last Opened Group/Folder Card (Redesigned) -->
+                            <div id="last-opened-card" class="group-card last-opened-card hidden"
+                                style="width: 100%; max-width: 500px; display: flex; flex-direction: column; justify-content: space-between; min-height: auto;">
 
-                            <button id="btn-start-global" class="btn-primary start-session-btn">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                    stroke-linejoin="round">
-                                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                                </svg>
-                                Начать тренировку
-                            </button>
+                                <!-- Top Content Wrapper -->
+                                <div style="width: 100%;">
+                                    <!-- Header -->
+                                    <div
+                                        style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                                        <div style="flex: 1; min-width: 0; padding-right: 1rem;">
+                                            <h3 id="last-opened-title"
+                                                style="margin: 0; font-size: 1.4rem; font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                                Заголовок</h3>
+                                        </div>
+                                        <!-- Edit Button -->
+                                        <button id="btn-edit-last-opened" class="btn-icon"
+                                            style="color: var(--text-muted); padding: 0.5rem;" title="Редактировать">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                                stroke-linecap="round" stroke-linejoin="round">
+                                                <line x1="8" y1="6" x2="21" y2="6"></line>
+                                                <line x1="8" y1="12" x2="21" y2="12"></line>
+                                                <line x1="8" y1="18" x2="21" y2="18"></line>
+                                                <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                                                <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                                                <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                                            </svg>
+                                        </button>
+                                    </div>
+
+                                    <!-- Stats Grid -->
+                                    <div class="group-stats-grid" style="margin-bottom: 1.5rem;">
+                                        <div class="group-stat-item">
+                                            <div id="last-opened-stat-total" class="group-stat-value"
+                                                style="color: var(--text-main);">0</div>
+                                            <div class="group-stat-label">Всего</div>
+                                        </div>
+                                        <div class="group-stat-item">
+                                            <div id="last-opened-stat-due" class="group-stat-value"
+                                                style="color: var(--accent-2);">0</div>
+                                            <div class="group-stat-label">К повтору</div>
+                                        </div>
+                                        <div class="group-stat-item">
+                                            <div id="last-opened-stat-learned" class="group-stat-value"
+                                                style="color: var(--secondary);">0</div>
+                                            <div class="group-stat-label"
+                                                style="display:flex; justify-content:center; align-items:center; gap:4px;">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"
+                                                    viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                                    style="color: var(--secondary); opacity: 0.8;">
+                                                    <polygon
+                                                        points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+                                                    </polygon>
+                                                </svg>
+                                                Идеально
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Progress Bar -->
+                                    <div
+                                        style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 2rem;">
+                                        <div
+                                            style="display: flex; justify-content: space-between; align-items: center;">
+                                            <span style="font-size: 0.75rem; color: var(--text-muted);">Прогресс</span>
+                                            <span id="last-opened-progress-text"
+                                                style="font-size: 0.75rem; font-weight: 600; color: var(--secondary);">0%</span>
+                                        </div>
+                                        <div
+                                            style="height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden;">
+                                            <div id="last-opened-progress-bar"
+                                                style="height: 100%; width: 0%; background: linear-gradient(90deg, var(--secondary), var(--accent-bright)); border-radius: 3px; transition: width 0.3s ease;">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button id="btn-continue-last" class="btn-primary start-session-btn">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                                    </svg>
+                                    Продолжить
+                                </button>
+                            </div>
                         </div>
 
                         <div class="section-title"
@@ -1286,6 +1377,22 @@
                     <div class="setting-row">
                         <span class="setting-label" style="font-weight: 600;">Изучать активные слова</span>
                         <button type="button" id="btn-toggle-include-active" class="toggle-switch-btn">
+                            <div class="toggle-thumb"></div>
+                        </button>
+                    </div>
+
+                    <div style="height: 1px; background: rgba(255,255,255,0.05); margin: 0.8rem 0;"></div>
+
+                    <div class="setting-row">
+                        <span class="setting-label" style="font-weight: 600;">Цвета по роду</span>
+                        <button type="button" id="btn-toggle-gender-colors" class="toggle-switch-btn">
+                            <div class="toggle-thumb"></div>
+                        </button>
+                    </div>
+
+                    <div class="setting-row">
+                        <span class="setting-label" style="font-weight: 600;">Подсветка карточки</span>
+                        <button type="button" id="btn-toggle-gender-card-bg" class="toggle-switch-btn">
                             <div class="toggle-thumb"></div>
                         </button>
                     </div>

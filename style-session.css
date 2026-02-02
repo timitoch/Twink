@@ -155,6 +155,7 @@
     box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
     overflow: hidden;
     /* Prevent scrolling as requested */
+    gap: 0.5rem;
 }
 
 /* 
@@ -198,28 +199,32 @@
     visibility: visible;
 }
 
-.card-face h1 {
-    font-size: 1.8rem;
-    /* Further reduced size */
-    margin-bottom: 0.5rem;
+.card-face h1,
+.card-face h2 {
+    margin: 0;
     color: #ffffff;
-    /* White color instead of pink gradient */
     word-break: break-word;
-    /* Ensure long words don't overflow horizontally */
     line-height: 1.2;
     padding: 0 1rem;
+}
+
+.card-face h1 {
+    font-size: 1.8rem;
+}
+
+.card-face h2 {
+    font-size: 2rem;
 }
 
 .sub-text {
     color: var(--text-muted);
     font-size: 0.9rem;
-    margin-bottom: 0.5rem;
+    margin: 0;
     font-style: italic;
 }
 
 .examples {
-    margin-top: 0.5rem;
-    /* Reduced gap */
+    margin: 0;
     width: 100%;
     text-align: left;
 }

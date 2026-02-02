@@ -150,10 +150,12 @@ class ProfileModule {
         let mastered = 0;
         let learned = 0;
         let activeCount = 0;
+        const now = Date.now();
         this.wordsCache.forEach(w => {
             const p = w.progress_global;
             if (p) {
-                if (p.interval >= 12) mastered++;
+                // Mastered: interval >= 12 AND not overdue
+                if (p.interval >= 12 && p.nextDate > now) mastered++;
                 if (p.interval > 0) learned++;
                 if (p.isActive) activeCount++;
             }
