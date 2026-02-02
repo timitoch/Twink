@@ -31,6 +31,7 @@ class StudyModule {
             genderColors: false,
             genderCardBackground: false
         };
+        this.tempSettings = null; // Temporary state for settings modal
 
         // DOM Elements
         this.viewStudy = document.getElementById('view-study');
@@ -292,13 +293,7 @@ class StudyModule {
         this.btnToggleAudioTranslation = document.getElementById('btn-toggle-audio-translation');
 
         if (this.btnMasterAudio) {
-            this.btnMasterAudio.onclick = () => {
-                this.settings.audio = !this.settings.audio;
-                this.settings.masterAudio = this.settings.audio;
-                if (!this.settings.audio) this.stopAudio();
-                this.updateElementsVisibility();
-                this.db.saveSettings(this.settings);
-            };
+            this.btnMasterAudio.onclick = () => this.toggleSetting('audio');
         }
 
         if (this.btnQuickToggleAudio) {
@@ -313,16 +308,7 @@ class StudyModule {
 
         const setupToggle = (btn, settingsKey) => {
             if (btn) {
-                btn.onclick = () => {
-                    this.settings[settingsKey] = !this.settings[settingsKey];
-                    btn.classList.toggle('active', this.settings[settingsKey]);
-                    if (!this.settings[settingsKey]) {
-                        this.stopAudio();
-                    }
-                    this.updateElementsVisibility();
-                    this.db.saveSettings(this.settings);
-                };
-                btn.classList.toggle('active', this.settings[settingsKey]);
+                btn.onclick = () => this.toggleSetting(settingsKey);
             }
         };
 
@@ -354,30 +340,129 @@ class StudyModule {
             this.btnToggleVoice.onclick = () => {
                 const isActive = window.VoiceControl.toggle();
                 this.btnToggleVoice.classList.toggle('active', isActive);
-                console.log('Voice control toggled:', isActive);
             };
             window.VoiceControl.btnToggle = this.btnToggleVoice;
         }
 
-        // Handle Settings Menu Dropdown
+        // Handle Settings Menu
         const btnSettings = document.getElementById('btn-session-settings');
-        const menuSettings = document.getElementById('session-settings-menu');
-
-        if (btnSettings && menuSettings) {
+        if (btnSettings) {
             btnSettings.onclick = (e) => {
                 e.stopPropagation();
-                menuSettings.classList.remove('hidden');
+                this.openSettings();
             };
+        }
 
-            const btnClose = document.getElementById('btn-close-settings');
-            if (btnClose) {
-                btnClose.onclick = () => {
-                    menuSettings.classList.add('hidden');
-                };
-            }
+        const btnClose = document.getElementById('btn-close-settings');
+        if (btnClose) {
+            btnClose.onclick = () => this.closeSettings();
         }
 
         this.updateElementsVisibility();
+    }
+
+    openSettings() {
+        const menuSettings = document.getElementById('session-settings-menu');
+        if (menuSettings) {
+            // Copy actual settings to temp
+            this.tempSettings = JSON.parse(JSON.stringify(this.settings));
+            this.syncTogglesUI();
+            menuSettings.classList.remove('hidden');
+        }
+    }
+
+    applySettings() {
+        if (this.tempSettings) {
+            // Finalize changes
+            const audioSettingsChanged = this.settings.audio !== this.tempSettings.audio ||
+                this.settings.audioWord !== this.tempSettings.audioWord ||
+                this.settings.audioInfo1 !== this.tempSettings.audioInfo1 ||
+                this.settings.audioInfo2 !== this.tempSettings.audioInfo2 ||
+                this.settings.audioEx1 !== this.tempSettings.audioEx1 ||
+                this.settings.audioEx2 !== this.tempSettings.audioEx2 ||
+                this.settings.audioTranslation !== this.tempSettings.audioTranslation;
+
+            this.settings = JSON.parse(JSON.stringify(this.tempSettings));
+            this.db.saveSettings(this.settings);
+
+            if (!this.settings.audio) this.stopAudio();
+
+            this.updateElementsVisibility();
+
+            // Re-render current card to apply gender colors, etc.
+            if (this.currentSession && this.currentSession.currentWord) {
+                // If audio wasn't changed, we might not want to restart it
+                // But for simplicity and to ensure new audio fields play, we refresh.
+                // However, we should stop current audio first.
+                this.stopAudio();
+                this.showNextCard(true);
+            }
+
+            this.tempSettings = null;
+        }
+        const menuSettings = document.getElementById('session-settings-menu');
+        if (menuSettings) menuSettings.classList.add('hidden');
+    }
+
+    closeSettings() {
+        this.tempSettings = null;
+        const menuSettings = document.getElementById('session-settings-menu');
+        if (menuSettings) menuSettings.classList.add('hidden');
+    }
+
+    toggleSetting(key) {
+        if (!this.tempSettings) return;
+
+        this.tempSettings[key] = !this.tempSettings[key];
+
+        // Special logic for master audio
+        if (key === 'audio') {
+            this.tempSettings.masterAudio = this.tempSettings.audio;
+        }
+
+        this.syncTogglesUI();
+    }
+
+    syncTogglesUI() {
+        const s = this.tempSettings || this.settings;
+
+        const updateBtn = (btn, key) => {
+            if (btn) btn.classList.toggle('active', s[key]);
+        };
+
+        updateBtn(this.btnMasterAudio, 'audio');
+        updateBtn(this.btnToggleAudioWord, 'audioWord');
+        updateBtn(this.btnToggleAudioInfo1, 'audioInfo1');
+        updateBtn(this.btnToggleAudioInfo2, 'audioInfo2');
+        updateBtn(this.btnToggleAudioEx1, 'audioEx1');
+        updateBtn(this.btnToggleAudioEx2, 'audioEx2');
+        updateBtn(this.btnToggleAudioTranslation, 'audioTranslation');
+
+        updateBtn(this.btnToggleWord, 'showWord');
+        updateBtn(this.btnToggleInfo1, 'showInfo1');
+        updateBtn(this.btnToggleInfo2, 'showInfo2');
+        updateBtn(this.btnToggleEx1, 'showEx1');
+        updateBtn(this.btnToggleEx2, 'showEx2');
+        updateBtn(this.btnToggleProgress, 'showProgress');
+        updateBtn(this.btnToggleStatTotal, 'showStatTotal');
+        updateBtn(this.btnToggleStatDue, 'showStatDue');
+        updateBtn(this.btnToggleStatToday, 'showStatToday');
+        updateBtn(this.btnToggleIncludeActive, 'includeActive');
+        updateBtn(this.btnToggleGenderColors, 'genderColors');
+        updateBtn(this.btnToggleGenderCardBackground, 'genderCardBackground');
+
+        updateBtn(this.btnMasterCard, 'masterCard');
+        updateBtn(this.btnMasterInterface, 'masterInterface');
+
+        // Update Section Expansion
+        if (this.sectionCardElements) this.sectionCardElements.classList.toggle('expanded', s.masterCard);
+        if (this.sectionInterfaceElements) this.sectionInterfaceElements.classList.toggle('expanded', s.masterInterface);
+        if (this.sectionAudioElements) this.sectionAudioElements.classList.toggle('expanded', s.masterAudio);
+
+        // Voice Control
+        if (this.btnToggleVoice && window.VoiceControl) {
+            this.btnToggleVoice.classList.toggle('active', window.VoiceControl.isActive);
+        }
     }
 
     updateElementsVisibility() {
@@ -1692,62 +1777,38 @@ class StudyModule {
             this.cardWord.style.fontSize = '1.8rem';
         }
 
-        // Apply gender-based color if enabled
-        if (this.settings.genderColors) {
-            const genderColors = this.getGenderColor(word.word);
-            if (genderColors) {
-                // Check if word contains comma (e.g., "die Katze, die Katzen")
-                if (word.word.includes(',')) {
-                    const commaIndex = word.word.indexOf(',');
-                    const beforeComma = word.word.substring(0, commaIndex);
-                    const afterComma = word.word.substring(commaIndex); // includes comma
+        // Apply gender-based highlighting
+        const genderColors = this.getGenderColor(word.word);
 
-                    // Clear any existing content and styles
-                    this.cardWord.textContent = '';
-                    this.cardWord.style.color = '';
-                    this.cardWord.innerHTML = '';
-
-                    // Create colored span for first part only
-                    const coloredSpan = document.createElement('span');
-                    coloredSpan.style.color = genderColors.base;
-                    coloredSpan.textContent = beforeComma;
-
-                    // Create default colored text node for comma and after
-                    const defaultText = document.createTextNode(afterComma);
-
-                    // Append both
-                    this.cardWord.appendChild(coloredSpan);
-                    this.cardWord.appendChild(defaultText);
-                } else {
-                    // No comma, apply base color to entire word
-                    this.cardWord.innerHTML = '';
-                    this.cardWord.textContent = word.word;
-                    this.cardWord.style.color = genderColors.base;
-                }
-
-                // Apply subtle background color to the card ONLY if separate setting is enabled
-                if (this.flashcard) {
-                    if (this.settings.genderCardBackground) {
-                        this.flashcard.style.background = `linear-gradient(135deg, ${genderColors.background}, rgba(255,255,255,0.02))`;
-                    } else {
-                        this.flashcard.style.background = '';
-                    }
-                }
+        // 1. Handle Word Text Coloring
+        if (this.settings.genderColors && genderColors) {
+            if (word.word.includes(',')) {
+                const commaIndex = word.word.indexOf(',');
+                const beforeComma = word.word.substring(0, commaIndex);
+                const afterComma = word.word.substring(commaIndex);
+                this.cardWord.innerHTML = '';
+                const coloredSpan = document.createElement('span');
+                coloredSpan.style.color = genderColors.base;
+                coloredSpan.textContent = beforeComma;
+                const defaultText = document.createTextNode(afterComma);
+                this.cardWord.appendChild(coloredSpan);
+                this.cardWord.appendChild(defaultText);
             } else {
-                // Reset to default if no gender article found
                 this.cardWord.innerHTML = '';
                 this.cardWord.textContent = word.word;
-                this.cardWord.style.color = '';
-                if (this.flashcard) {
-                    this.flashcard.style.background = '';
-                }
+                this.cardWord.style.color = genderColors.base;
             }
         } else {
-            // Reset to default if feature is disabled
             this.cardWord.innerHTML = '';
             this.cardWord.textContent = word.word;
             this.cardWord.style.color = '';
-            if (this.flashcard) {
+        }
+
+        // 2. Handle Card Background Coloring (Independent)
+        if (this.flashcard) {
+            if (this.settings.genderCardBackground && genderColors) {
+                this.flashcard.style.background = `linear-gradient(135deg, ${genderColors.background}, rgba(255,255,255,0.02))`;
+            } else {
                 this.flashcard.style.background = '';
             }
         }
