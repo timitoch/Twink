@@ -647,13 +647,17 @@ td {
 }
 
 .level-badge {
-    background: rgba(99, 102, 241, 0.2);
-    color: var(--primary);
-    padding: 0.3rem 0.6rem;
-    border-radius: 6px;
+    background: rgba(99, 102, 241, 0.12);
+    /* Deep blue/indigo bubble */
+    color: var(--text-muted);
+    padding: 0.25rem 0.6rem;
+    border-radius: 8px;
     font-size: 0.75rem;
+    font-weight: 500;
     white-space: nowrap;
     display: inline-block;
+    border: 1px solid rgba(99, 102, 241, 0.1);
+    /* Subtle border for definition */
 }
 
 .active-badge {
@@ -1731,40 +1735,40 @@ td {
         display: none;
     }
 
-    /* 7-9. Examples (Full Width) */
+    /* 7-8. Examples (Full Width) */
     #words-table td:nth-child(7),
-    #words-table td:nth-child(8),
-    #words-table td:nth-child(9) {
+    #words-table td:nth-child(8) {
         width: 100%;
-        font-size: 0.75rem;
-        color: rgba(255, 255, 255, 0.65);
-        font-style: italic;
-        padding-left: 0.4rem;
+        font-size: 0.8rem;
+        /* Slightly larger for better readability */
+        color: rgba(255, 255, 255, 0.6);
+        font-style: normal;
+        /* Match screenshot: not italic */
+        padding-left: 0.5rem;
         border-left: 2px solid rgba(255, 255, 255, 0.1);
-        margin-top: 0.2rem;
+        margin-top: 0.3rem;
         order: 4;
     }
 
     #words-table td:nth-child(7):empty,
-    #words-table td:nth-child(8):empty,
-    #words-table td:nth-child(9):empty {
+    #words-table td:nth-child(8):empty {
         display: none;
     }
 
-    /* 10-11. Stats (Full Width Container equivalent) */
-    #words-table td:nth-child(10),
-    #words-table td:nth-child(11) {
-        font-size: 0.75rem;
+    /* 9-10. Stats (Interval & Date) */
+    #words-table td:nth-child(9),
+    #words-table td:nth-child(10) {
+        font-size: 0.8rem;
         color: var(--text-muted);
         order: 5;
-        margin-top: 0.5rem;
-        margin-right: 1rem;
-        opacity: 0.7;
+        margin-top: 0.6rem;
+        margin-right: 1.2rem;
+        opacity: 0.8;
     }
 
-    /* 12-13. ACTION BUTTONS (Top-Right Corner) */
-    #words-table td:nth-child(12),
-    #words-table td:nth-child(13) {
+    /* 11-12. ACTION BUTTONS (Top-Right Corner) */
+    #words-table td:nth-child(11),
+    #words-table td:nth-child(12) {
         position: absolute;
         top: 0.5rem;
         right: auto;
@@ -1775,31 +1779,31 @@ td {
         padding: 0;
     }
 
-    #words-table td:nth-child(12) {
+    #words-table td:nth-child(11) {
         right: 2.5rem;
         /* Edit button */
     }
 
-    #words-table td:nth-child(13) {
+    #words-table td:nth-child(12) {
         right: 0.5rem;
         /* Delete button */
     }
 
     /* Make buttons smaller on mobile */
-    #words-table td:nth-child(12) button,
-    #words-table td:nth-child(13) button {
+    #words-table td:nth-child(11) button,
+    #words-table td:nth-child(12) button {
         padding: 0.35rem;
         opacity: 0.6;
         transition: opacity 0.2s;
     }
 
-    #words-table td:nth-child(12) button:active,
-    #words-table td:nth-child(13) button:active {
+    #words-table td:nth-child(11) button:active,
+    #words-table td:nth-child(12) button:active {
         opacity: 1;
     }
 
-    #words-table td:nth-child(12) svg,
-    #words-table td:nth-child(13) svg {
+    #words-table td:nth-child(11) svg,
+    #words-table td:nth-child(12) svg {
         width: 16px;
         height: 16px;
     }

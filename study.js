@@ -13,7 +13,6 @@ class StudyModule {
             audioInfo2: true,
             audioEx1: false,
             audioEx2: false,
-            audioEx3: false,
             audioTranslation: true,
             examples: true,
             showWord: true,
@@ -21,7 +20,6 @@ class StudyModule {
             showInfo2: true,
             showEx1: true,
             showEx2: true,
-            showEx3: true,
             showProgress: true,
             showStatTotal: true,
             showStatDue: true,
@@ -84,7 +82,6 @@ class StudyModule {
         this.btnToggleInfo2 = null;
         this.btnToggleEx1 = null;
         this.btnToggleEx2 = null;
-        this.btnToggleEx3 = null;
         this.btnToggleProgress = null;
         this.btnToggleStatTotal = null;
         this.btnToggleStatDue = null;
@@ -267,7 +264,6 @@ class StudyModule {
         this.btnToggleInfo2 = document.getElementById('btn-toggle-info2');
         this.btnToggleEx1 = document.getElementById('btn-toggle-ex1');
         this.btnToggleEx2 = document.getElementById('btn-toggle-ex2');
-        this.btnToggleEx3 = document.getElementById('btn-toggle-ex3');
         this.btnToggleProgress = document.getElementById('btn-toggle-progress');
         this.btnToggleStatTotal = document.getElementById('btn-toggle-stat-total');
         this.btnToggleStatDue = document.getElementById('btn-toggle-stat-due');
@@ -293,7 +289,6 @@ class StudyModule {
         this.btnToggleAudioInfo2 = document.getElementById('btn-toggle-audio-info2');
         this.btnToggleAudioEx1 = document.getElementById('btn-toggle-audio-ex1');
         this.btnToggleAudioEx2 = document.getElementById('btn-toggle-audio-ex2');
-        this.btnToggleAudioEx3 = document.getElementById('btn-toggle-audio-ex3');
         this.btnToggleAudioTranslation = document.getElementById('btn-toggle-audio-translation');
 
         if (this.btnMasterAudio) {
@@ -336,7 +331,6 @@ class StudyModule {
         setupToggle(this.btnToggleAudioInfo2, 'audioInfo2');
         setupToggle(this.btnToggleAudioEx1, 'audioEx1');
         setupToggle(this.btnToggleAudioEx2, 'audioEx2');
-        setupToggle(this.btnToggleAudioEx3, 'audioEx3');
         setupToggle(this.btnToggleAudioTranslation, 'audioTranslation');
 
         setupToggle(this.btnToggleWord, 'showWord');
@@ -344,7 +338,6 @@ class StudyModule {
         setupToggle(this.btnToggleInfo2, 'showInfo2');
         setupToggle(this.btnToggleEx1, 'showEx1');
         setupToggle(this.btnToggleEx2, 'showEx2');
-        setupToggle(this.btnToggleEx3, 'showEx3');
         setupToggle(this.btnToggleProgress, 'showProgress');
         setupToggle(this.btnToggleStatTotal, 'showStatTotal');
         setupToggle(this.btnToggleStatDue, 'showStatDue');
@@ -1284,7 +1277,6 @@ class StudyModule {
         if (this.settings.audioInfo2 && word.info2) rawItems.push({ text: word.info2, lang: 'de' });
         if (this.settings.audioEx1 && word.ex1) rawItems.push({ text: word.ex1, lang: 'de' });
         if (this.settings.audioEx2 && word.ex2) rawItems.push({ text: word.ex2, lang: 'de' });
-        if (this.settings.audioEx3 && word.ex3) rawItems.push({ text: word.ex3, lang: 'de' });
 
         if (rawItems.length) {
             const groupedItems = [];
@@ -1763,8 +1755,8 @@ class StudyModule {
         this.cardInfo1.textContent = word.info1 || '';
         if (this.cardInfo2) this.cardInfo2.textContent = word.info2 || '';
 
-        const examplesProps = ['ex1', 'ex2', 'ex3'];
-        const examplesToggles = ['showEx1', 'showEx2', 'showEx3'];
+        const examplesProps = ['ex1', 'ex2'];
+        const examplesToggles = ['showEx1', 'showEx2'];
 
         this.cardExamples.innerHTML = examplesProps.map((prop, idx) => {
             if (!word[prop]) return '';

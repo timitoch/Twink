@@ -450,10 +450,117 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1.2rem 0;
+    padding: 0.8rem 0;
+    /* Reduced */
     color: #ffffff;
     font-size: 1.05rem;
 }
+
+/* Session Settings Modal Re-Design */
+.session-settings-modal {
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    /* Center on desktop */
+    justify-content: center;
+    padding: 2rem;
+    /* Give some space around */
+    transition: all 0.3s ease;
+    overflow-y: auto;
+}
+
+.session-settings-container {
+    max-width: 520px;
+    /* Increased from 420px to fit everything comfortably */
+    width: 100%;
+    max-height: 90vh;
+    /* Don't stretch too much */
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.session-settings-card {
+    backdrop-filter: blur(50px) saturate(180%);
+    -webkit-backdrop-filter: blur(50px) saturate(180%);
+    animation: liquidGlassOpen 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    display: flex;
+    flex-direction: column;
+    max-height: 100%;
+    border-radius: 24px;
+    /* Back to rounded on desktop */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(15, 15, 15, 0.7);
+    box-shadow: 0 40px 100px rgba(0, 0, 0, 0.8);
+}
+
+.setting-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+}
+
+.setting-section-header {
+    font-size: 0.7rem;
+    /* Even smaller */
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--secondary);
+    margin-bottom: 0.3rem;
+    /* Reduced */
+    font-weight: 800;
+    opacity: 0.6;
+}
+
+.setting-group-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+    margin: 0.4rem 0;
+    /* Reduced from 0.8rem */
+}
+
+@media (max-width: 768px) {
+    .session-settings-modal {
+        padding: 0;
+        align-items: flex-start;
+        /* Back to top on mobile */
+    }
+
+    .session-settings-container {
+        max-width: 100% !important;
+        width: 100% !important;
+        min-height: 100vh !important;
+        max-height: 100vh !important;
+    }
+
+    .session-settings-card {
+        border-radius: 0 !important;
+        border: none !important;
+        min-height: 100vh !important;
+    }
+
+    .session-settings-card {
+        border-radius: 0;
+        border: none;
+        height: 100%;
+    }
+
+    .session-settings-card .card-edit-content {
+        padding: 1.2rem 1.2rem 4rem 1.2rem !important;
+        /* Tighter padding */
+    }
+
+    .setting-row {
+        padding: 0.4rem 0 !important;
+        /* Tighter rows */
+    }
+
+    .setting-group-divider {
+        margin: 0.5rem 0 !important;
+        /* Reduced from 0.8rem */
+    }
+}
+
 
 @keyframes fadeInOverlay {
     from {
@@ -536,12 +643,38 @@
     /* Dark thumb for contrast on white bg */
 }
 
+/* Expand Arrow Button */
+.btn-expand {
+    background: none;
+    border: none;
+    padding: 0.4rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.6;
+}
+
+.btn-expand:hover {
+    opacity: 1;
+    color: #ffffff;
+}
+
+.btn-expand.active {
+    transform: rotate(180deg);
+    opacity: 1;
+    color: var(--secondary);
+}
+
 /* Compact Settings Layouts */
 .setting-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.6rem 0;
+    padding: 0.35rem 0;
+    /* Tightest possible */
 }
 
 .setting-label {

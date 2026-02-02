@@ -720,7 +720,6 @@
                                                         <th>E: Инфо2</th>
                                                         <th>F: Пример 1</th>
                                                         <th>G: Пример 2</th>
-                                                        <th>H: Пример 3</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -733,7 +732,6 @@
                                                         <td><i>м.р.</i></td>
                                                         <td style="color: var(--text-main);">Ich esse einen Apfel.</td>
                                                         <td>-</td>
-                                                        <td>-</td>
                                                     </tr>
                                                     <tr>
                                                         <td style="color: var(--text-muted);">102</td>
@@ -744,7 +742,6 @@
                                                         <td style="color: var(--text-main);">Das Buch ist interessant.
                                                         </td>
                                                         <td>Ich lese ein Buch.</td>
-                                                        <td>-</td>
                                                     </tr>
                                                 </tbody>
                                             </table>
@@ -760,7 +757,6 @@
                                         <div class="guide-mobile-item"><span>E</span> Инфо 2 (род, тип)</div>
                                         <div class="guide-mobile-item"><span>F</span> Пример 1</div>
                                         <div class="guide-mobile-item"><span>G</span> Пример 2</div>
-                                        <div class="guide-mobile-item"><span>H</span> Пример 3</div>
                                     </div>
                                 </div>
                             </div>
@@ -870,10 +866,6 @@
                                                 checked onchange="toggleColumn('ex2')"><span
                                                 class="checkmark"></span><span>Пример
                                                 2</span></label>
-                                        <label class="custom-checkbox secondary"><input type="checkbox" value="ex3"
-                                                checked onchange="toggleColumn('ex3')"><span
-                                                class="checkmark"></span><span>Пример
-                                                3</span></label>
                                         <label class="custom-checkbox secondary"><input type="checkbox" value="interval"
                                                 checked onchange="toggleColumn('interval')"><span
                                                 class="checkmark"></span><span>Интервал</span></label>
@@ -968,7 +960,6 @@
                                         <th>Доп. инфо 2</th>
                                         <th>Пример 1</th>
                                         <th>Пример 2</th>
-                                        <th>Пример 3</th>
                                         <th>Интервал</th>
                                         <th>След. повтор</th>
                                         <th></th>
@@ -1343,12 +1334,9 @@
     <script src="particles.js?v=antigravity"></script>
     <script src="app.js"></script>
     <!-- Session Settings Modal -->
-    <div id="session-settings-menu" class="modal-overlay hidden"
-        style="z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 1rem;">
-        <div
-            style="max-width: 520px; width: 100%; max-height: calc(100vh - 2rem); position: relative; display: flex; flex-direction: column;">
-            <div class="word-edit-card"
-                style="backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); animation: liquidGlassOpen 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; display: flex; flex-direction: column; max-height: 100%; border-radius: 24px; border: 1px solid var(--border); overflow: hidden; background: rgba(255, 255, 255, 0.03);">
+    <div id="session-settings-menu" class="modal-overlay hidden session-settings-modal">
+        <div class="session-settings-container">
+            <div class="word-edit-card session-settings-card">
                 <div class="card-header-mini">
                     <span class="card-num">Настройки сессии</span>
                     <div class="card-actions-mini">
@@ -1362,193 +1350,197 @@
                         </button>
                     </div>
                 </div>
-                <div class="card-edit-content"
-                    style="display: flex; flex-direction: column; gap: 0rem; padding: 1rem 2rem; overflow-y: auto; flex: 1;">
+                <div class="card-edit-content" style="padding: 1.2rem 2rem; overflow-y: auto; flex: 1;">
 
-                    <div class="setting-row">
-                        <span class="setting-label" style="font-weight: 600; color: var(--secondary);">Голосовое
-                            управление</span>
-                        <button type="button" id="btn-toggle-voice" class="toggle-switch-btn">
-                            <div class="toggle-thumb"></div>
-                        </button>
-                    </div>
+                    <!-- Section 1: Voice & Study -->
+                    <div class="setting-section">
+                        <div class="setting-section-header">Голос и обучение</div>
+                        <div class="setting-row">
+                            <span class="setting-label">Голосовое управление</span>
+                            <button type="button" id="btn-toggle-voice" class="toggle-switch-btn">
+                                <div class="toggle-thumb"></div>
+                            </button>
+                        </div>
+                        <div class="setting-row">
+                            <span class="setting-label">Озвучка</span>
+                            <button id="btn-master-toggle-audio" class="btn-expand active">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                            </button>
+                        </div>
 
-                    <div class="setting-row">
-                        <span class="setting-label" style="font-weight: 600;">Изучать активные слова</span>
-                        <button type="button" id="btn-toggle-include-active" class="toggle-switch-btn">
-                            <div class="toggle-thumb"></div>
-                        </button>
-                    </div>
-
-                    <div style="height: 1px; background: rgba(255,255,255,0.05); margin: 0.8rem 0;"></div>
-
-                    <div class="setting-row">
-                        <span class="setting-label" style="font-weight: 600;">Цвета по роду</span>
-                        <button type="button" id="btn-toggle-gender-colors" class="toggle-switch-btn">
-                            <div class="toggle-thumb"></div>
-                        </button>
-                    </div>
-
-                    <div class="setting-row">
-                        <span class="setting-label" style="font-weight: 600;">Подсветка карточки</span>
-                        <button type="button" id="btn-toggle-gender-card-bg" class="toggle-switch-btn">
-                            <div class="toggle-thumb"></div>
-                        </button>
-                    </div>
-
-                    <div style="height: 1px; background: rgba(255,255,255,0.05); margin: 0.8rem 0;"></div>
-
-                    <!-- Main Settings -->
-                    <div class="setting-row">
-                        <span class="setting-label">Настройка озвучки</span>
-                        <button type="button" id="btn-master-toggle-audio" class="toggle-switch-btn active">
-                            <div class="toggle-thumb"></div>
-                        </button>
-                    </div>
-
-                    <div id="section-audio-elements" class="settings-expand-section expanded">
-                        <div class="setting-inner-grid">
-                            <div class="setting-row">
-                                <span class="setting-label">Слово</span>
-                                <button id="btn-toggle-audio-word" class="toggle-switch-btn active">
-                                    <div class="toggle-thumb"></div>
-                                </button>
-                            </div>
-                            <div class="setting-row">
-                                <span class="setting-label">Инфо 1</span>
-                                <button id="btn-toggle-audio-info1" class="toggle-switch-btn active">
-                                    <div class="toggle-thumb"></div>
-                                </button>
-                            </div>
-                            <div class="setting-row">
-                                <span class="setting-label">Инфо 2</span>
-                                <button id="btn-toggle-audio-info2" class="toggle-switch-btn active">
-                                    <div class="toggle-thumb"></div>
-                                </button>
-                            </div>
-                            <div class="setting-row">
-                                <span class="setting-label">Пример 1</span>
-                                <button id="btn-toggle-audio-ex1" class="toggle-switch-btn">
-                                    <div class="toggle-thumb"></div>
-                                </button>
-                            </div>
-                            <div class="setting-row">
-                                <span class="setting-label">Пример 2</span>
-                                <button id="btn-toggle-audio-ex2" class="toggle-switch-btn">
-                                    <div class="toggle-thumb"></div>
-                                </button>
-                            </div>
-                            <div class="setting-row">
-                                <span class="setting-label">Пример 3</span>
-                                <button id="btn-toggle-audio-ex3" class="toggle-switch-btn">
-                                    <div class="toggle-thumb"></div>
-                                </button>
-                            </div>
-                            <div class="setting-row">
-                                <span class="setting-label">Перевод</span>
-                                <button id="btn-toggle-audio-translation" class="toggle-switch-btn active">
-                                    <div class="toggle-thumb"></div>
-                                </button>
+                        <!-- Condensed sub-settings for audio -->
+                        <div id="section-audio-elements" class="settings-expand-section expanded">
+                            <div class="setting-inner-grid">
+                                <div class="setting-row">
+                                    <span class="setting-label">Слово</span>
+                                    <button id="btn-toggle-audio-word" class="toggle-switch-btn active">
+                                        <div class="toggle-thumb"></div>
+                                    </button>
+                                </div>
+                                <div class="setting-row">
+                                    <span class="setting-label">Инфо 1</span>
+                                    <button id="btn-toggle-audio-info1" class="toggle-switch-btn active">
+                                        <div class="toggle-thumb"></div>
+                                    </button>
+                                </div>
+                                <div class="setting-row">
+                                    <span class="setting-label">Инфо 2</span>
+                                    <button id="btn-toggle-audio-info2" class="toggle-switch-btn active">
+                                        <div class="toggle-thumb"></div>
+                                    </button>
+                                </div>
+                                <div class="setting-row">
+                                    <span class="setting-label">Пример 1</span>
+                                    <button id="btn-toggle-audio-ex1" class="toggle-switch-btn">
+                                        <div class="toggle-thumb"></div>
+                                    </button>
+                                </div>
+                                <div class="setting-row">
+                                    <span class="setting-label">Пример 2</span>
+                                    <button id="btn-toggle-audio-ex2" class="toggle-switch-btn">
+                                        <div class="toggle-thumb"></div>
+                                    </button>
+                                </div>
+                                <div class="setting-row">
+                                    <span class="setting-label">Перевод</span>
+                                    <button id="btn-toggle-audio-translation" class="toggle-switch-btn active">
+                                        <div class="toggle-thumb"></div>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div style="height: 1px; background: rgba(255,255,255,0.05); margin: 0.5rem 0;"></div>
+                    <div class="setting-group-divider"></div>
 
-                    <!-- CARD SECTION MASTER -->
-                    <div class="setting-row">
-                        <span class="setting-label">Настройка карточки</span>
-                        <button id="btn-master-toggle-card" class="toggle-switch-btn">
-                            <div class="toggle-thumb"></div>
-                        </button>
-                    </div>
+                    <!-- Section 2: Appearance -->
+                    <div class="setting-section">
+                        <div class="setting-section-header">Оформление</div>
+                        <div class="setting-row">
+                            <span class="setting-label">Подсветка слова по роду</span>
+                            <button type="button" id="btn-toggle-gender-colors" class="toggle-switch-btn">
+                                <div class="toggle-thumb"></div>
+                            </button>
+                        </div>
+                        <div class="setting-row">
+                            <span class="setting-label">Подсветка карточки по роду</span>
+                            <button type="button" id="btn-toggle-gender-card-bg" class="toggle-switch-btn">
+                                <div class="toggle-thumb"></div>
+                            </button>
+                        </div>
 
-                    <div id="section-card-elements" class="settings-expand-section">
-                        <div class="setting-inner-grid">
-                            <div class="setting-row">
-                                <span class="setting-label">Слово</span>
-                                <button id="btn-toggle-word" class="toggle-switch-btn active">
-                                    <div class="toggle-thumb"></div>
-                                </button>
+                        <div class="setting-row">
+                            <span class="setting-label">Редактировать элементы карточки</span>
+                            <button id="btn-master-toggle-card" class="btn-expand">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                            </button>
+                        </div>
+                        <div id="section-card-elements" class="settings-expand-section">
+                            <div class="setting-inner-grid">
+                                <div class="setting-row">
+                                    <span class="setting-label">Слово</span>
+                                    <button id="btn-toggle-word" class="toggle-switch-btn active">
+                                        <div class="toggle-thumb"></div>
+                                    </button>
+                                </div>
+                                <div class="setting-row">
+                                    <span class="setting-label">Инфо 1</span>
+                                    <button id="btn-toggle-info1" class="toggle-switch-btn active">
+                                        <div class="toggle-thumb"></div>
+                                    </button>
+                                </div>
+                                <div class="setting-row">
+                                    <span class="setting-label">Инфо 2</span>
+                                    <button id="btn-toggle-info2" class="toggle-switch-btn active">
+                                        <div class="toggle-thumb"></div>
+                                    </button>
+                                </div>
+                                <div class="setting-row">
+                                    <span class="setting-label">Пример 1</span>
+                                    <button id="btn-toggle-ex1" class="toggle-switch-btn active">
+                                        <div class="toggle-thumb"></div>
+                                    </button>
+                                </div>
+                                <div class="setting-row">
+                                    <span class="setting-label">Пример 2</span>
+                                    <button id="btn-toggle-ex2" class="toggle-switch-btn active">
+                                        <div class="toggle-thumb"></div>
+                                    </button>
+                                </div>
                             </div>
-                            <div class="setting-row">
-                                <span class="setting-label">Инфо 1</span>
-                                <button id="btn-toggle-info1" class="toggle-switch-btn active">
-                                    <div class="toggle-thumb"></div>
-                                </button>
-                            </div>
-                            <div class="setting-row">
-                                <span class="setting-label">Инфо 2</span>
-                                <button id="btn-toggle-info2" class="toggle-switch-btn active">
-                                    <div class="toggle-thumb"></div>
-                                </button>
-                            </div>
-                            <div class="setting-row">
-                                <span class="setting-label">Пример 1</span>
-                                <button id="btn-toggle-ex1" class="toggle-switch-btn active">
-                                    <div class="toggle-thumb"></div>
-                                </button>
-                            </div>
-                            <div class="setting-row">
-                                <span class="setting-label">Пример 2</span>
-                                <button id="btn-toggle-ex2" class="toggle-switch-btn active">
-                                    <div class="toggle-thumb"></div>
-                                </button>
-                            </div>
-                            <div class="setting-row">
-                                <span class="setting-label">Пример 3</span>
-                                <button id="btn-toggle-ex3" class="toggle-switch-btn active">
-                                    <div class="toggle-thumb"></div>
-                                </button>
+                        </div>
+
+                        <div class="setting-row">
+                            <span class="setting-label">Редактировать интерфейс сессии</span>
+                            <button id="btn-master-toggle-interface" class="btn-expand">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                            </button>
+                        </div>
+                        <div id="section-interface-elements" class="settings-expand-section">
+                            <div class="setting-inner-grid">
+                                <div class="setting-row">
+                                    <span class="setting-label">Прогресс-бар</span>
+                                    <button id="btn-toggle-progress" class="toggle-switch-btn active">
+                                        <div class="toggle-thumb"></div>
+                                    </button>
+                                </div>
+                                <div class="setting-row">
+                                    <span class="setting-label">Всего слов</span>
+                                    <button id="btn-toggle-stat-total" class="toggle-switch-btn active">
+                                        <div class="toggle-thumb"></div>
+                                    </button>
+                                </div>
+                                <div class="setting-row">
+                                    <span class="setting-label">К повторению</span>
+                                    <button id="btn-toggle-stat-due" class="toggle-switch-btn active">
+                                        <div class="toggle-thumb"></div>
+                                    </button>
+                                </div>
+                                <div class="setting-row">
+                                    <span class="setting-label">Пройдено сегодня</span>
+                                    <button type="button" id="btn-toggle-stat-today" class="toggle-switch-btn active">
+                                        <div class="toggle-thumb"></div>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div style="height: 1px; background: rgba(255,255,255,0.05); margin: 0.5rem 0;"></div>
+                    <div class="setting-group-divider"></div>
 
-                    <!-- INTERFACE SECTION MASTER -->
-                    <div class="setting-row">
-                        <span class="setting-label">Настройка интерфейса</span>
-                        <button id="btn-master-toggle-interface" class="toggle-switch-btn">
-                            <div class="toggle-thumb"></div>
-                        </button>
-                    </div>
-
-                    <div id="section-interface-elements" class="settings-expand-section">
-                        <div class="setting-inner-grid">
-                            <div class="setting-row">
-                                <span class="setting-label">Прогресс-бар</span>
-                                <button id="btn-toggle-progress" class="toggle-switch-btn active">
-                                    <div class="toggle-thumb"></div>
-                                </button>
-                            </div>
-                            <div class="setting-row">
-                                <span class="setting-label">Всего слов</span>
-                                <button id="btn-toggle-stat-total" class="toggle-switch-btn active">
-                                    <div class="toggle-thumb"></div>
-                                </button>
-                            </div>
-                            <div class="setting-row">
-                                <span class="setting-label">К повторению</span>
-                                <button id="btn-toggle-stat-due" class="toggle-switch-btn active">
-                                    <div class="toggle-thumb"></div>
-                                </button>
-                            </div>
-                            <div class="setting-row">
-                                <span class="setting-label">Пройдено сегодня</span>
-                                <button type="button" id="btn-toggle-stat-today" class="toggle-switch-btn active">
-                                    <div class="toggle-thumb"></div>
-                                </button>
-                            </div>
+                    <!-- Section 3: Other -->
+                    <div class="setting-section">
+                        <div class="setting-section-header">Другое</div>
+                        <div class="setting-row">
+                            <span class="setting-label">Изучать активные слова</span>
+                            <button type="button" id="btn-toggle-include-active" class="toggle-switch-btn">
+                                <div class="toggle-thumb"></div>
+                            </button>
                         </div>
                     </div>
+                </div>
 
-
-                    <div style="margin-top: 1.5rem; display: flex; justify-content: center; padding-bottom: 0.5rem;">
-                        <button type="button" class="btn-primary"
-                            onclick="document.getElementById('session-settings-menu').classList.add('hidden')"
-                            style="max-width: 200px; border-radius: 999px; height: 42px; font-size: 0.9rem; background: #ffffff; color: #000000; font-weight: 700;">Готово</button>
-                    </div>
+                <!-- Fixed Footer for 'Done' Button -->
+                <div class="card-edit-footer"
+                    style="padding: 1rem 1.5rem; display: flex; justify-content: center; background: transparent; border: none;">
+                    <button type="button" class="btn-primary"
+                        onclick="document.getElementById('session-settings-menu').classList.add('hidden')"
+                        style="max-width: 280px; width: 100%; border-radius: 999px; height: 52px; font-size: 1.05rem; background: #ffffff; color: #000000; font-weight: 700; border: none; cursor:pointer; transition: transform 0.2s ease;"
+                        onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+                        Готово
+                    </button>
                 </div>
             </div>
         </div>

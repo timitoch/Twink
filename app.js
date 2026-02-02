@@ -152,8 +152,7 @@ class WordLabDB {
                 info1: String(row[3] || "").trim(),
                 info2: String(row[4] || "").trim(),
                 ex1: String(row[5] || "").trim(),
-                ex2: String(row[6] || "").trim(),
-                ex3: String(row[7] || "").trim()
+                ex2: String(row[6] || "").trim()
             };
             const dbPath = `users/${this.userId}/words/${id}`;
             if (existingIds.has(id)) {
@@ -170,7 +169,6 @@ class WordLabDB {
                 if (norm(existing.info2) !== wordData.info2) { updates[`${dbPath}/info2`] = wordData.info2; hasChanges = true; }
                 if (norm(existing.ex1) !== wordData.ex1) { updates[`${dbPath}/ex1`] = wordData.ex1; hasChanges = true; }
                 if (norm(existing.ex2) !== wordData.ex2) { updates[`${dbPath}/ex2`] = wordData.ex2; hasChanges = true; }
-                if (norm(existing.ex3) !== wordData.ex3) { updates[`${dbPath}/ex3`] = wordData.ex3; hasChanges = true; }
 
                 if (hasChanges) stats.updated++;
             } else {
@@ -444,7 +442,6 @@ const defaultColumns = {
     info2: true,
     ex1: true,
     ex2: true,
-    ex3: true,
     interval: true,
     nextDate: true
 };
@@ -568,9 +565,8 @@ function renderTable(arr) {
         if (ths[5]) ths[5].style.display = visibleColumns.info2 ? '' : 'none';
         if (ths[6]) ths[6].style.display = visibleColumns.ex1 ? '' : 'none';
         if (ths[7]) ths[7].style.display = visibleColumns.ex2 ? '' : 'none';
-        if (ths[8]) ths[8].style.display = visibleColumns.ex3 ? '' : 'none';
-        if (ths[9]) ths[9].style.display = visibleColumns.interval ? '' : 'none';
-        if (ths[10]) ths[10].style.display = visibleColumns.nextDate ? '' : 'none';
+        if (ths[8]) ths[8].style.display = visibleColumns.interval ? '' : 'none';
+        if (ths[9]) ths[9].style.display = visibleColumns.nextDate ? '' : 'none';
     }
 
     arr.forEach(w => {
@@ -613,7 +609,6 @@ function renderTable(arr) {
             <td class="info-cell" style="${displayStyle('info2')}">${w.info2 || ''}</td>
             <td class="example-cell" style="${displayStyle('ex1')}">${w.ex1 || ''}</td>
             <td class="example-cell" style="${displayStyle('ex2')}">${w.ex2 || ''}</td>
-            <td class="example-cell" style="${displayStyle('ex3')}">${w.ex3 || ''}</td>
             <td style="${displayStyle('interval')}"><span class="level-badge">${intervalDisplay}</span></td>
             <td class="date-info" style="${displayStyle('nextDate')}">${d}</td>
             
@@ -671,8 +666,7 @@ function exportWordsToExcel() {
         "Доп. инфо 1": w.info1,
         "Доп. инфо 2": w.info2,
         "Пример 1": w.ex1,
-        "Пример 2": w.ex2,
-        "Пример 3": w.ex3
+        "Пример 2": w.ex2
     }));
 
     // Create worksheet
@@ -1085,8 +1079,7 @@ function exportWordsToExcel() {
         "Доп. инфо 1": w.info1,
         "Доп. инфо 2": w.info2,
         "Пример 1": w.ex1,
-        "Пример 2": w.ex2,
-        "Пример 3": w.ex3
+        "Пример 2": w.ex2
     }));
 
     // Create worksheet
