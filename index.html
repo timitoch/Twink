@@ -808,7 +808,7 @@
 
                                 <!-- Mobile Close Button -->
                                 <button id="dict-mobile-filter-close" class="mobile-only-btn"
-                                    style="width: 100%; justify-content: flex-end; margin-bottom: 1rem; background: none; border: none; padding: 0; color: var(--text-muted);">
+                                    style="width: 100%; justify-content: flex-end; background: none; border: none; padding: 0; color: var(--text-muted);">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
                                         fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                         stroke-linejoin="round">
@@ -818,7 +818,9 @@
                                 </button>
 
                                 <!-- Column Filter -->
-                                <div style="flex: 1; min-width: 140px; position: relative;">
+                                <div class="filter-group-wrapper"
+                                    style="flex: 1; min-width: 140px; position: relative;">
+                                    <span class="mobile-filter-title">Отображение</span>
                                     <button id="dict-filter-columns-btn"
                                         style="width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 1rem; border-radius: 10px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-main); height: 42px; cursor: pointer; text-align: left;">
                                         <span id="columns-btn-label">Столбцы</span>
@@ -877,7 +879,9 @@
                                 </div>
 
                                 <!-- Interval Filter -->
-                                <div style="flex: 1; min-width: 140px; position: relative;">
+                                <div class="filter-group-wrapper"
+                                    style="flex: 1; min-width: 140px; position: relative;">
+                                    <span class="mobile-filter-title">Интервалы</span>
                                     <button id="dict-filter-interval-btn"
                                         style="width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 1rem; border-radius: 10px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-main); height: 42px; cursor: pointer; text-align: left;">
                                         <span id="interval-btn-label">Интервалы</span>
@@ -912,7 +916,9 @@
                                 </div>
 
                                 <!-- Sorting Filter -->
-                                <div style="flex: 1; min-width: 140px; position: relative;">
+                                <div class="filter-group-wrapper"
+                                    style="flex: 1; min-width: 140px; position: relative;">
+                                    <span class="mobile-filter-title">Сортировка</span>
                                     <button id="dict-filter-sort-btn"
                                         style="width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 1rem; border-radius: 10px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-main); height: 42px; cursor: pointer; text-align: left;">
                                         <span id="sort-btn-label">Сортировка</span>
@@ -964,16 +970,23 @@
                                 </div>
 
                                 <!-- Duplicates Only Filter (Icon Only) -->
-                                <button id="dict-filter-duplicates-btn" onclick="toggleDuplicatesFilter()"
-                                    title="Показать дубликаты"
-                                    style="height: 42px; width: 42px; display: flex; align-items: center; justify-content: center; border-radius: 10px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-main); cursor: pointer; transition: all 0.2s ease;">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                        stroke-linejoin="round">
-                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                                    </svg>
-                                </button>
+                                <div class="filter-group-wrapper" id="duplicates-filter-container">
+                                    <span class="mobile-filter-title">Дубликаты</span>
+                                    <button id="dict-filter-duplicates-btn" onclick="toggleDuplicatesFilter()"
+                                        title="Показать дубликаты"
+                                        style="height: 42px; width: 42px; display: flex; align-items: center; justify-content: center; border-radius: 10px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-main); cursor: pointer; transition: all 0.2s ease;">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round">
+                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1">
+                                            </path>
+                                        </svg>
+                                    </button>
+                                    <span class="mobile-only-text"
+                                        style="display:none; align-items: center; font-size: 0.9rem; color: var(--text-muted);">Только
+                                        повторки</span>
+                                </div>
                             </div>
 
 

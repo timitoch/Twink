@@ -2006,6 +2006,15 @@ td {
     box-shadow: 0 0 15px rgba(var(--secondary-rgb), 0.15);
 }
 
+.mobile-filter-title,
+.mobile-only-text {
+    display: none;
+}
+
+.filter-group-wrapper {
+    display: block;
+}
+
 
 @media (max-width: 768px) {
 
@@ -2046,38 +2055,74 @@ td {
     }
 
     /* --- SIDE DRAWER FOR FILTERS --- */
-    /* Transform the filter group into a fixed side panel */
-    /* --- SIDE DRAWER FOR FILTERS --- */
     .dict-filters-group {
-        position: fixed;
-        top: 0;
-        right: 0;
-        height: 100vh;
-        width: 85%;
-        max-width: 320px;
-        background: #111827;
-        z-index: 9999;
-        flex-direction: column;
-        padding: 5rem 1.5rem 2rem 1.5rem;
-        box-shadow: -5px 0 25px rgba(0, 0, 0, 0.8);
-        border-left: 1px solid rgba(255, 255, 255, 0.1);
-        transform: translateX(110%);
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        overflow-y: auto;
+        position: fixed !important;
+        top: 0 !important;
+        right: 0 !important;
+        height: 100vh !important;
+        width: 80% !important;
+        max-width: 300px !important;
+        background: rgba(15, 15, 15, 0.7) !important;
+        backdrop-filter: blur(25px) !important;
+        -webkit-backdrop-filter: blur(25px) !important;
+        z-index: 9999 !important;
+        flex-direction: column !important;
+        padding: 3.5rem 1.25rem 2rem 1.25rem !important;
+        box-shadow: -10px 0 40px rgba(0, 0, 0, 0.5) !important;
+        border-left: 1px solid rgba(255, 255, 255, 0.08) !important;
+        transform: translateX(110%) !important;
+        transition: transform 0.3s ease !important;
+        overflow-y: auto !important;
+        display: none;
+        gap: 0 !important;
+        /* Reset desktop gap */
     }
 
     .dict-filters-group.show-filters {
-        transform: translateX(0);
+        display: flex !important;
+        transform: translateX(0) !important;
     }
 
-    /* Filter Items in Drawer */
-    .dict-filters-group>div {
-        width: 100%;
+    .filter-group-wrapper {
+        flex: 0 0 auto !important;
         min-width: 0 !important;
-        margin-bottom: 1rem;
-        position: relative;
-        display: flex;
-        flex-direction: column;
+        position: relative !important;
+        display: flex !important;
+        flex-direction: column !important;
+        margin-bottom: 0.5rem !important;
+    }
+
+    .mobile-filter-title {
+        display: none !important;
+    }
+
+    .mobile-only-text {
+        display: flex !important;
+        align-items: center;
+        margin-left: 0.5rem;
+    }
+
+    #duplicates-filter-container {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center;
+    }
+
+    #dict-mobile-filter-close {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        width: 44px !important;
+        height: 44px !important;
+        background: none !important;
+        border: none !important;
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-muted) !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        z-index: 10001;
     }
 
     /* DROPDOWNS IN MOBILE DRAWER */
@@ -2086,21 +2131,31 @@ td {
     }
 
     /* When not hidden, expand inline */
-    .dict-filters-group>div>div[id$="-menu"]:not(.hidden) {
+    .dict-filters-group .filter-group-wrapper div[id$="-menu"]:not(.hidden) {
         position: relative !important;
-        top: auto !important;
-        left: auto !important;
+        top: 0.5rem !important;
+        left: 0 !important;
         width: 100% !important;
         max-height: none !important;
         box-shadow: none !important;
-        background: transparent !important;
-        border: none !important;
-        padding: 0.5rem 0 0 1rem !important;
+        background: rgba(255, 255, 255, 0.03) !important;
+        border: 1px solid rgba(255, 255, 255, 0.05) !important;
+        padding: 0.75rem !important;
+        border-radius: 12px !important;
         backdrop-filter: none !important;
+        margin-bottom: 0.5rem;
     }
 
-    .dict-filters-group button {
+    .dict-filters-group button:not(.mobile-only-btn) {
         width: 100% !important;
-        justify-content: space-between;
+        background: rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        height: 46px !important;
+        font-weight: 600 !important;
+    }
+
+    .dict-filters-group label {
+        padding: 0.6rem 0.5rem !important;
+        font-size: 0.95rem !important;
     }
 }
