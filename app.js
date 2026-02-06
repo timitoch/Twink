@@ -240,6 +240,10 @@ async function switchView(targetView) {
     [viewProfile, viewImport, viewWords, viewStudy, viewStudySession, viewSettings, viewGroupEdit].forEach(v => v && v.classList.add('hidden'));
     targetView.classList.remove('hidden');
     targetView.classList.add('fade-in');
+    // Remove fade-in after animation to prevent persistent stacking context (fixes mobile filter clipping)
+    setTimeout(() => {
+        targetView.classList.remove('fade-in');
+    }, 500);
 
     const appContainer = document.querySelector('.app-container');
     // Wide mode for Words, Settings, IMPORT, STUDY, GROUP EDIT, and PROFILE
@@ -1240,10 +1244,19 @@ const mobileFilterClose = document.getElementById('dict-mobile-filter-close');
 const filtersGroup = document.getElementById('dict-filters-group');
 
 if (mobileFilterToggle && filtersGroup) {
+    const updateScrollLock = () => {
+        if (filtersGroup.classList.contains('show-filters')) {
+            document.body.classList.add('no-scroll');
+        } else {
+            document.body.classList.remove('no-scroll');
+        }
+    };
+
     // Toggle Drawer
     mobileFilterToggle.onclick = (e) => {
         e.stopPropagation();
         filtersGroup.classList.toggle('show-filters');
+        updateScrollLock();
     };
 
     // Close Button
@@ -1251,6 +1264,7 @@ if (mobileFilterToggle && filtersGroup) {
         mobileFilterClose.onclick = (e) => {
             e.stopPropagation();
             filtersGroup.classList.remove('show-filters');
+            updateScrollLock();
         };
     }
 
@@ -1259,6 +1273,7 @@ if (mobileFilterToggle && filtersGroup) {
         if (filtersGroup.classList.contains('show-filters')) {
             if (!filtersGroup.contains(e.target) && !mobileFilterToggle.contains(e.target)) {
                 filtersGroup.classList.remove('show-filters');
+                updateScrollLock();
             }
         }
     });

@@ -2062,20 +2062,19 @@ td {
         height: 100vh !important;
         width: 80% !important;
         max-width: 300px !important;
-        background: rgba(15, 15, 15, 0.7) !important;
-        backdrop-filter: blur(25px) !important;
-        -webkit-backdrop-filter: blur(25px) !important;
+        background: rgba(10, 10, 10, 0.95) !important;
+        backdrop-filter: blur(25px) saturate(180%) !important;
+        -webkit-backdrop-filter: blur(25px) saturate(180%) !important;
         z-index: 9999 !important;
         flex-direction: column !important;
-        padding: 3.5rem 1.25rem 2rem 1.25rem !important;
-        box-shadow: -10px 0 40px rgba(0, 0, 0, 0.5) !important;
-        border-left: 1px solid rgba(255, 255, 255, 0.08) !important;
-        transform: translateX(110%) !important;
-        transition: transform 0.3s ease !important;
+        padding: 4rem 1.25rem 2rem 1.25rem !important;
+        box-shadow: -20px 0 60px rgba(0, 0, 0, 0.8) !important;
+        border: none !important;
+        transform: translateX(100%) !important;
+        transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
         overflow-y: auto !important;
         display: none;
         gap: 0 !important;
-        /* Reset desktop gap */
     }
 
     .dict-filters-group.show-filters {
