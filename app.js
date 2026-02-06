@@ -313,7 +313,7 @@ if (navTabs.study) navTabs.study.onclick = () => {
         switchView(viewStudy);
     }
 };
-if (navTabs.dictionary) navTabs.dictionary.onclick = () => { renderTable(allWordsCache); switchView(viewWords); };
+if (navTabs.dictionary) navTabs.dictionary.onclick = () => { applyDictionaryFilters(); switchView(viewWords); };
 if (navTabs.import) navTabs.import.onclick = () => switchView(viewImport);
 
 // Keep existing secondary navs
@@ -371,7 +371,7 @@ firebase.auth().onAuthStateChanged((user) => {
             if (!viewStudy.classList.contains('hidden') && window.StudyModule) {
                 window.StudyModule.renderStudyDashboard();
             }
-            if (!viewWords.classList.contains('hidden')) renderTable(allWordsCache);
+            if (!viewWords.classList.contains('hidden')) applyDictionaryFilters();
 
             // On first data load, show the dashboard and hide loading screen
             if (isFirstDataLoad) {
