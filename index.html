@@ -258,7 +258,7 @@
                         <!-- Study Modes Grid -->
                         <div class="study-modes-grid">
                             <!-- Global Study Button -->
-                            <div class="study-mode-card global-mode-card">
+                            <div class="group-card" style="width: 100%; max-width: 500px;">
                                 <div class="mode-header">
                                     <div class="mode-icon-container">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22"
@@ -770,8 +770,9 @@
                         <div class="dict-toolbar"
                             style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: center; position: relative;">
 
-                            <!-- 1. Search (Longer) -->
-                            <div class="dict-search-wrapper" style="flex: 2; min-width: 300px; position: relative;">
+                            <!-- 1. Search (Shorter) -->
+                            <div class="dict-search-wrapper"
+                                style="flex: 1 1 160px; min-width: 160px; position: relative;">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
                                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                     stroke-linejoin="round"
@@ -909,6 +910,70 @@
                                                 class="checkmark"></span><span>21 дн</span></label>
                                     </div>
                                 </div>
+
+                                <!-- Sorting Filter -->
+                                <div style="flex: 1; min-width: 140px; position: relative;">
+                                    <button id="dict-filter-sort-btn"
+                                        style="width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 1rem; border-radius: 10px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-main); height: 42px; cursor: pointer; text-align: left;">
+                                        <span id="sort-btn-label">Сортировка</span>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round">
+                                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                                            <polyline points="19 12 12 19 5 12"></polyline>
+                                        </svg>
+                                    </button>
+                                    <div id="dict-filter-sort-menu" class="hidden"
+                                        style="position: absolute; top: 110%; left: 0; width: 100%; background: rgba(30, 41, 59, 0.95); backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 0.5rem; z-index: 1000; box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.7); display: flex; flex-direction: column; gap: 2px;">
+
+                                        <label class="custom-checkbox secondary"
+                                            style="cursor: pointer; display: flex; align-items: center;">
+                                            <input type="radio" name="sort-order" value="newest"
+                                                onchange="setSortOrder('newest')">
+                                            <span class="checkmark" style="border-radius: 50%;"></span>
+                                            <span>Новые <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+                                                    viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                                                    style="margin-left: 2px; display: inline-block; vertical-align: middle;">
+                                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                                    <polyline points="19 12 12 19 5 12"></polyline>
+                                                </svg></span>
+                                        </label>
+
+                                        <label class="custom-checkbox secondary"
+                                            style="cursor: pointer; display: flex; align-items: center;">
+                                            <input type="radio" name="sort-order" value="oldest" checked
+                                                onchange="setSortOrder('oldest')">
+                                            <span class="checkmark" style="border-radius: 50%;"></span>
+                                            <span>Старые <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+                                                    viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                                                    style="margin-left: 2px; display: inline-block; vertical-align: middle;">
+                                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                                    <polyline points="19 12 12 19 5 12"></polyline>
+                                                </svg></span>
+                                        </label>
+
+                                        <label class="custom-checkbox secondary" style="cursor: pointer;">
+                                            <input type="radio" name="sort-order" value="alphabet"
+                                                onchange="setSortOrder('alphabet')">
+                                            <span class="checkmark" style="border-radius: 50%;"></span>
+                                            <span>По алфавиту</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Duplicates Only Filter (Icon Only) -->
+                                <button id="dict-filter-duplicates-btn" onclick="toggleDuplicatesFilter()"
+                                    title="Показать дубликаты"
+                                    style="height: 42px; width: 42px; display: flex; align-items: center; justify-content: center; border-radius: 10px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-main); cursor: pointer; transition: all 0.2s ease;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                    </svg>
+                                </button>
                             </div>
 
 

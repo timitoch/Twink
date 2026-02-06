@@ -566,6 +566,8 @@
         width: 100% !important;
         min-height: 100vh !important;
         max-height: 100vh !important;
+        overflow: visible !important;
+        /* Allow fixed footer button to be visible */
     }
 
     .session-settings-card {
@@ -575,11 +577,13 @@
         height: 100% !important;
         display: flex;
         flex-direction: column;
+        overflow: visible !important;
+        /* Allow button to be visible outside card bounds */
     }
 
     .session-settings-card .card-edit-content {
-        padding: 1.2rem 1.2rem 5.5rem 1.2rem !important;
-        /* Spacing for fixed footer */
+        padding: 1.2rem 1.2rem 7rem 1.2rem !important;
+        /* Spacing for fixed footer - increased for better visibility */
         overflow-y: auto !important;
         flex: 0 1 auto !important;
         /* Prevent stretching on mobile */
@@ -601,19 +605,26 @@
         background: transparent !important;
         backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
-        z-index: 100;
-        pointer-events: none;
-        /* Allow scrolling content behind if touching outside button */
+        z-index: 2100 !important;
+        /* Higher than modal overlay and content */
+        pointer-events: auto !important;
+        /* Allow clicking the footer and button */
+        display: flex !important;
+        justify-content: center !important;
     }
 
     .card-edit-footer button {
-        pointer-events: auto;
+        pointer-events: auto !important;
         /* Enable clicks on the button itself */
+        width: 180px !important;
         max-width: 180px !important;
         height: 44px !important;
         font-size: 0.9rem !important;
         border-radius: 999px !important;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.8) !important;
+        background: #ffffff !important;
+        color: #000000 !important;
+        border: none !important;
     }
 
     .setting-row {

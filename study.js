@@ -1787,12 +1787,20 @@ class StudyModule {
                 const beforeComma = word.word.substring(0, commaIndex);
                 const afterComma = word.word.substring(commaIndex);
                 this.cardWord.innerHTML = '';
+
+                // Color the part before comma with gender color
                 const coloredSpan = document.createElement('span');
                 coloredSpan.style.color = genderColors.base;
                 coloredSpan.textContent = beforeComma;
-                const defaultText = document.createTextNode(afterComma);
                 this.cardWord.appendChild(coloredSpan);
-                this.cardWord.appendChild(defaultText);
+
+                // Part after comma should be default theme color (not inherit)
+                const afterCommaSpan = document.createElement('span');
+                // Get the current theme text color from CSS variable
+                const themeTextColor = getComputedStyle(document.documentElement).getPropertyValue('--text-main').trim() || '#ffffff';
+                afterCommaSpan.style.color = themeTextColor;
+                afterCommaSpan.textContent = afterComma;
+                this.cardWord.appendChild(afterCommaSpan);
             } else {
                 this.cardWord.innerHTML = '';
                 this.cardWord.textContent = word.word;

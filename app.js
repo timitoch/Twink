@@ -549,13 +549,8 @@ function renderTable(arr) {
     wordsTableBody.innerHTML = '';
 
     // Update Header Visibility
-    // We use display:none so nth-child indices in CSS remain consistent for the remaining visible elements?
-    // wait, if we use display:none, the element IS still in DOM tree, so nth-child counts it.
-    // So our CSS rules targeting nth-child(2) for 'Word' will still work even if ID is hidden.
     const headRow = document.querySelector('#words-table tr');
     if (headRow) {
-        // IDs of headers must match order or be selected by index. 
-        // Let's assume order: ID(0), Word(1), Trans(2), Info1(3), Info2(4), Ex1(5), Ex2(6), Ex3(7), Interval(8), Next(9), Actions(10,11)
         const ths = headRow.querySelectorAll('th');
         if (ths[0]) ths[0].style.display = visibleColumns.id ? '' : 'none';
         if (ths[1]) ths[1].style.display = visibleColumns.active ? '' : 'none';
@@ -569,8 +564,33 @@ function renderTable(arr) {
         if (ths[9]) ths[9].style.display = visibleColumns.nextDate ? '' : 'none';
     }
 
+    // --- DUPLICATE DETECTION --
+    // Scan all words (not just filtered) to find duplicates in the entire dictionary
+    // STRICT RULE: Only column "German word" checked. Exact match ignoring articles (der, die, das).
+    const duplicateIds = new Set();
+    const normalizeGerman = (str) => (str || "").toLowerCase().replace(/^(der|die|das)\s+/i, '').replace(/\s*\(.*?\)/g, '').trim();
+    const wordCounts = {};
+
+    allWordsCache.forEach(w => {
+        const key = normalizeGerman(w.word);
+        if (key) {
+            if (!wordCounts[key]) wordCounts[key] = [];
+            wordCounts[key].push(w.id);
+        }
+    });
+
+    Object.values(wordCounts).forEach(ids => {
+        if (ids.length > 1) ids.forEach(id => duplicateIds.add(String(id)));
+    });
+    // -------------------------
+
     arr.forEach(w => {
         const tr = document.createElement('tr');
+
+        // Check for duplicate
+        if (duplicateIds.has(String(w.id))) {
+            tr.style.backgroundColor = "rgba(255, 235, 59, 0.15)";
+        }
 
         // Check for overdue
         const now = Date.now();
@@ -942,6 +962,7 @@ if (dictFilterIntervalBtn) {
         e.stopPropagation();
         dictFilterIntervalMenu.classList.toggle('hidden');
         if (dictFilterColumnsMenu) dictFilterColumnsMenu.classList.add('hidden');
+        if (dictFilterSortMenu) dictFilterSortMenu.classList.add('hidden');
     };
 }
 
@@ -954,8 +975,67 @@ if (dictFilterColumnsBtn) {
         e.stopPropagation();
         dictFilterColumnsMenu.classList.toggle('hidden');
         if (dictFilterIntervalMenu) dictFilterIntervalMenu.classList.add('hidden');
+        if (dictFilterSortMenu) dictFilterSortMenu.classList.add('hidden');
     };
 }
+
+// --- SORTING UI HANDLERS ---
+const dictFilterSortBtn = document.getElementById('dict-filter-sort-btn');
+const dictFilterSortMenu = document.getElementById('dict-filter-sort-menu');
+const dictFilterSortLabel = document.getElementById('sort-btn-label');
+const dictFilterDuplicatesBtn = document.getElementById('dict-filter-duplicates-btn');
+let currentSortOrder = 'oldest'; // Default
+let showOnlyDuplicates = false;
+
+if (dictFilterSortBtn) {
+    dictFilterSortBtn.onclick = (e) => {
+        e.stopPropagation();
+        dictFilterSortMenu.classList.toggle('hidden');
+        if (dictFilterIntervalMenu) dictFilterIntervalMenu.classList.add('hidden');
+        if (dictFilterColumnsMenu) dictFilterColumnsMenu.classList.add('hidden');
+    };
+}
+
+// Global handler for radio buttons in Sort Menu
+window.setSortOrder = (order) => {
+    currentSortOrder = order;
+    applyDictionaryFilters();
+    updateSortLabel(order);
+    // Close menu slightly delayed for better UX
+    setTimeout(() => {
+        if (dictFilterSortMenu) dictFilterSortMenu.classList.add('hidden');
+    }, 150);
+};
+
+function updateSortLabel(order) {
+    if (!dictFilterSortLabel) return;
+    const arrowIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 2px; display: inline-block; vertical-align: middle;"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>`;
+
+    switch (order) {
+        case 'newest':
+            dictFilterSortLabel.innerHTML = `Новые ${arrowIcon}`;
+            break;
+        case 'oldest':
+            dictFilterSortLabel.innerHTML = `Старые ${arrowIcon}`;
+            break;
+        case 'alphabet':
+            dictFilterSortLabel.textContent = 'А-Я';
+            break;
+        default:
+            dictFilterSortLabel.textContent = 'Сортировка';
+    }
+}
+
+// Duplicates Filter Handler
+window.toggleDuplicatesFilter = () => {
+    showOnlyDuplicates = !showOnlyDuplicates;
+
+    if (dictFilterDuplicatesBtn) {
+        dictFilterDuplicatesBtn.classList.toggle('filter-active', showOnlyDuplicates);
+    }
+
+    applyDictionaryFilters();
+};
 
 // Close menus when clicking outside
 window.addEventListener('click', (e) => {
@@ -967,6 +1047,11 @@ window.addEventListener('click', (e) => {
     if (dictFilterColumnsMenu && !dictFilterColumnsMenu.classList.contains('hidden')) {
         if (!dictFilterColumnsMenu.contains(e.target) && !dictFilterColumnsBtn.contains(e.target)) {
             dictFilterColumnsMenu.classList.add('hidden');
+        }
+    }
+    if (dictFilterSortMenu && !dictFilterSortMenu.classList.contains('hidden')) {
+        if (!dictFilterSortMenu.contains(e.target) && !dictFilterSortBtn.contains(e.target)) {
+            dictFilterSortMenu.classList.add('hidden');
         }
     }
 });
@@ -1043,6 +1128,56 @@ function applyDictionaryFilters(returnOnly) {
                 if (checkedIntervals.includes(String(days))) return true;
                 return false;
             });
+        }
+    }
+
+    // 2.5 Duplicates Filter
+    if (showOnlyDuplicates) {
+        const duplicateIds = new Set();
+        const normalizeGerman = (str) => (str || "").toLowerCase().replace(/^(der|die|das)\s+/i, '').replace(/\s*\(.*?\)/g, '').trim();
+        const wordCounts = {};
+
+        // Recalculate duplicates based on STRICT German word rule
+        allWordsCache.forEach(w => {
+            const key = normalizeGerman(w.word);
+            if (key) {
+                if (!wordCounts[key]) wordCounts[key] = [];
+                wordCounts[key].push(w.id);
+            }
+        });
+
+        Object.values(wordCounts).forEach(ids => {
+            if (ids.length > 1) ids.forEach(id => duplicateIds.add(String(id)));
+        });
+
+        result = result.filter(w => duplicateIds.has(String(w.id)));
+    }
+
+    // 3. Sorting
+    if (showOnlyDuplicates) {
+        // Grouping Sort: Sort by normalized German word to bring duplicates together
+        const normalizeGerman = (str) => (str || "").toLowerCase().replace(/^(der|die|das)\s+/i, '').replace(/\s*\(.*?\)/g, '').trim();
+
+        result.sort((a, b) => {
+            const keyA = normalizeGerman(a.word);
+            const keyB = normalizeGerman(b.word);
+
+            if (keyA < keyB) return -1;
+            if (keyA > keyB) return 1;
+
+            // Secondary sort by ID to ensure stable order
+            return parseInt(a.id) - parseInt(b.id);
+        });
+    } else {
+        if (currentSortOrder === 'newest') {
+            // ID descending
+            result.sort((a, b) => parseInt(b.id) - parseInt(a.id));
+        } else if (currentSortOrder === 'oldest') {
+            // ID ascending (default)
+            result.sort((a, b) => parseInt(a.id) - parseInt(b.id));
+        } else if (currentSortOrder === 'alphabet') {
+            // Word Alphabetical
+            result.sort((a, b) => (a.word || "").localeCompare(b.word || ""));
         }
     }
 

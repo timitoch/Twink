@@ -294,27 +294,32 @@
 
 /* Study Mode Card - Redesigned */
 .study-mode-card {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%);
+    background: rgba(255, 255, 255, 0.03);
     border: 1px solid var(--border);
-    border-radius: 24px;
-    padding: 2rem;
+    border-radius: 20px;
+    padding: 1.75rem;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    min-height: 180px;
     position: relative;
-    overflow: hidden;
-    backdrop-filter: blur(10px);
-    transition: all 0.3s ease;
 }
 
 .study-modes-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 500px));
+    display: flex;
+    flex-wrap: wrap;
     gap: 1.5rem;
-    justify-content: start;
+    justify-content: flex-start;
     margin-top: 2rem;
 }
 
-.global-mode-card {
+.study-modes-grid .group-card {
+    flex: 1 1 340px;
+    width: auto !important;
+    /* Override inline width: 100% to allow side-by-side */
     max-width: 500px;
 }
+
 
 /* Redesigned Last Opened Card positioning fix */
 .last-opened-card {
@@ -329,8 +334,10 @@
 }
 
 .study-mode-card:hover {
-    border-color: rgba(255, 255, 255, 0.3);
-    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateY(-4px);
+    border-color: #ffffff;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
 }
 
 .mode-header {
@@ -1991,6 +1998,14 @@ td {
 .mobile-only-btn {
     display: none;
 }
+
+.filter-active {
+    color: var(--secondary) !important;
+    border-color: var(--secondary) !important;
+    background: rgba(var(--secondary-rgb), 0.12) !important;
+    box-shadow: 0 0 15px rgba(var(--secondary-rgb), 0.15);
+}
+
 
 @media (max-width: 768px) {
 
