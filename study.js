@@ -1917,7 +1917,8 @@ class StudyModule {
 
         // Rule 1: Plural hint (multiple words with articles)
         // Only check if it's NOT identified as a feminine pair
-        if (!isFemininePair && germanWord.includes(' ') && /\b(der|die|das)\b/i.test(germanWord)) {
+        // FIX: Check for comma to ensure it's actually a list/pair, not just "die Word"
+        if (!isFemininePair && germanWord.includes(',') && /\b(der|die|das)\b/i.test(germanWord)) {
             hints.push("(plural)");
         }
 
@@ -1986,6 +1987,21 @@ class StudyModule {
             .replace(/[^a-z0-9äöüß]/gi, ''); // Remove everything else
     }
 
+    // Helper to extract article and word content
+    extractArticle(str) {
+        const cleaned = str.replace(/\([^)]*\)/g, '').trim();
+        const parts = cleaned.split(/\s+/);
+        const articles = ["der", "die", "das", "den", "dem", "des", "ein", "eine", "einer", "einem", "einen"];
+
+        if (parts.length > 0 && articles.includes(parts[0].toLowerCase())) {
+            return {
+                article: parts[0].toLowerCase(),
+                word: parts.slice(1).join(" ")
+            };
+        }
+        return { article: null, word: cleaned };
+    }
+
     async checkExamAnswer() {
         if (!this.currentExamSession || !this.currentExamSession.currentWord) return;
 
@@ -1994,19 +2010,45 @@ class StudyModule {
         const correctAnswer = word.word;
 
         // 1. Content Check
-        const normUser = this.normalizeContent(userAnswer);
-        const normCorrect = this.normalizeContent(correctAnswer);
+        // Use normalizeAnswer to strip articles and punctuation for content comparison
+        const normUser = this.normalizeAnswer(userAnswer);
+        const normCorrect = this.normalizeAnswer(correctAnswer);
         const isContentCorrect = normUser === normCorrect;
 
         // 2. Article Check (Only if content matched)
         let articleError = false;
+
         if (isContentCorrect) {
-            const correctArt = this.getFirstArticle(correctAnswer);
-            if (correctArt) {
-                const userArt = this.getFirstArticle(userAnswer);
-                if (userArt !== correctArt) articleError = true;
+            const correctParts = correctAnswer.split(',');
+            const userParts = userAnswer.split(',');
+
+            // We iterate over the correct parts to verify articles
+            for (let i = 0; i < correctParts.length; i++) {
+                // If user excluded a part entirely (e.g. synonyms), we stop checking logic for that part
+                // However, since content check passed, they likely have the content.
+                if (i >= userParts.length) break;
+
+                const cPart = this.extractArticle(correctParts[i]);
+                const uPart = this.extractArticle(userParts[i]);
+
+                if (cPart.article) {
+                    if (i === 0) {
+                        // First Article: MANDATORY
+                        if (uPart.article !== cPart.article) {
+                            articleError = true;
+                        }
+                    } else {
+                        // Subsequent Articles: OPTIONAL (can be omitted, but if present must be correct)
+                        // If user provided an article, strict check.
+                        // If user provided NO article (uPart.article matches null), it avoids this check.
+                        if (uPart.article && uPart.article !== cPart.article) {
+                            articleError = true;
+                        }
+                    }
+                }
             }
         }
+
         const isCorrect = isContentCorrect && !articleError;
 
         // Disable input and check button
