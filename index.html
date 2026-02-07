@@ -299,6 +299,38 @@
                                 </button>
                             </div>
 
+                            <!-- Exam Mode Card -->
+                            <div class="group-card" id="exam-mode-card"
+                                style="display: none; width: 100%; max-width: 500px; border: 1px solid var(--accent-bright);">
+                                <div class="mode-header">
+                                    <div class="mode-icon-container"
+                                        style="color: var(--accent-bright); background: rgba(16, 185, 129, 0.1);">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                        </svg>
+                                    </div>
+                                    <div class="mode-title-group">
+                                        <h3 class="mode-title">Экзамен</h3>
+                                        <p class="mode-description">Сдайте экзамен, чтобы перенести слова в активный
+                                            запас.</p>
+                                    </div>
+                                </div>
+                                <div class="mode-stats-grid">
+                                    <div class="stats-box due-box" style="width: 100%;">
+                                        <div class="stats-label">Готовы к сдаче</div>
+                                        <div id="exam-ready-count" class="stats-value"
+                                            style="color: var(--accent-bright);">0</div>
+                                    </div>
+                                </div>
+                                <button id="btn-start-exam" class="btn-primary start-session-btn"
+                                    style="background: var(--accent-bright); border-color: var(--accent-bright);">
+                                    Начать экзамен
+                                </button>
+                            </div>
+
                             <!-- Last Opened Group/Folder Card (Redesigned) -->
                             <div id="last-opened-card" class="group-card last-opened-card hidden"
                                 style="width: 100%; max-width: 500px; display: flex; flex-direction: column; justify-content: space-between; min-height: auto;">
@@ -391,26 +423,64 @@
                         <div class="section-title"
                             style="margin-top: 2rem; display: flex; justify-content: space-between; align-items: center;">
                             <h2>Папки</h2>
-                            <button class="btn-secondary small" onclick="window.StudyModule.openFolderCreator()">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                    stroke-linejoin="round">
-                                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                                </svg>
-                                Создать папку
-                            </button>
+                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                <div style="position: relative;">
+                                    <button class="btn-secondary small" id="folder-sort-toggle" title="Сортировка"
+                                        style="padding: 0.5rem 0.8rem; height: 36px;">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round">
+                                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                                            <line x1="3" y1="12" x2="15" y2="12"></line>
+                                            <line x1="3" y1="18" x2="9" y2="18"></line>
+                                        </svg>
+                                    </button>
+                                    <div id="folder-sort-menu" class="dropdown-menu hidden"
+                                        style="position: absolute; top: 100%; right: 0; min-width: 180px; margin-top: 0.5rem; z-index: 100; background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); padding: 0.5rem;">
+                                        <div
+                                            style="padding: 0.5rem 1rem; font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+                                            Сортировка папок</div>
+                                        <label class="dropdown-item"
+                                            style="display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1rem; cursor: pointer; border-radius: 8px; transition: background 0.2s;">
+                                            <input type="radio" name="folder-sort" value="newest"
+                                                onchange="window.StudyModule.updateFolderSort('newest')"
+                                                style="accent-color: var(--primary);">
+                                            <span style="font-size: 0.9rem;">Сначала новые</span>
+                                        </label>
+                                        <label class="dropdown-item"
+                                            style="display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1rem; cursor: pointer; border-radius: 8px; transition: background 0.2s;">
+                                            <input type="radio" name="folder-sort" value="oldest"
+                                                onchange="window.StudyModule.updateFolderSort('oldest')"
+                                                style="accent-color: var(--primary);">
+                                            <span style="font-size: 0.9rem;">Сначала старые</span>
+                                        </label>
+                                        <label class="dropdown-item"
+                                            style="display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1rem; cursor: pointer; border-radius: 8px; transition: background 0.2s;">
+                                            <input type="radio" name="folder-sort" value="alphabet"
+                                                onchange="window.StudyModule.updateFolderSort('alphabet')"
+                                                style="accent-color: var(--primary);">
+                                            <span style="font-size: 0.9rem;">По алфавиту</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <button class="btn-secondary small" onclick="window.StudyModule.openFolderCreator()"
+                                    style="height: 36px;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                                    </svg>
+                                    Создать папку
+                                </button>
+                            </div>
                         </div>
                         <div id="folders-list" class="groups-grid">
                             <!-- Folders injected here -->
                         </div>
 
-                        <div class="section-title" style="margin-top: 2rem;">
-                            <h2>По группам</h2>
-                        </div>
-                        <div id="groups-list" class="groups-grid">
-                            <!-- Groups injected here -->
-                        </div>
+
                     </div>
                 </div>
 
@@ -423,7 +493,7 @@
                         <div class="group-meta-container">
                             <div class="group-meta-field">
                                 <label>Назва</label>
-                                <input type="text" id="group-name-input" placeholder="Введите название группы">
+                                <input type="text" id="group-name-input" placeholder="Введите название папки">
                             </div>
                             <div class="group-meta-field">
                                 <input type="text" id="group-desc-input" placeholder="Додати опис...">
@@ -623,7 +693,84 @@
                     </div>
                 </div>
 
-                <!-- 3. VIEW: IMPORT -->
+                <!-- 3.5 VIEW: EXAM (NEW DEDICATED VIEW) -->
+                <div id="view-exam" class="view-section hidden"
+                    style="min-height: 100vh; display: flex; flex-direction: column;">
+                    <!-- Exam Header -->
+                    <div
+                        style="padding: 1.5rem; background: var(--bg-card); border-bottom: 1px solid var(--border); margin-bottom: 2rem;">
+                        <div
+                            style="max-width: 600px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center;">
+                            <button id="btn-exit-exam" class="btn-square icon-btn" title="Выйти"
+                                style="border: 1px solid var(--border);">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                                    <polyline points="12 19 5 12 12 5"></polyline>
+                                </svg>
+                            </button>
+                            <div style="text-align: center;">
+                                <h3 style="margin: 0; font-size: 1.1rem; font-weight: 600; color: var(--text-main);">
+                                    Экзамен</h3>
+                                <p id="exam-progress-text"
+                                    style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: var(--text-muted);">Слово 1
+                                    из 10</p>
+                            </div>
+                            <div style="width: 44px;"></div> <!-- Spacer for centering -->
+                        </div>
+                    </div>
+
+                    <!-- Exam Content -->
+                    <div
+                        style="flex: 1; display: flex; align-items: center; justify-content: center; padding: 2rem 1rem;">
+                        <div style="width: 100%; max-width: 500px;">
+                            <!-- Question Card -->
+                            <div
+                                style="background: var(--bg-card); border-radius: 16px; padding: 2.5rem 2rem; box-shadow: 0 4px 20px rgba(0,0,0,0.15); border: 1px solid var(--border); margin-bottom: 2rem;">
+                                <div style="text-align: center; margin-bottom: 2rem;">
+                                    <div
+                                        style="color: var(--accent-bright); font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1rem;">
+                                        Переведите на немецкий
+                                    </div>
+                                    <h2 id="exam-question-text"
+                                        style="font-size: 1.8rem; font-weight: 700; color: var(--text-main); margin: 0; line-height: 1.4;">
+                                        яблоко
+                                    </h2>
+                                    <p id="exam-question-info"
+                                        style="color: var(--text-muted); font-size: 0.95rem; margin: 0.75rem 0 0 0;">
+                                    </p>
+                                </div>
+
+                                <!-- Input Area -->
+                                <div style="margin-bottom: 1.5rem;">
+                                    <input type="text" id="exam-input" placeholder="Введите немецкое слово..."
+                                        autocomplete="off"
+                                        style="width: 100%; padding: 1rem 1.25rem; border-radius: 12px; background: var(--bg-main); border: 2px solid var(--border); color: var(--text-main); font-size: 1.2rem; text-align: center; transition: all 0.2s; font-weight: 500;">
+                                </div>
+
+                                <!-- Feedback -->
+                                <div id="exam-feedback" class="hidden"
+                                    style="margin-bottom: 1.5rem; padding: 1rem; border-radius: 10px; font-weight: 500; text-align: center; font-size: 0.95rem;">
+                                </div>
+
+                                <!-- Action Buttons -->
+                                <div style="display: flex; gap: 0.75rem;">
+                                    <button id="btn-exam-check" class="btn-primary"
+                                        style="flex: 1; padding: 0.9rem; font-size: 1rem; font-weight: 600;">
+                                        Проверить
+                                    </button>
+                                    <button id="btn-exam-next" class="btn-secondary hidden"
+                                        style="flex: 1; padding: 0.9rem; font-size: 1rem; font-weight: 600;">
+                                        Далее
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. VIEW: IMPORT -->
                 <div id="view-import" class="view-section hidden">
                     <div style="max-width: 1000px; margin: 0 auto; width: 100%;">
                         <div class="section-title" style="margin-bottom: 2rem;">
@@ -714,17 +861,20 @@
                                                 <thead>
                                                     <tr>
                                                         <th style="width: 50px;">A</th>
-                                                        <th>B: Слово</th>
-                                                        <th>C: Перевод</th>
-                                                        <th>D: Инфо</th>
-                                                        <th>E: Инфо2</th>
-                                                        <th>F: Пример 1</th>
-                                                        <th>G: Пример 2</th>
+                                                        <th>B: Активное</th>
+                                                        <th>C: Слово</th>
+                                                        <th>D: Перевод</th>
+                                                        <th>E: Инфо</th>
+                                                        <th>F: Инфо2</th>
+                                                        <th>G: Пример 1</th>
+                                                        <th>H: Пример 2</th>
+                                                        <th>I: Папка</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
                                                     <tr>
                                                         <td style="color: var(--text-muted);">101</td>
+                                                        <td style="color: var(--secondary);">yes</td>
                                                         <td style="color: var(--text-main); font-weight: 500;">Apfel
                                                         </td>
                                                         <td>Яблоко</td>
@@ -732,9 +882,11 @@
                                                         <td><i>м.р.</i></td>
                                                         <td style="color: var(--text-main);">Ich esse einen Apfel.</td>
                                                         <td>-</td>
+                                                        <td style="color: var(--secondary);">Obst</td>
                                                     </tr>
                                                     <tr>
                                                         <td style="color: var(--text-muted);">102</td>
+                                                        <td style="color: var(--secondary);">yes</td>
                                                         <td style="color: var(--text-main); font-weight: 500;">Buch</td>
                                                         <td>Книга</td>
                                                         <td><i>сущ.</i></td>
@@ -742,6 +894,7 @@
                                                         <td style="color: var(--text-main);">Das Buch ist interessant.
                                                         </td>
                                                         <td>Ich lese ein Buch.</td>
+                                                        <td style="color: var(--secondary);">Medien</td>
                                                     </tr>
                                                 </tbody>
                                             </table>
@@ -751,12 +904,14 @@
                                     <!-- Mobile Card List -->
                                     <div class="import-guide-mobile-list mobile-only">
                                         <div class="guide-mobile-item"><span>A</span> ID (необязательно)</div>
-                                        <div class="guide-mobile-item"><span>B</span> Немецкое слово</div>
-                                        <div class="guide-mobile-item"><span>C</span> Перевод</div>
-                                        <div class="guide-mobile-item"><span>D</span> Доп. информация</div>
-                                        <div class="guide-mobile-item"><span>E</span> Инфо 2 (род, тип)</div>
-                                        <div class="guide-mobile-item"><span>F</span> Пример 1</div>
-                                        <div class="guide-mobile-item"><span>G</span> Пример 2</div>
+                                        <div class="guide-mobile-item"><span>B</span> Активное слово (yes/no)</div>
+                                        <div class="guide-mobile-item"><span>C</span> Немецкое слово</div>
+                                        <div class="guide-mobile-item"><span>D</span> Перевод</div>
+                                        <div class="guide-mobile-item"><span>E</span> Доп. информация</div>
+                                        <div class="guide-mobile-item"><span>F</span> Доп. информация 2</div>
+                                        <div class="guide-mobile-item"><span>G</span> Пример 1</div>
+                                        <div class="guide-mobile-item"><span>H</span> Пример 2</div>
+                                        <div class="guide-mobile-item"><span>I</span> Название папки</div>
                                     </div>
                                 </div>
                             </div>
@@ -872,6 +1027,9 @@
                                         <label class="custom-checkbox secondary"><input type="checkbox" value="interval"
                                                 checked onchange="toggleColumn('interval')"><span
                                                 class="checkmark"></span><span>Интервал</span></label>
+                                        <label class="custom-checkbox secondary"><input type="checkbox" value="folder"
+                                                checked onchange="toggleColumn('folder')"><span
+                                                class="checkmark"></span><span>Папка</span></label>
                                         <label class="custom-checkbox secondary"><input type="checkbox" value="nextDate"
                                                 checked onchange="toggleColumn('nextDate')"><span
                                                 class="checkmark"></span><span>След. повтор</span></label>
@@ -1024,24 +1182,39 @@
                                 <thead>
                                     <tr>
                                         <th>ID</th>
-                                        <th>
+                                        <th class="has-tooltip">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
                                                 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
                                                 stroke-linecap="round" stroke-linejoin="round"
                                                 title="Активный словарный запас">
                                                 <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
                                             </svg>
+                                            <div class="tooltip-box">
+                                                <h4>Активные слова</h4>
+                                                <p>Это слова из вашего активного запаса. Числа — это баллы прогресса.
+                                                    Наберите <b>9 баллов</b>, чтобы слово стало считаться вашим активным
+                                                    словарным запасом и больше не попадалось вам при обучении.</p>
+                                                <ul class="tooltip-list">
+                                                    <li><span>Отлично</span> <span class="score-plus">+3.0</span></li>
+                                                    <li><span>Помню</span> <span class="score-plus">+1.5</span></li>
+                                                    <li><span>Почти</span> <span class="score-zero">0.0</span></li>
+                                                    <li><span>Частично</span> <span class="score-minus">-1.5</span></li>
+                                                    <li><span>С трудом</span> <span class="score-minus">-3.0</span></li>
+                                                    <li><span>Не помню</span> <span class="score-reset">Сброс</span>
+                                                    </li>
+                                                </ul>
+                                            </div>
                                         </th>
                                         <th>Немецкое слово</th>
                                         <th>Перевод</th>
                                         <th>Доп. инфо 1</th>
                                         <th>Доп. инфо 2</th>
                                         <th>Пример 1</th>
-                                        <th>Пример 2</th>
-                                        <th>Интервал</th>
+                                        <th data-col="ex2" onclick="sortWords('ex2')">Пример 2</th>
+                                        <th data-col="folder" onclick="sortWords('folder')">Папка</th>
+                                        <th data-col="interval" onclick="sortWords('interval')">Интервал</th>
                                         <th>След. повтор</th>
-                                        <th></th>
-                                        <th></th>
+                                        <th style="width: 70px;"></th>
                                     </tr>
                                 </thead>
                                 <tbody id="words-table-body"></tbody>
@@ -1378,6 +1551,12 @@
                                 <div class="field-group">
                                     <label>Определение</label>
                                     <input type="text" class="input-stealth input-main" id="edit-translation" required>
+                                </div>
+                                <!-- FOLDER -->
+                                <div class="field-group" style="margin-top: 1rem; opacity: 0.6;">
+                                    <label>Папка</label>
+                                    <input type="text" class="input-stealth" id="edit-folder"
+                                        placeholder="Название папки...">
                                 </div>
                             </div>
 

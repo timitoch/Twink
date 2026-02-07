@@ -32,11 +32,13 @@ class StudyModule {
             genderCardBackground: false
         };
         this.tempSettings = null; // Temporary state for settings modal
+        this.folderSortOrder = localStorage.getItem('folderSortOrder') || 'newest';
 
         // DOM Elements
         this.viewStudy = document.getElementById('view-study');
         this.viewGroupEdit = document.getElementById('view-group-edit');
         this.viewStudySession = document.getElementById('view-study-session');
+        this.viewExam = document.getElementById('view-exam');
 
         // Study UI
         this.globalDueCountLbl = document.getElementById('global-due-count-lbl');
@@ -96,6 +98,17 @@ class StudyModule {
         this.sectionCardElements = null;
         this.sectionInterfaceElements = null;
 
+        // Exam UI Elements
+        this.btnExitExam = document.getElementById('btn-exit-exam');
+        this.examProgressText = document.getElementById('exam-progress-text');
+        this.examQuestionText = document.getElementById('exam-question-text');
+        this.examQuestionInfo = document.getElementById('exam-question-info');
+        this.examInput = document.getElementById('exam-input');
+        this.examFeedback = document.getElementById('exam-feedback');
+        this.btnExamCheck = document.getElementById('btn-exam-check');
+        this.btnExamNext = document.getElementById('btn-exam-next');
+        this.currentExamSession = null;
+
         // Time Tracking
         this.timer = null;
         this.lastActivity = Date.now();
@@ -140,6 +153,16 @@ class StudyModule {
                 // or if the DB value is significantly ahead
                 if (!this.isActiveSession) {
                     this.todayTotalSeconds = val;
+                }
+            });
+
+            // Subscribe to Folder Metadata (creation type)
+            const refMeta = this.db.db.ref(`users/${this.userId}/folderMeta`);
+            refMeta.on('value', (snap) => {
+                this.folderMetaCache = snap.val() || {};
+                // If study dashboard is visible, re-render to update labels
+                if (!this.viewStudy.classList.contains('hidden')) {
+                    this.renderFolders();
                 }
             });
         }
@@ -510,14 +533,9 @@ class StudyModule {
             }
             return sorted.filter(w => !w.progress_global || !w.progress_global.isActive);
         }
-        if (mode === 'groups' && groupIndex != null) {
-            return sorted.slice(groupIndex * 100, (groupIndex + 1) * 100);
-        }
         if (mode === 'folder' && groupIndex != null) {
-            // groupIndex here is the folderId
-            const folder = this.foldersCache.find(f => f.id === groupIndex);
-            if (!folder || !folder.wordIds) return [];
-            return sorted.filter(w => folder.wordIds.includes(w.id));
+            // groupIndex here is the folder name
+            return sorted.filter(w => w.folder === groupIndex);
         }
         return [];
     }
@@ -532,10 +550,10 @@ class StudyModule {
             const key = 'progress_global';
             const prog = w[key] || {};
 
-            if (!prog.nextDate || prog.nextDate <= now) due++;
+            if (!prog.isActive && (!prog.nextDate || prog.nextDate <= now)) due++;
             if (prog.lastReviewed && prog.lastReviewed >= startOfToday) learnedToday++;
-            // Mastered: interval >= 12 AND not overdue
-            if (prog.interval && prog.interval >= 12 && prog.nextDate > now) mastered++;
+            // Mastered: active OR (interval >= 12 AND not overdue)
+            if (prog.isActive || (prog.interval && prog.interval >= 12 && prog.nextDate > now)) mastered++;
         });
 
         if (this.totalWordsCount) this.totalWordsCount.textContent = total;
@@ -561,46 +579,62 @@ class StudyModule {
 
     // --- FOLDERS LOGIC ---
     initFolderCreation() {
-        return;
-        /*
-        const form = document.getElementById('create-folder-form');
-        const modal = document.getElementById('create-folder-modal');
-        if (form) {
-            form.onsubmit = async (e) => {
-                e.preventDefault();
-                const nameInput = document.getElementById('folder-name-input');
-                const countInput = document.getElementById('folder-count-input');
-        
-                const name = nameInput.value.trim();
-                const count = parseInt(countInput.value);
-        
-                if (!name || isNaN(count) || count < 1) return;
-        
-                // Create Logic: Select random words
-                // Copy IDs
-                const allIds = this.allWordsCache.map(w => w.id);
-                // Shuffle
-                for (let i = allIds.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [allIds[i], allIds[j]] = [allIds[j], allIds[i]];
+        // Initialize Sort Menu Listeners
+        const sortBtn = document.getElementById('folder-sort-toggle');
+        const sortMenu = document.getElementById('folder-sort-menu');
+
+        if (sortBtn && sortMenu) {
+            sortBtn.onclick = (e) => {
+                e.stopPropagation();
+                if (sortMenu.classList.contains('hidden')) {
+                    sortMenu.classList.remove('hidden');
+                } else {
+                    sortMenu.classList.add('hidden');
                 }
-                const selectedIds = allIds.slice(0, count);
-        
-                const folder = {
-                    id: 'folder_' + Date.now(),
-                    name: name,
-                    wordIds: selectedIds,
-                    createdAt: Date.now()
-                };
-        
-                await this.db.saveFolder(folder);
-        
-                modal.classList.add('hidden');
-                nameInput.value = '';
-                countInput.value = '';
-                    };
+            };
+
+            // Close when clicking outside
+            window.addEventListener('click', (e) => {
+                if (!sortMenu.classList.contains('hidden')) {
+                    if (!sortMenu.contains(e.target) && !sortBtn.contains(e.target)) {
+                        sortMenu.classList.add('hidden');
+                    }
                 }
-                */
+            });
+
+            // Set Initial Radio State based on saved preference
+            const radio = sortMenu.querySelector(`input[value="${this.folderSortOrder}"]`);
+            if (radio) radio.checked = true;
+        }
+
+        // Listener for Manual Folder Creation to save metadata
+        document.addEventListener('click', (e) => {
+            // Check for the create button (ID based on likely naming convention or inspect)
+            // Assuming ID is 'btn-create-folder-confirm' based on standard pattern
+            if (e.target && (e.target.id === 'btn-create-folder-confirm' || e.target.id === 'btn-save-new-folder')) {
+                const input = document.getElementById('folder-create-name') || document.getElementById('new-folder-name');
+                if (input && input.value && this.userId) {
+                    const name = input.value.trim();
+                    // Save as Manual
+                    this.db.db.ref(`users/${this.userId}/folderMeta/${name}`).update({
+                        type: 'manual',
+                        createdAt: Date.now()
+                    });
+                }
+            }
+        });
+    }
+
+    updateFolderSort(order) {
+        this.folderSortOrder = order;
+        localStorage.setItem('folderSortOrder', order);
+
+        // Update UI immediately
+        this.renderFolders();
+
+        // Close menu
+        const sortMenu = document.getElementById('folder-sort-menu');
+        if (sortMenu) sortMenu.classList.add('hidden');
     }
 
     openFolderCreator() {
@@ -637,11 +671,33 @@ class StudyModule {
         }
     }
 
-    async deleteFolder(folderId) {
-        if (!confirm('Вы уверены, что хотите удалить эту папку? Слова останутся в общем словаре.')) return;
+    async deleteFolder(folderName) {
+        if (!confirm('Вы уверены, что хотите удалить эту папку? Слова останутся с названием этой папки.')) return;
 
         try {
-            await this.db.db.ref(`users/${this.userId}/folders/${folderId}`).remove();
+            // Since we no longer use 'folders/' structure, we only need to clean up old data if any
+            // For new implementation, deleting a "folder" just means we stop showing it,
+            // but words still keep their folder field.
+            // If you want to clear the folder field from words, you'd need to update each word:
+
+            const updates = {};
+            this.allWordsCache.forEach(w => {
+                if (w.folder === folderName) {
+                    // Option 1: Clear folder field (words will go to auto-folders)
+                    // updates[`users/${this.userId}/words/${w.id}/folder`] = null;
+
+                    // Option 2: Keep the folder name (recommended)
+                    // Do nothing, words keep their folder name
+                }
+            });
+
+            // Remove old folder structure if exists
+            await this.db.db.ref(`users/${this.userId}/folders/${folderName}`).remove();
+
+            if (Object.keys(updates).length > 0) {
+                await this.db.db.ref().update(updates);
+            }
+
             this.renderStudyDashboard();
             if (window.switchView) window.switchView(this.viewStudy);
         } catch (e) {
@@ -650,39 +706,34 @@ class StudyModule {
         }
     }
 
-    openFolderEditor(folderId) {
+    openFolderEditor(folderName) {
         if (window.switchView) window.switchView(this.viewGroupEdit);
-
-        const folder = this.foldersCache.find(f => f.id === folderId);
-        if (!folder) return; // Should not happen
 
         // Reset Inputs
         const nameInput = document.getElementById('group-name-input');
         const descInput = document.getElementById('group-desc-input');
-        if (nameInput) nameInput.value = folder.name || '';
-        if (descInput) descInput.value = folder.desc || '';
+        if (nameInput) nameInput.value = folderName || '';
+        if (descInput) descInput.value = '';
 
         this.editingMode = 'edit_folder';
-        this.currentFolderId = folderId;
+        this.currentFolderId = folderName; // Store original folder name
         this.folderDraftState = [];
 
-        // Load words
-        if (folder.wordIds) {
-            folder.wordIds.forEach(id => {
-                const w = this.allWordsCache.find(word => word.id === id);
-                if (w) {
-                    this.folderDraftState.push({
-                        id: w.id, // Keep ID for updates
-                        word: w.word,
-                        translation: w.translation,
-                        info1: w.info1,
-                        info2: w.info2,
-                        ex1: w.ex1,
-                        ex2: w.ex2
-                    });
-                }
+        // Load words from allWordsCache that belong to this folder
+        const folderWords = this.allWordsCache.filter(w => w.folder === folderName);
+        folderWords.forEach(w => {
+            this.folderDraftState.push({
+                id: w.id, // Keep ID for updates
+                word: w.word,
+                translation: w.translation,
+                info1: w.info1,
+                info2: w.info2,
+                ex1: w.ex1,
+                ex2: w.ex2,
+                progress_global: w.progress_global,
+                progress_groups: w.progress_groups
             });
-        }
+        });
 
         // Ensure at least one empty card if empty
         if (this.folderDraftState.length === 0) {
@@ -694,7 +745,7 @@ class StudyModule {
         // Show and Bind Delete Button
         if (this.btnDeleteFolder) {
             this.btnDeleteFolder.classList.remove('hidden');
-            this.btnDeleteFolder.onclick = () => this.deleteFolder(folderId);
+            this.btnDeleteFolder.onclick = () => this.deleteFolder(folderName);
         }
 
         // Update Save Button Listener
@@ -846,6 +897,7 @@ class StudyModule {
 
             newWordIds.push(id);
 
+            // Important: Assign the folder name to each word
             updates[`users/${this.userId}/words/${id}`] = {
                 id: id,
                 word: w.word,
@@ -854,27 +906,29 @@ class StudyModule {
                 info2: w.info2,
                 ex1: w.ex1,
                 ex2: w.ex2,
+                folder: name, // Set folder to the folder name
                 progress_global: w.progress_global || { interval: 0, nextDate: Date.now(), state: "new" },
                 progress_groups: w.progress_groups || { interval: 0, nextDate: Date.now(), state: "new" }
             };
         });
 
-        // Determine Folder ID
-        let folderId = (this.editingMode === 'edit_folder' && this.currentFolderId)
-            ? this.currentFolderId
-            : 'folder_' + Date.now();
+        // If editing and folder name changed, update folder field for old words that weren't included
+        if (this.editingMode === 'edit_folder' && this.currentFolderId && this.currentFolderId !== name) {
+            // Update all words that had the old folder name but aren't in the new list
+            this.allWordsCache.forEach(w => {
+                if (w.folder === this.currentFolderId && !newWordIds.includes(w.id)) {
+                    // Word was removed from folder - optionally clear its folder or leave it
+                    // Option: Clear folder (will go to auto-folders)
+                    // updates[`users/${this.userId}/words/${w.id}/folder`] = null;
 
-        // Create/Update Folder Object
-        const folder = {
-            id: folderId,
-            name: name,
-            desc: descInput ? descInput.value : '',
-            wordIds: newWordIds,
-            createdAt: (this.editingMode === 'edit_folder' && this.currentFolderId)
-                ? (this.foldersCache.find(f => f.id === folderId)?.createdAt || Date.now())
-                : Date.now()
-        };
-        updates[`users/${this.userId}/folders/${folderId}`] = folder;
+                    // Option: Keep old folder name (recommended for history)
+                    // Do nothing
+                }
+            });
+        }
+
+        // Note: We no longer save the folder object in 'folders/' path.
+        // Folders are derived dynamically from the 'folder' field in words.
 
         // Batch Update
         await this.db.db.ref().update(updates);
@@ -889,21 +943,60 @@ class StudyModule {
         if (!container) return;
         container.innerHTML = '';
 
-        if (!this.foldersCache || this.foldersCache.length === 0) {
+        // Derive folders from allWordsCache
+        const foldersMap = {};
+        this.allWordsCache.forEach(w => {
+            // Only include words that have a folder assigned
+            if (w.folder) {
+                const folderName = w.folder;
+                if (!foldersMap[folderName]) {
+                    foldersMap[folderName] = {
+                        name: folderName,
+                        id: folderName,
+                        wordIds: [],
+                        minId: Infinity // Track min ID for creation order sort
+                    };
+                }
+                foldersMap[folderName].wordIds.push(w.id);
+
+                // Capture the lowest ID to use as "Creation Time" proxy
+                const wId = parseInt(w.id);
+                if (!isNaN(wId) && wId < foldersMap[folderName].minId) {
+                    foldersMap[folderName].minId = wId;
+                }
+            }
+        });
+
+        // Sort based on user preference
+        const folders = Object.values(foldersMap).sort((a, b) => {
+            const valA = a.minId === Infinity ? 0 : a.minId;
+            const valB = b.minId === Infinity ? 0 : b.minId;
+
+            if (this.folderSortOrder === 'newest') {
+                return valB - valA; // Descending ID
+            } else if (this.folderSortOrder === 'alphabet') {
+                return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
+            } else {
+                // Default 'oldest'
+                return valA - valB; // Ascending ID
+            }
+        });
+
+        if (folders.length === 0) {
             container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 2rem;">Нет созданных папок</div>';
             return;
         }
 
         const now = Date.now();
 
-        this.foldersCache.forEach(folder => {
+        folders.forEach(folder => {
             // Get words objects
-            const folderWords = this.allWordsCache.filter(w => folder.wordIds && folder.wordIds.includes(w.id));
-            if (folderWords.length === 0) return; // Skip empty/broken folders? Or show empty.
+            const folderWords = this.allWordsCache.filter(w => folder.wordIds.includes(w.id));
+            if (folderWords.length === 0) return;
 
-            const due = folderWords.filter(w => !w.progress_global || w.progress_global.nextDate <= now);
-            // Mastered: interval >= 12 AND not overdue
-            const learned = folderWords.filter(w => w.progress_global && w.progress_global.interval >= 12 && w.progress_global.nextDate > now);
+            const due = folderWords.filter(w => !w.progress_global?.isActive && (!w.progress_global || w.progress_global.nextDate <= now));
+            // Mastered: active OR (interval >= 12 AND not overdue)
+            const learned = folderWords.filter(w => w.progress_global && (w.progress_global.isActive || (w.progress_global.interval >= 12 && w.progress_global.nextDate > now)));
 
             const card = document.createElement('div');
             card.className = due.length === 0 ? 'group-card completed' : 'group-card';
@@ -916,7 +1009,9 @@ class StudyModule {
                     <div style="flex: 1; min-width: 0; padding-right: 1rem;">
                         <h3 style="margin: 0; font-size: 1.4rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${folder.name}">${folder.name}</h3>
                          <div style="font-size: 0.8rem; color: var(--text-muted); opacity: 0.6; margin-top:0.2rem;">
-                            Создано вручную
+                            ${(/^Папка \d+$/.test(folder.name)) ? 'Создано автоматически' :
+                    (this.folderMetaCache && this.folderMetaCache[folder.name] && this.folderMetaCache[folder.name].type === 'manual') ? 'Создано вручную' :
+                        'Создано через импорт'}
                         </div>
                     </div>
                     
@@ -1007,8 +1102,30 @@ class StudyModule {
         const now = Date.now();
         const sortedWords = [...this.allWordsCache].sort((a, b) => parseInt(a.id) - parseInt(b.id));
 
-        const globalDue = sortedWords.filter(w => !w.progress_global || w.progress_global.nextDate <= now);
+        const globalDue = sortedWords.filter(w => !w.progress_global?.isActive && (!w.progress_global || w.progress_global.nextDate <= now));
         if (this.globalDueCountLbl) this.globalDueCountLbl.textContent = globalDue.length;
+
+        const examWords = sortedWords.filter(w => (w.progress_global?.excellentStreak || 0) >= 9 && !w.progress_global?.isActive);
+        const examCard = document.getElementById('exam-mode-card');
+        const examCountEl = document.getElementById('exam-ready-count');
+        const examBtn = document.getElementById('btn-start-exam');
+
+        // Exam card is always visible
+        if (examCard) {
+            examCard.style.display = 'block';
+            if (examCountEl) examCountEl.textContent = examWords.length;
+            if (examBtn) {
+                examBtn.disabled = examWords.length === 0;
+                if (examWords.length === 0) {
+                    examBtn.style.opacity = '0.5';
+                    examBtn.style.cursor = 'not-allowed';
+                } else {
+                    examBtn.style.opacity = '1';
+                    examBtn.style.cursor = 'pointer';
+                    examBtn.onclick = () => this.startExamSession();
+                }
+            }
+        }
 
         const dashTotalWords = document.getElementById('dash-total-words');
         if (dashTotalWords) dashTotalWords.textContent = sortedWords.length;
@@ -1031,24 +1148,10 @@ class StudyModule {
                     groupIndex = meta.groupIndex;
 
                     if (mode === 'folder') {
-                        // Ensure folders are loaded.
-                        const folder = (this.foldersCache || []).find(f => f.id === groupIndex);
-                        if (folder) {
-                            title = folder.name;
-                            folderOrGroupWords = this.allWordsCache.filter(w => folder.wordIds && folder.wordIds.includes(w.id));
-                            isValid = true;
-                        }
-                    } else if (mode === 'groups') {
-                        const idx = parseInt(groupIndex);
-                        const chunkSize = 100;
-                        const startX = idx * chunkSize;
-                        if (startX < sortedWords.length) {
-                            const groupKey = `group_meta_${idx}`;
-                            const groupMeta = JSON.parse(localStorage.getItem(groupKey) || '{}');
-                            title = groupMeta.name || `Группа ${idx + 1}`;
-                            folderOrGroupWords = sortedWords.slice(startX, startX + chunkSize);
-                            isValid = true;
-                        }
+                        // Deriving folder info from words (groupIndex is folder name)
+                        title = groupIndex;
+                        folderOrGroupWords = this.allWordsCache.filter(w => w.folder === groupIndex);
+                        isValid = folderOrGroupWords.length > 0;
                     }
                 } catch (e) {
                     console.error("Error parsing last opened session", e);
@@ -1060,8 +1163,8 @@ class StudyModule {
 
                 // Stats Logic
                 const total = folderOrGroupWords.length;
-                const due = folderOrGroupWords.filter(w => !w.progress_global || w.progress_global.nextDate <= now).length;
-                const mastered = folderOrGroupWords.filter(w => w.progress_global && w.progress_global.interval >= 12 && w.progress_global.nextDate > now).length;
+                const due = folderOrGroupWords.filter(w => !w.progress_global?.isActive && (!w.progress_global || w.progress_global.nextDate <= now)).length;
+                const mastered = folderOrGroupWords.filter(w => w.progress_global && (w.progress_global.isActive || (w.progress_global.interval >= 12 && w.progress_global.nextDate > now))).length;
                 const progressPct = total === 0 ? 0 : Math.round((mastered / total) * 100);
 
                 // UI References
@@ -1106,8 +1209,6 @@ class StudyModule {
                         e.stopPropagation();
                         if (mode === 'folder') {
                             this.openFolderEditor(groupIndex);
-                        } else if (mode === 'groups') {
-                            this.openGroupEditor(parseInt(groupIndex));
                         }
                     };
                 }
@@ -1121,203 +1222,6 @@ class StudyModule {
         // Render Folders
         this.renderFolders();
 
-        if (this.groupsList) {
-            this.groupsList.innerHTML = '';
-            const chunkSize = 100;
-            const totalGroups = Math.ceil(sortedWords.length / chunkSize);
-
-            for (let i = 0; i < totalGroups; i++) {
-                const idx = i;
-                const startX = i * chunkSize;
-                const chunk = sortedWords.slice(startX, startX + chunkSize);
-                const due = chunk.filter(w => !w.progress_global || w.progress_global.nextDate <= now);
-                // Mastered: interval >= 12 AND not overdue
-                const learned = chunk.filter(w => w.progress_global && w.progress_global.interval >= 12 && w.progress_global.nextDate > now);
-
-                const groupKey = `group_meta_${i}`;
-                const meta = JSON.parse(localStorage.getItem(groupKey) || '{}');
-                const groupTitle = meta.name || `Группа ${i + 1}`;
-                const rangeStr = `${chunk[0].id}–${chunk[chunk.length - 1].id}`;
-                const subTitle = meta.desc ? `${rangeStr} • ${meta.desc}` : rangeStr;
-
-                const card = document.createElement('div');
-                card.className = due.length === 0 ? 'group-card completed' : 'group-card';
-                card.style.cursor = 'pointer';
-
-                card.innerHTML = `
-            <div style="display: flex; flex-direction: column; gap: 1rem; width: 100%; position: relative;">
-                <!-- Header -->
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
-                    <div style="flex: 1; min-width: 0; padding-right: 1rem;">
-                        <h3 style="margin: 0; font-size: 1.4rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${groupTitle}">${groupTitle}</h3>
-                         <div style="font-size: 0.8rem; color: var(--text-muted); opacity: 0.6; margin-top:0.2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                            ${subTitle}
-                        </div>
-                    </div>
-                    
-                    <button class="btn-icon" style="color: var(--text-muted); padding: 0.5rem;" onclick="event.stopPropagation(); window.StudyModule.openGroupEditor(${idx})" title="Редактировать список">
-                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="8" y1="6" x2="21" y2="6"></line>
-                            <line x1="8" y1="12" x2="21" y2="12"></line>
-                            <line x1="8" y1="18" x2="21" y2="18"></line>
-                            <line x1="3" y1="6" x2="3.01" y2="6"></line>
-                            <line x1="3" y1="12" x2="3.01" y2="12"></line>
-                            <line x1="3" y1="18" x2="3.01" y2="18"></line>
-                        </svg>
-                    </button>
-                </div>
-                
-                <!-- Stats Grid -->
-                <div class="group-stats-grid">
-                    <div class="group-stat-item">
-                        <div class="group-stat-value" style="color: var(--text-main);">${chunk.length}</div>
-                        <div class="group-stat-label">Всего</div>
-                    </div>
-                    <div class="group-stat-item">
-                        <div class="group-stat-value" style="color: ${due.length > 0 ? 'var(--accent-2)' : 'rgba(255,255,255,0.3)'};">${due.length}</div>
-                        <div class="group-stat-label">К повтору</div>
-                    </div>
-                    <div class="group-stat-item">
-                        <div class="group-stat-value" style="color: ${learned.length > 0 ? 'var(--secondary)' : 'rgba(255,255,255,0.3)'};">${learned.length}</div>
-                        <div class="group-stat-label" style="display:flex; justify-content:center; align-items:center; gap:4px;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--secondary); opacity: 0.8;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-                            Идеально
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Progress Bar -->
-                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-size: 0.75rem; color: var(--text-muted);">Прогресс</span>
-                        <span style="font-size: 0.75rem; font-weight: 600; color: var(--secondary);">${Math.round(learned.length / chunk.length * 100)}%</span>
-                    </div>
-                    <div style="height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden;">
-                        <div style="height: 100%; width: ${learned.length / chunk.length * 100}%; background: linear-gradient(90deg, var(--secondary), var(--accent-bright)); border-radius: 3px; transition: width 0.3s ease;"></div>
-                    </div>
-                </div>
-            </div>
-        `;
-
-                card.onclick = () => this.startSession('groups', idx);
-                this.groupsList.appendChild(card);
-            }
-        }
-    }
-
-    // --- GROUP EDITOR ---
-    openGroupEditor(groupIndex) {
-        if (window.switchView) window.switchView(this.viewGroupEdit);
-        this.editingMode = 'group_edit';
-
-        const chunk = this.getWordsForScope('groups', groupIndex);
-
-        const groupKey = `group_meta_${groupIndex}`;
-        const savedMeta = JSON.parse(localStorage.getItem(groupKey) || '{}');
-
-        const nameInput = document.getElementById('group-name-input');
-        const descInput = document.getElementById('group-desc-input');
-
-        descInput.value = savedMeta.desc || '';
-
-        const saveMeta = () => {
-            if (this.editingMode === 'group_edit') {
-                localStorage.setItem(groupKey, JSON.stringify({ name: nameInput.value, desc: descInput.value }));
-            }
-        };
-        // Unbind previous listeners to avoid duplicates if re-opened
-        nameInput.onblur = saveMeta;
-        descInput.onblur = saveMeta;
-
-        this.renderGroupEditorList(chunk);
-
-        this.btnSaveGroup.onclick = () => {
-            saveMeta();
-            this.renderStudyDashboard();
-            if (window.switchView) window.switchView(this.viewStudy);
-        };
-
-        this.btnBackToStudy.onclick = () => {
-            this.renderStudyDashboard();
-            if (window.switchView) window.switchView(this.viewStudy);
-        };
-    }
-
-    renderGroupEditorList(words) {
-        this.groupWordsList.innerHTML = '';
-        words.forEach((w, index) => {
-            const div = document.createElement('div');
-            div.className = 'word-edit-card';
-            div.innerHTML = `
-        <div class="card-header-mini">
-            <span class="card-num">
-                ${index + 1}
-                <span style="opacity: 0.3; font-size: 0.8em; margin-left: 10px; font-weight: normal;">#${w.id}</span>
-            </span>
-            <div class="card-actions-mini">
-                <button class="btn-icon btn-delete text-muted" title="Delete">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M3 6h18"></path>
-                        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-                    </svg>
-                </button>
-            </div>
-        </div>
-        <div class="card-edit-content">
-            <div class="term-col">
-                <div class="field-group">
-                    <label>Слово</label>
-                    <input type="text" class="input-stealth input-main" value="${w.word}" data-field="word" data-id="${w.id}" style="padding-left: 1rem; font-weight: 600;">
-                </div>
-                 <div class="field-group">
-                    <label>Определение</label>
-                    <input type="text" class="input-stealth input-main" value="${w.translation}" data-field="translation" data-id="${w.id}" style="padding-left: 1rem; font-weight: 600;">
-                </div>
-            </div>
-            
-            <div class="def-col">
-                 <div class="field-group">
-                     <label>Доп. инфо</label>
-                     <input type="text" class="input-stealth input-sub" value="${w.info1 || ''}" data-field="info1" data-id="${w.id}" style="padding-left: 1rem; font-weight: 500; color: #ffffff; opacity: 1; font-size: 0.9rem;">
-                </div>
-                 <div class="field-group">
-                     <input type="text" class="input-stealth input-sub" value="${w.info2 || ''}" data-field="info2" data-id="${w.id}" style="padding-left: 1rem; font-weight: 500; color: #ffffff; opacity: 1; font-size: 0.9rem;">
-                </div>
-                 <div class="field-group">
-                     <label>Примеры</label>
-                     <input type="text" class="input-stealth input-sub" value="${w.ex1 || ''}" data-field="ex1" data-id="${w.id}" style="padding-left: 1rem; font-weight: 500; color: #ffffff; opacity: 1; font-size: 0.9rem;">
-                </div>
-                 <div class="field-group">
-                     <input type="text" class="input-stealth input-sub" value="${w.ex2 || ''}" data-field="ex2" data-id="${w.id}" style="padding-left: 1rem; font-weight: 500; color: #ffffff; opacity: 1; font-size: 0.9rem;">
-                </div>
-            </div>
-        </div>
-    `;
-
-            div.querySelectorAll('input').forEach(input => {
-                input.onblur = async (e) => {
-                    const field = e.target.dataset.field;
-                    const id = e.target.dataset.id;
-                    const val = e.target.value;
-                    if (w[field] !== val) {
-                        await this.db.updateWord(id, { [field]: val });
-                        w[field] = val;
-                    }
-                };
-            });
-
-            div.querySelector('.btn-delete').onclick = async () => {
-                if (confirm(`Удалить слово "${w.word}"?`)) {
-                    await this.db.deleteWord(w.id);
-                    div.remove();
-                    const globalIdx = this.allWordsCache.findIndex(cw => cw.id === w.id);
-                    if (globalIdx !== -1) this.allWordsCache.splice(globalIdx, 1);
-                }
-            };
-
-            this.groupWordsList.appendChild(div);
-        });
     }
 
     // --- TTS HELPER ---
@@ -1397,8 +1301,8 @@ class StudyModule {
 
     // --- SESSION ENGINE ---
     startSession(mode, groupIndex) {
-        // Save Last Opened Context (if folder or groups)
-        if (mode === 'folder' || mode === 'groups') {
+        // Save Last Opened Context (if folder)
+        if (mode === 'folder') {
             const meta = {
                 mode,
                 groupIndex,
@@ -1441,7 +1345,12 @@ class StudyModule {
             this.currentSession = sessionData;
         } else {
             const scope = this.getWordsForScope(mode, groupIndex);
-            let dueWords = scope.filter(w => !w[progressKey] || w[progressKey].nextDate <= now);
+            // Regular session excludes Active words AND Exam candidates (score >= 9)
+            let dueWords = scope.filter(w =>
+                !w.progress_global?.isActive &&
+                (w.progress_global?.excellentStreak || 0) < 9 &&
+                (!w[progressKey] || w[progressKey].nextDate <= now)
+            );
 
             if (dueWords.length === 0) {
                 alert("Нет слов для повторения!");
@@ -1468,10 +1377,8 @@ class StudyModule {
         if (this.sessionGroupTitle) {
             if (mode === 'global') {
                 this.sessionGroupTitle.textContent = 'Все слова';
-            } else if (mode === 'groups' && groupIndex != null) {
-                const groupKey = `group_meta_${groupIndex}`;
-                const meta = JSON.parse(localStorage.getItem(groupKey) || '{}');
-                this.sessionGroupTitle.textContent = meta.name || `Группа ${groupIndex + 1}`;
+            } else if (mode === 'folder') {
+                this.sessionGroupTitle.textContent = groupIndex; // groupIndex is folder name
             }
         }
 
@@ -1861,28 +1768,49 @@ class StudyModule {
         const key = this.currentSession.key;
 
         let nextIntervalDays = 1;
+        let scoreChange = 0;
+
         switch (rating) {
-            case 1: nextIntervalDays = 0; break;
-            case 2: nextIntervalDays = 1; break;
-            case 3: nextIntervalDays = 4; break;
-            case 4: nextIntervalDays = 7; break;
-            case 5: nextIntervalDays = 12; break;
-            case 6: nextIntervalDays = 21; break;
+            case 1: // Не помню
+                nextIntervalDays = 0;
+                scoreChange = -999; // Signal for reset to 0
+                break;
+            case 2: // С трудом
+                nextIntervalDays = 1;
+                scoreChange = -3;
+                break;
+            case 3: // Частично
+                nextIntervalDays = 4;
+                scoreChange = -1.5;
+                break;
+            case 4: // Почти
+                nextIntervalDays = 7;
+                scoreChange = 0;
+                break;
+            case 5: // Помню
+                nextIntervalDays = 12;
+                scoreChange = 1.5;
+                break;
+            case 6: // Отлично
+                nextIntervalDays = 21;
+                scoreChange = 3;
+                break;
         }
 
         const currentProgress = word[key] || {};
-        let excellentStreak = currentProgress.excellentStreak || 0;
+        let activityScore = currentProgress.excellentStreak || 0;
         let isActive = currentProgress.isActive || false;
 
-        if (rating === 6) {
-            excellentStreak++;
+        if (scoreChange === -999) {
+            activityScore = 0;
         } else {
-            excellentStreak = 0;
+            activityScore = Math.max(0, activityScore + scoreChange);
         }
 
-        if (excellentStreak >= 3) {
-            isActive = true;
-        }
+        // CAP at 9 in regular sessions - can only reach 10 via exam
+        if (activityScore > 9) activityScore = 9;
+
+        // isActive remains unchanged in regular sessions (only exam can set it to true)
 
         const nextTimestamp = rating === 1 ? Date.now() + 3600000 : Date.now() + (nextIntervalDays * 86400000);
         const newProgress = {
@@ -1890,7 +1818,7 @@ class StudyModule {
             nextDate: nextTimestamp,
             lastRating: rating,
             lastReviewed: Date.now(),
-            excellentStreak: excellentStreak,
+            excellentStreak: activityScore,
             isActive: isActive
         };
 
@@ -1912,6 +1840,190 @@ class StudyModule {
 
         this.currentSession.currentIndex++;
         this.showNextCard();
+    }
+
+    // --- EXAM SESSION LOGIC ---
+    startExamSession() {
+        const examWords = this.allWordsCache.filter(w =>
+            (w.progress_global?.excellentStreak || 0) >= 9 &&
+            !w.progress_global?.isActive
+        );
+
+        if (examWords.length === 0) {
+            alert("Нет слов для экзамена!");
+            return;
+        }
+
+        this.currentExamSession = {
+            queue: this.shuffleArray([...examWords]),
+            currentIndex: 0,
+            currentWord: null
+        };
+
+        // Switch to exam view
+        if (window.switchView) window.switchView(this.viewExam);
+
+        // Bind exit button
+        if (this.btnExitExam) {
+            this.btnExitExam.onclick = () => {
+                if (confirm('Вы уверены, что хотите выйти из экзамена?')) {
+                    this.currentExamSession = null;
+                    if (window.switchView) window.switchView(this.viewStudy);
+                    this.renderStudyDashboard();
+                }
+            };
+        }
+
+        this.showNextExamQuestion();
+    }
+
+    showNextExamQuestion() {
+        if (!this.currentExamSession) return;
+
+        if (this.currentExamSession.currentIndex >= this.currentExamSession.queue.length) {
+            // Exam finished
+            alert("Экзамен завершен!");
+            this.currentExamSession = null;
+            if (window.switchView) window.switchView(this.viewStudy);
+            this.renderStudyDashboard();
+            return;
+        }
+
+        const word = this.currentExamSession.queue[this.currentExamSession.currentIndex];
+        this.currentExamSession.currentWord = word;
+
+        // Update progress text
+        if (this.examProgressText) {
+            this.examProgressText.textContent = `Слово ${this.currentExamSession.currentIndex + 1} из ${this.currentExamSession.queue.length}`;
+        }
+
+        // Display question
+        if (this.examQuestionText) this.examQuestionText.textContent = word.translation;
+        if (this.examQuestionInfo) {
+            this.examQuestionInfo.textContent = word.info1 || '';
+        }
+
+        // Reset input
+        if (this.examInput) {
+            this.examInput.value = '';
+            this.examInput.disabled = false;
+            this.examInput.style.borderColor = 'var(--border)';
+            this.examInput.focus();
+        }
+
+        // Reset buttons
+        if (this.btnExamCheck) {
+            this.btnExamCheck.classList.remove('hidden');
+            this.btnExamCheck.disabled = false;
+        }
+        if (this.btnExamNext) this.btnExamNext.classList.add('hidden');
+        if (this.examFeedback) this.examFeedback.classList.add('hidden');
+
+        // Bind check button
+        if (this.btnExamCheck) {
+            this.btnExamCheck.onclick = () => this.checkExamAnswer();
+        }
+
+        // Allow Enter key to submit
+        if (this.examInput) {
+            this.examInput.onkeydown = (e) => {
+                if (e.key === 'Enter' && !this.btnExamCheck.classList.contains('hidden')) {
+                    this.checkExamAnswer();
+                }
+            };
+        }
+    }
+
+    normalizeAnswer(str) {
+        // Remove articles, normalize whitespace, lowercase
+        return str.toLowerCase()
+            .replace(/\b(der|die|das|den|dem|des|ein|eine|einer|einem|einen)\b/gi, '')
+            .replace(/[.,;:!?]/g, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    async checkExamAnswer() {
+        if (!this.currentExamSession || !this.currentExamSession.currentWord) return;
+
+        const word = this.currentExamSession.currentWord;
+        const userAnswer = this.examInput.value.trim();
+        const correctAnswer = word.word;
+
+        // Normalize both answers for comparison
+        const normalizedUser = this.normalizeAnswer(userAnswer);
+        const normalizedCorrect = this.normalizeAnswer(correctAnswer);
+
+        const isCorrect = normalizedUser === normalizedCorrect;
+
+        // Disable input and check button
+        if (this.examInput) this.examInput.disabled = true;
+        if (this.btnExamCheck) {
+            this.btnExamCheck.classList.add('hidden');
+            this.btnExamCheck.disabled = true;
+        }
+
+        // Show feedback
+        if (this.examFeedback) {
+            this.examFeedback.classList.remove('hidden');
+            if (isCorrect) {
+                this.examFeedback.style.background = 'rgba(16, 185, 129, 0.1)';
+                this.examFeedback.style.color = 'var(--accent-bright)';
+                this.examFeedback.style.border = '1px solid var(--accent-bright)';
+                this.examFeedback.textContent = '✓ Правильно!';
+            } else {
+                this.examFeedback.style.background = 'rgba(239, 68, 68, 0.1)';
+                this.examFeedback.style.color = '#ef4444';
+                this.examFeedback.style.border = '1px solid #ef4444';
+                this.examFeedback.innerHTML = `✗ Неправильно<br><small>Правильный ответ: <strong>${correctAnswer}</strong></small>`;
+            }
+        }
+
+        // Update score
+        const currentProgress = word.progress_global || {};
+        let score = currentProgress.excellentStreak || 0;
+
+        if (isCorrect) {
+            // +1 point, becomes active (10)
+            score = 10;
+            word.progress_global = {
+                ...currentProgress,
+                excellentStreak: 10,
+                isActive: true,
+                interval: 21,
+                nextDate: Date.now() + (21 * 86400000),
+                lastRating: 6,
+                lastReviewed: Date.now()
+            };
+        } else {
+            // -3 points
+            score = Math.max(0, score - 3);
+            word.progress_global = {
+                ...currentProgress,
+                excellentStreak: score,
+                isActive: false,
+                interval: score >= 9 ? 7 : 1,
+                nextDate: Date.now() + ((score >= 9 ? 7 : 1) * 86400000),
+                lastRating: 2,
+                lastReviewed: Date.now()
+            };
+        }
+
+        // Save to database
+        try {
+            await this.db.updateProgress(word.id, 'progress_global', word.progress_global);
+        } catch (e) {
+            console.error('Error updating exam progress:', e);
+        }
+
+        // Show Next button
+        if (this.btnExamNext) {
+            this.btnExamNext.classList.remove('hidden');
+            this.btnExamNext.onclick = () => {
+                this.currentExamSession.currentIndex++;
+                this.showNextExamQuestion();
+            };
+        }
     }
 }
 

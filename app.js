@@ -40,7 +40,8 @@ const editInputs = {
     info1: document.getElementById('edit-info1'),
     info2: document.getElementById('edit-info2'),
     ex1: document.getElementById('edit-ex1'),
-    ex2: document.getElementById('edit-ex2')
+    ex2: document.getElementById('edit-ex2'),
+    folder: document.getElementById('edit-folder')
 };
 
 // --- STATE ---
@@ -128,7 +129,60 @@ class WordLabDB {
 
     async getAllWords() {
         const snap = await this.db.ref(`users/${this.userId}/words`).once('value');
-        return snap.val() || {};
+        const words = snap.val() || {};
+        await this.autoOrganizeExistingWords(words);
+        return words;
+    }
+
+    async autoOrganizeExistingWords(words) {
+        if (!words || Object.keys(words).length === 0) return;
+        const updates = {};
+        const wordsSorted = Object.values(words).sort((a, b) => parseInt(a.id) - parseInt(b.id));
+
+        // Build a complete map of how many words are in each auto-folder
+        const autoFolderCounts = {};
+        wordsSorted.forEach(w => {
+            if (w.folder && w.folder.startsWith('Папка ')) {
+                const num = parseInt(w.folder.replace('Папка ', ''));
+                if (!isNaN(num)) {
+                    if (!autoFolderCounts[num]) autoFolderCounts[num] = 0;
+                    autoFolderCounts[num]++;
+                }
+            }
+        });
+
+        // Find the current auto-folder to use (the last one that's not full)
+        let currentAutoIdx = 1;
+        let wordsInCurrentAuto = 0;
+
+        const autoFolderNumbers = Object.keys(autoFolderCounts).map(k => parseInt(k));
+        if (autoFolderNumbers.length > 0) {
+            currentAutoIdx = Math.max(...autoFolderNumbers);
+            wordsInCurrentAuto = autoFolderCounts[currentAutoIdx] || 0;
+
+            // If the last auto-folder is full, start a new one
+            if (wordsInCurrentAuto >= 100) {
+                currentAutoIdx++;
+                wordsInCurrentAuto = 0;
+            }
+        }
+
+        wordsSorted.forEach(w => {
+            if (!w.folder) {
+                if (wordsInCurrentAuto >= 100) {
+                    currentAutoIdx++;
+                    wordsInCurrentAuto = 0;
+                }
+                const folderName = `Папка ${currentAutoIdx}`;
+                updates[`users/${this.userId}/words/${w.id}/folder`] = folderName;
+                w.folder = folderName; // Update local cache too
+                wordsInCurrentAuto++;
+            }
+        });
+
+        if (Object.keys(updates).length > 0) {
+            await this.db.ref().update(updates);
+        }
     }
 
     async processSmartImport(rows) {
@@ -140,19 +194,91 @@ class WordLabDB {
         let startIndex = 0;
         if (rows.length > 0 && String(rows[0][0]).toLowerCase().includes('id')) startIndex = 1;
 
+        // Auto-folder tracking for new/empty folder words
+        // Build a complete map of how many words are in each auto-folder
+        const autoFolderCounts = {};
+        const wordsSorted = Object.values(existingWords).sort((a, b) => parseInt(a.id) - parseInt(b.id));
+
+        wordsSorted.forEach(w => {
+            if (w.folder && w.folder.startsWith('Папка ')) {
+                const num = parseInt(w.folder.replace('Папка ', ''));
+                if (!isNaN(num)) {
+                    if (!autoFolderCounts[num]) autoFolderCounts[num] = 0;
+                    autoFolderCounts[num]++;
+                }
+            }
+        });
+
+        // Find the current auto-folder to use (the last one that's not full)
+        let autoFolderIndex = 1;
+        let wordsInCurrentAutoFolder = 0;
+
+        // Find the highest auto-folder number
+        const autoFolderNumbers = Object.keys(autoFolderCounts).map(k => parseInt(k));
+        if (autoFolderNumbers.length > 0) {
+            autoFolderIndex = Math.max(...autoFolderNumbers);
+            wordsInCurrentAutoFolder = autoFolderCounts[autoFolderIndex] || 0;
+
+            // If the last auto-folder is full, start a new one
+            if (wordsInCurrentAutoFolder >= 100) {
+                autoFolderIndex++;
+                wordsInCurrentAutoFolder = 0;
+            }
+        }
+
         for (let i = startIndex; i < rows.length; i++) {
             const row = rows[i];
             if (!row || !Array.isArray(row) || row.length < 2) continue;
             const id = String(row[0] || "").trim();
             if (!id) continue;
             newIdsInFile.add(id);
+            // Score handling: 0-10 range. 10 = Active.
+            let rawScore = String(row[1] || "").trim();
+            let scoreVal = 0;
+
+            if (rawScore.toLowerCase() === 'yes') scoreVal = 10;
+            else if (rawScore.toLowerCase() === 'no') scoreVal = 0;
+            else {
+                scoreVal = parseFloat(rawScore);
+                if (isNaN(scoreVal)) scoreVal = 0;
+            }
+            // Clamp 0-10
+            scoreVal = Math.max(0, Math.min(10, scoreVal));
+
+            const isActive = scoreVal >= 10;
+            const excellentStreak = scoreVal;
+            let wordFolder = String(row[8] || "").trim();
+
+            // Only auto-assign folder if it's empty AND it's a new word OR existing word without folder
+            const existingWord = existingWords[id];
+            if (!wordFolder) {
+                // Check if this is an existing word that already has a folder
+                if (existingWord && existingWord.folder) {
+                    // Keep the existing folder
+                    wordFolder = existingWord.folder;
+                } else {
+                    // Assign to auto-folder
+                    if (wordsInCurrentAutoFolder >= 100) {
+                        autoFolderIndex++;
+                        wordsInCurrentAutoFolder = 0;
+                    }
+                    wordFolder = `Папка ${autoFolderIndex}`;
+                    wordsInCurrentAutoFolder++;
+                }
+            }
+
+            // Cleaning helpers
+            const cleanParens = (val) => String(val || "").replace(/[()]/g, '').replace(/\s+/g, ' ').trim(); // Remove parens, normalize spaces
+            const cleanTr = (val) => String(val || "").replace(/\s*\(pl\)/gi, '').replace(/\s*\(plural\)/gi, '').trim();
+
             const wordData = {
-                word: String(row[1] || "").trim(),
-                translation: String(row[2] || "").trim(),
-                info1: String(row[3] || "").trim(),
-                info2: String(row[4] || "").trim(),
-                ex1: String(row[5] || "").trim(),
-                ex2: String(row[6] || "").trim()
+                word: String(row[2] || "").trim(),
+                translation: cleanTr(row[3]),
+                info1: cleanParens(row[4]),
+                info2: cleanParens(row[5]),
+                ex1: cleanParens(row[6]),
+                ex2: cleanParens(row[7]),
+                folder: wordFolder
             };
             const dbPath = `users/${this.userId}/words/${id}`;
             if (existingIds.has(id)) {
@@ -169,6 +295,15 @@ class WordLabDB {
                 if (norm(existing.info2) !== wordData.info2) { updates[`${dbPath}/info2`] = wordData.info2; hasChanges = true; }
                 if (norm(existing.ex1) !== wordData.ex1) { updates[`${dbPath}/ex1`] = wordData.ex1; hasChanges = true; }
                 if (norm(existing.ex2) !== wordData.ex2) { updates[`${dbPath}/ex2`] = wordData.ex2; hasChanges = true; }
+                if (norm(existing.folder) !== wordData.folder) { updates[`${dbPath}/folder`] = wordData.folder; hasChanges = true; }
+
+                const existingScore = existing.progress_global ? (existing.progress_global.excellentStreak || 0) : 0;
+                // Update score if changed. Since import implies new state, we trust the file's score.
+                if (existingScore !== excellentStreak) {
+                    updates[`${dbPath}/progress_global/excellentStreak`] = excellentStreak;
+                    updates[`${dbPath}/progress_global/isActive`] = excellentStreak >= 10;
+                    hasChanges = true;
+                }
 
                 if (hasChanges) stats.updated++;
             } else {
@@ -176,7 +311,7 @@ class WordLabDB {
                 updates[dbPath] = {
                     id: id,
                     ...wordData,
-                    progress_global: defaultProgress,
+                    progress_global: { ...defaultProgress, isActive: isActive, excellentStreak: excellentStreak },
                     progress_groups: defaultProgress
                 };
                 stats.created++;
@@ -447,10 +582,17 @@ const defaultColumns = {
     ex1: true,
     ex2: true,
     interval: true,
+    folder: true,
     nextDate: true
 };
 let savedCols = localStorage.getItem('visibleColumns');
 const visibleColumns = savedCols ? JSON.parse(savedCols) : defaultColumns;
+
+// Ensure 'folder' column exists in saved settings (migration for existing users)
+if (visibleColumns.folder === undefined) {
+    visibleColumns.folder = true;
+    localStorage.setItem('visibleColumns', JSON.stringify(visibleColumns));
+}
 
 function toggleColumn(colKey) {
     visibleColumns[colKey] = !visibleColumns[colKey];
@@ -552,20 +694,36 @@ function renderTable(arr) {
     if (tableHead) tableHead.style.display = '';
     wordsTableBody.innerHTML = '';
 
-    // Update Header Visibility
+    // Update Header Visibility - INDICES MUST MATCH HTML TH ORDER!
     const headRow = document.querySelector('#words-table tr');
     if (headRow) {
         const ths = headRow.querySelectorAll('th');
+        // New Order in HTML:
+        // 0: ID
+        // 1: Active
+        // 2: Word
+        // 3: Translation
+        // 4: Info1
+        // 5: Info2
+        // 6: Ex1
+        // 7: Ex2
+        // 8: Folder
+        // 9: Interval
+        // 10: NextDate
         if (ths[0]) ths[0].style.display = visibleColumns.id ? '' : 'none';
         if (ths[1]) ths[1].style.display = visibleColumns.active ? '' : 'none';
         if (ths[2]) ths[2].style.display = visibleColumns.word ? '' : 'none';
         if (ths[3]) ths[3].style.display = visibleColumns.translation ? '' : 'none';
+
         if (ths[4]) ths[4].style.display = visibleColumns.info1 ? '' : 'none';
         if (ths[5]) ths[5].style.display = visibleColumns.info2 ? '' : 'none';
         if (ths[6]) ths[6].style.display = visibleColumns.ex1 ? '' : 'none';
         if (ths[7]) ths[7].style.display = visibleColumns.ex2 ? '' : 'none';
-        if (ths[8]) ths[8].style.display = visibleColumns.interval ? '' : 'none';
-        if (ths[9]) ths[9].style.display = visibleColumns.nextDate ? '' : 'none';
+
+        if (ths[8]) ths[8].style.display = visibleColumns.folder ? '' : 'none';
+
+        if (ths[9]) ths[9].style.display = visibleColumns.interval ? '' : 'none';
+        if (ths[10]) ths[10].style.display = visibleColumns.nextDate ? '' : 'none';
     }
 
     // --- DUPLICATE DETECTION --
@@ -622,36 +780,50 @@ function renderTable(arr) {
 
         // We MUST render all TD elements so nth-child CSS matches. We hide them via style.
         const isActive = w.progress_global && w.progress_global.isActive;
-        const activeIcon = isActive ? `<div class="active-badge"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="var(--secondary)" stroke="var(--secondary)" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg></div>` : '';
+        const score = w.progress_global ? (w.progress_global.excellentStreak || 0) : 0;
+
+        let activeDisplay = '';
+        if (isActive) {
+            // Active word: Show Lightning
+            activeDisplay = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="var(--secondary)" stroke="var(--secondary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>`;
+        } else {
+            // Show Score
+            const color = score >= 9 ? 'var(--accent-bright)' : (score > 0 ? 'var(--text-main)' : 'var(--text-muted)');
+            activeDisplay = `<span style="font-size: 0.85rem; font-weight: 600; color: ${color};">${score > 0 ? score : '-'}</span>`;
+        }
 
         tr.innerHTML = `
             <td class="id-cell" style="${displayStyle('id')}">${w.id}</td>
-            <td style="${displayStyle('active')}; text-align: center;">${activeIcon}</td>
+            <td style="${displayStyle('active')}; text-align: center;">${activeDisplay}</td>
             <td style="${displayStyle('word')}"><strong>${w.word}</strong></td>
-            <td style="${displayStyle('translation')}"><strong>${w.translation}</strong></td>
+            <td style="${displayStyle('translation')}" title="${w.translation}"><strong>${w.translation}</strong></td>
+            
             <td class="info-cell" style="${displayStyle('info1')}">${w.info1 || ''}</td>
             <td class="info-cell" style="${displayStyle('info2')}">${w.info2 || ''}</td>
             <td class="example-cell" style="${displayStyle('ex1')}">${w.ex1 || ''}</td>
             <td class="example-cell" style="${displayStyle('ex2')}">${w.ex2 || ''}</td>
+            
+            <td class="folder-cell" style="${displayStyle('folder')}; opacity: 0.6; font-size: 0.75rem; color: var(--text-muted); font-weight: 400; vertical-align: middle; min-width: 100px; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${w.folder || ''}">${w.folder || ''}</td>
+            
             <td style="${displayStyle('interval')}"><span class="level-badge">${intervalDisplay}</span></td>
             <td class="date-info" style="${displayStyle('nextDate')}">${d}</td>
             
-            <td style="text-align:center;">
-                <button class="btn-icon btn-edit" data-id="${w.id}" title="Редактировать">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                    </svg>
-                </button>
-            </td>
-            <td style="text-align:center;">
-                <button class="btn-icon btn-delete" data-id="${w.id}" title="Удалить">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M3 6h18"></path>
-                        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-                    </svg>
-                </button>
+            <td style="text-align:center; padding: 0.5rem 0.2rem; min-width: 60px;">
+                <div style="display: inline-flex; gap: 2px; align-items: center; justify-content: center;">
+                    <button class="btn-icon btn-edit" data-id="${w.id}" title="Редактировать" style="padding: 4px; opacity: 0.7;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                    </button>
+                    <button class="btn-icon btn-delete" data-id="${w.id}" title="Удалить" style="padding: 4px; opacity: 0.7;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 6h18"></path>
+                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                        </svg>
+                    </button>
+                </div>
             </td>`;
 
         tr.querySelector('.btn-edit').onclick = () => openEditModal(w);
@@ -673,44 +845,6 @@ function getFilteredWords() {
     // Let's make applyDictionaryFilters return the array if an arg is passed, otherwise render.
 }
 
-
-// --- EXPORT TO EXCEL ---
-function exportWordsToExcel() {
-    if (!allWordsCache || allWordsCache.length === 0) {
-        alert("Словарь пуст, нечего экспортировать.");
-        return;
-    }
-
-    // Format data for Excel
-    // Columns: [ID, Word, Translation, Info1, Info2, Ex1, Ex2, Ex3]
-    const data = allWordsCache.map(w => ({
-        "ID": w.id,
-        "Немецкое слово": w.word,
-        "Перевод": w.translation,
-        "Доп. инфо 1": w.info1,
-        "Доп. инфо 2": w.info2,
-        "Пример 1": w.ex1,
-        "Пример 2": w.ex2
-    }));
-
-    // Create worksheet
-    const ws = XLSX.utils.json_to_sheet(data);
-
-    // Create workbook
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Dictionary");
-
-    // Generate file name with date
-    const date = new Date().toISOString().split('T')[0];
-    const fileName = `WordLab_Export_${date}.xlsx`;
-
-    // Save file
-    XLSX.writeFile(wb, fileName);
-}
-// Attach to global scope to call from onclick
-window.exportWordsToExcel = exportWordsToExcel;
-
-// (Duplicate removed)
 
 // Refactor applyDictionaryFilters to support return only
 function applyDictionaryFilters(returnOnly = false) {
@@ -766,6 +900,7 @@ function openEditModal(w = null) {
         editInputs.id.value = w.id;
         editInputs.word.value = w.word;
         editInputs.translation.value = w.translation;
+        editInputs.folder.value = w.folder || '';
         editInputs.info1.value = w.info1 || '';
         editInputs.info2.value = w.info2 || '';
         editInputs.ex1.value = w.ex1 || '';
@@ -784,6 +919,7 @@ function openEditModal(w = null) {
         editInputs.id.value = ''; // Empty ID signalises new word
         editInputs.word.value = '';
         editInputs.translation.value = '';
+        editInputs.folder.value = '';
         editInputs.info1.value = '';
         editInputs.info2.value = '';
         editInputs.ex1.value = '';
@@ -827,13 +963,47 @@ editForm.onsubmit = async (e) => {
         id = String(maxId + 1);
     }
 
+    // Auto-folder assignment if empty
+    let wordFolder = editInputs.folder.value.trim();
+    if (!wordFolder) {
+        // Build a complete map of how many words are in each auto-folder
+        const autoFolderCounts = {};
+        allWordsCache.forEach(w => {
+            if (w.folder && w.folder.startsWith('Папка ')) {
+                const num = parseInt(w.folder.replace('Папка ', ''));
+                if (!isNaN(num)) {
+                    if (!autoFolderCounts[num]) autoFolderCounts[num] = 0;
+                    autoFolderCounts[num]++;
+                }
+            }
+        });
+
+        // Find the current auto-folder to use (the last one that's not full)
+        let currentAutoIdx = 1;
+        let wordsInCurrentAuto = 0;
+
+        const autoFolderNumbers = Object.keys(autoFolderCounts).map(k => parseInt(k));
+        if (autoFolderNumbers.length > 0) {
+            currentAutoIdx = Math.max(...autoFolderNumbers);
+            wordsInCurrentAuto = autoFolderCounts[currentAutoIdx] || 0;
+
+            // If the last auto-folder is full, start a new one
+            if (wordsInCurrentAuto >= 100) {
+                currentAutoIdx++;
+            }
+        }
+
+        wordFolder = `Папка ${currentAutoIdx}`;
+    }
+
     const wordData = {
         word: editInputs.word.value,
         translation: editInputs.translation.value,
         info1: editInputs.info1.value,
         info2: editInputs.info2.value,
         ex1: editInputs.ex1.value,
-        ex2: editInputs.ex2.value
+        ex2: editInputs.ex2.value,
+        folder: wordFolder
     };
 
     if (isNew) {
@@ -843,7 +1013,7 @@ editForm.onsubmit = async (e) => {
         const newWord = {
             id: id,
             ...wordData,
-            progress_global: defaultProgress,
+            progress_global: { ...defaultProgress, isActive: false },
             progress_groups: defaultProgress
         };
         await db.updateWord(id, newWord);
@@ -988,8 +1158,17 @@ const dictFilterSortBtn = document.getElementById('dict-filter-sort-btn');
 const dictFilterSortMenu = document.getElementById('dict-filter-sort-menu');
 const dictFilterSortLabel = document.getElementById('sort-btn-label');
 const dictFilterDuplicatesBtn = document.getElementById('dict-filter-duplicates-btn');
-let currentSortOrder = 'oldest'; // Default
+let currentSortOrder = localStorage.getItem('dictSortOrder') || 'oldest';
 let showOnlyDuplicates = false;
+
+// Update label on init
+if (dictFilterSortLabel) updateSortLabel(currentSortOrder);
+
+// Also check the radio button in the menu if it exists
+if (dictFilterSortMenu) {
+    const radio = dictFilterSortMenu.querySelector(`input[value="${currentSortOrder}"]`);
+    if (radio) radio.checked = true;
+}
 
 if (dictFilterSortBtn) {
     dictFilterSortBtn.onclick = (e) => {
@@ -1003,6 +1182,7 @@ if (dictFilterSortBtn) {
 // Global handler for radio buttons in Sort Menu
 window.setSortOrder = (order) => {
     currentSortOrder = order;
+    localStorage.setItem('dictSortOrder', order);
     applyDictionaryFilters();
     updateSortLabel(order);
     // Close menu slightly delayed for better UX
@@ -1210,15 +1390,23 @@ function exportWordsToExcel() {
     }
 
     // Format data for Excel
-    // Columns: [ID, Word, Translation, Info1, Info2, Ex1, Ex2, Ex3]
+    // Columns: [ID, Active, Word, Translation, Info1, Info2, Ex1, Ex2]
     const data = wordsToExport.map(w => ({
         "ID": w.id,
+        "Активные слова": (() => {
+            const pg = w.progress_global;
+            let s = pg ? (pg.excellentStreak || 0) : 0;
+            // Ensure sync: if Active -> at least 10
+            if (pg && pg.isActive && s < 10) s = 10;
+            return s;
+        })(),
         "Немецкое слово": w.word,
         "Перевод": w.translation,
         "Доп. инфо 1": w.info1,
         "Доп. инфо 2": w.info2,
         "Пример 1": w.ex1,
-        "Пример 2": w.ex2
+        "Пример 2": w.ex2,
+        "Папка": w.folder || ""
     }));
 
     // Create worksheet

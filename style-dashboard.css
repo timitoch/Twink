@@ -629,6 +629,94 @@ th {
     font-size: 0.8rem;
 }
 
+/* Tooltip for Active Words Header */
+.has-tooltip {
+    position: relative;
+    cursor: help;
+}
+
+.tooltip-box {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    transform: translateY(15px);
+    background: rgba(15, 15, 15, 0.95);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 1.25rem;
+    border-radius: 14px;
+    width: 280px;
+    z-index: 2000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+    pointer-events: none;
+    text-align: left;
+    white-space: normal;
+}
+
+.has-tooltip:hover .tooltip-box {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(8px);
+}
+
+.tooltip-box h4 {
+    margin: 0 0 0.6rem 0;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--secondary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tooltip-box p {
+    margin: 0 0 0.8rem 0;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.tooltip-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 0.8rem;
+}
+
+.tooltip-list li {
+    font-size: 0.75rem;
+    margin-bottom: 0.4rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.tooltip-list li span:last-child {
+    font-weight: 700;
+    font-family: monospace;
+}
+
+.score-plus {
+    color: var(--secondary);
+}
+
+.score-minus {
+    color: var(--accent-2);
+}
+
+.score-zero {
+    color: var(--text-muted);
+}
+
+.score-reset {
+    color: #ef4444;
+}
+
 td {
     vertical-align: top;
 }
@@ -1762,54 +1850,63 @@ td {
         display: none;
     }
 
-    /* 9-10. Stats (Interval & Date) */
-    #words-table td:nth-child(9),
-    #words-table td:nth-child(10) {
+    /* 9. Folder (NEW POSITION - Mobile Layout) */
+    #words-table td:nth-child(9) {
+        order: 7;
+        /* In the status row */
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        opacity: 0.6;
+        margin-top: 0.6rem;
+        margin-right: 0.5rem;
+        white-space: nowrap !important;
+        max-width: 100px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    #words-table td:nth-child(9):empty {
+        display: none;
+    }
+
+    /* 10-11. Stats (Interval & Date) - Was 9-10 */
+    #words-table td:nth-child(10),
+    #words-table td:nth-child(11) {
         font-size: 0.8rem;
         color: var(--text-muted);
         order: 5;
         margin-top: 0.6rem;
-        margin-right: 1.2rem;
+        margin-right: 0.8rem;
         opacity: 0.8;
     }
 
-    /* 11-12. ACTION BUTTONS (Top-Right Corner) */
-    #words-table td:nth-child(11),
+    /* 12. ACTION BUTTONS (Top-Right Corner) - Combined Cell */
     #words-table td:nth-child(12) {
-        position: absolute;
-        top: 0.5rem;
-        right: auto;
+        position: absolute !important;
+        top: 0.5rem !important;
+        right: 0.5rem !important;
         display: flex !important;
         align-items: center;
-        justify-content: center;
+        justify-content: flex-end;
         order: 99;
-        padding: 0;
-    }
-
-    #words-table td:nth-child(11) {
-        right: 2.5rem;
-        /* Edit button */
-    }
-
-    #words-table td:nth-child(12) {
-        right: 0.5rem;
-        /* Delete button */
+        padding: 0 !important;
+        width: auto !important;
+        min-width: 0 !important;
+        border: none !important;
+        background: transparent !important;
     }
 
     /* Make buttons smaller on mobile */
-    #words-table td:nth-child(11) button,
     #words-table td:nth-child(12) button {
         padding: 0.35rem;
         opacity: 0.6;
         transition: opacity 0.2s;
     }
 
-    #words-table td:nth-child(11) button:active,
     #words-table td:nth-child(12) button:active {
         opacity: 1;
     }
 
-    #words-table td:nth-child(11) svg,
     #words-table td:nth-child(12) svg {
         width: 16px;
         height: 16px;
@@ -1819,6 +1916,65 @@ td {
     #edit-modal>div {
         width: 95vw !important;
         margin: 1rem auto !important;
+    }
+
+    /* Ensure Folder cell is transparent on desktop too */
+    @media (min-width: 769px) {
+
+        /* FOLDER CELL: Make it wider, smaller font, transparent */
+        #words-table .folder-cell {
+            opacity: 0.5 !important;
+            color: var(--text-muted) !important;
+            font-size: 0.75rem !important;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-width: 120px !important;
+            /* Wider */
+            max-width: 250px !important;
+            font-weight: 400 !important;
+            vertical-align: middle !important;
+        }
+
+        /* TRANSLATION (4th) & WORD (3rd): Allow text wrap, limit max-width */
+        #words-table td:nth-child(3),
+        #words-table th:nth-child(3),
+        #words-table td:nth-child(4),
+        #words-table th:nth-child(4) {
+            width: auto !important;
+            max-width: 150px !important;
+            /* Restrict width further */
+            white-space: normal !important;
+            /* Allow wrapping */
+            word-wrap: break-word !important;
+            /* Break long words */
+            overflow-wrap: break-word !important;
+            overflow: visible !important;
+            text-overflow: clip !important;
+            height: auto !important;
+            vertical-align: top !important;
+            /* Align to top for multi-line */
+            padding-top: 0.8rem;
+            padding-bottom: 0.8rem;
+        }
+
+        /* Update hover effect - remove it as text is now fully visible */
+        #words-table td:nth-child(3):hover,
+        #words-table td:nth-child(4):hover {
+            position: static;
+            background: transparent;
+            z-index: auto;
+        }
+
+        #words-table .folder-cell:hover {
+            white-space: normal;
+            overflow: visible;
+            position: relative;
+            z-index: 10;
+            background: var(--card-bg);
+            /* Prevents transparency overlap */
+            opacity: 1 !important;
+        }
     }
 }
 
@@ -1882,34 +2038,36 @@ td {
         font-size: 0.75rem;
     }
 
-    /* 6-8. Examples */
+    /* 6-8. Examples & FOLDER (New 9) */
     #words-table th:nth-child(6),
     #words-table td:nth-child(6),
     #words-table th:nth-child(7),
     #words-table td:nth-child(7),
     #words-table th:nth-child(8),
-    #words-table td:nth-child(8) {
-        min-width: 120px;
-        max-width: 300px;
+    #words-table td:nth-child(8),
+    #words-table th:nth-child(9),
+    #words-table td:nth-child(9) {
+        min-width: 80px;
+        max-width: 200px;
         font-size: 0.75rem;
     }
 
-    /* 9-10. Stats (Interval/Next) */
-    #words-table th:nth-child(9),
-    #words-table td:nth-child(9),
+    /* 10-11. Stats (Interval/Next) - Was 9-10 */
     #words-table th:nth-child(10),
-    #words-table td:nth-child(10) {
+    #words-table td:nth-child(10),
+    #words-table th:nth-child(11),
+    #words-table td:nth-child(11) {
         min-width: 60px;
         width: 75px;
         white-space: nowrap;
         /* Dates usually better on one line, or break softly */
     }
 
-    /* 11-12. Actions */
-    #words-table th:nth-child(11),
-    #words-table td:nth-child(11),
+    /* 12-13. Actions - Was 11-12 */
     #words-table th:nth-child(12),
-    #words-table td:nth-child(12) {
+    #words-table td:nth-child(12),
+    #words-table th:nth-child(13),
+    #words-table td:nth-child(13) {
         min-width: 30px;
         width: 36px;
         text-align: center;
