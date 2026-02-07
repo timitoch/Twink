@@ -1899,8 +1899,34 @@ class StudyModule {
 
         // Display question
         if (this.examQuestionText) this.examQuestionText.textContent = word.translation;
+        // Hints Logic
+        // Hints Logic
+        let hints = [];
+        const germanWord = word.word;
+        let isFemininePair = false;
+
+        // Rule 2: Feminine form hint (check first)
+        // E.g. "der Arbeiter, die Arbeiterin" -> (жен. р.) only
+        if (germanWord.includes(',')) {
+            const parts = germanWord.split(',');
+            if (parts.length > 1 && parts[1].trim().endsWith('in')) {
+                hints.push("(жен. р.)");
+                isFemininePair = true;
+            }
+        }
+
+        // Rule 1: Plural hint (multiple words with articles)
+        // Only check if it's NOT identified as a feminine pair
+        if (!isFemininePair && germanWord.includes(' ') && /\b(der|die|das)\b/i.test(germanWord)) {
+            hints.push("(plural)");
+        }
+
+        const hint = hints.join(' ');
+
+        // Display hint
         if (this.examQuestionInfo) {
-            this.examQuestionInfo.textContent = word.info1 || '';
+            this.examQuestionInfo.textContent = hint;
+            // FIXED: Do not show word.info1 (extra info) here
         }
 
         // Reset input
@@ -1927,6 +1953,8 @@ class StudyModule {
         if (this.examFeedback) this.examFeedback.classList.add('hidden');
         const btnOverride = document.getElementById('btn-exam-override');
         if (btnOverride) btnOverride.classList.add('hidden');
+        const btnUndo = document.getElementById('btn-exam-undo-override');
+        if (btnUndo) btnUndo.classList.add('hidden');
 
         // Bind check button
         if (this.btnExamCheck) {
@@ -1949,12 +1977,13 @@ class StudyModule {
     }
 
     normalizeAnswer(str) {
-        // Remove articles, normalize whitespace, lowercase
-        return str.toLowerCase()
-            .replace(/\b(der|die|das|den|dem|des|ein|eine|einer|einem|einen)\b/gi, '')
-            .replace(/[.,;:!?]/g, '')
-            .replace(/\s+/g, ' ')
-            .trim();
+        // Remove content in parentheses FIRST (e.g. "zittern (hat gezittert)" -> "zittern")
+        let cleaned = str.replace(/\([^)]*\)/g, '');
+
+        // Remove articles, then remove ALL non-alphanumeric chars
+        return cleaned.toLowerCase()
+            .replace(/\b(der|die|das|den|dem|des|ein|eine|einer|einem|einen)\b/gi, '') // Remove articles
+            .replace(/[^a-z0-9äöüß]/gi, ''); // Remove everything else
     }
 
     async checkExamAnswer() {
@@ -1964,11 +1993,21 @@ class StudyModule {
         const userAnswer = this.examInput.value.trim();
         const correctAnswer = word.word;
 
-        // Normalize both answers for comparison
-        const normalizedUser = this.normalizeAnswer(userAnswer);
-        const normalizedCorrect = this.normalizeAnswer(correctAnswer);
+        // 1. Content Check
+        const normUser = this.normalizeContent(userAnswer);
+        const normCorrect = this.normalizeContent(correctAnswer);
+        const isContentCorrect = normUser === normCorrect;
 
-        const isCorrect = normalizedUser === normalizedCorrect;
+        // 2. Article Check (Only if content matched)
+        let articleError = false;
+        if (isContentCorrect) {
+            const correctArt = this.getFirstArticle(correctAnswer);
+            if (correctArt) {
+                const userArt = this.getFirstArticle(userAnswer);
+                if (userArt !== correctArt) articleError = true;
+            }
+        }
+        const isCorrect = isContentCorrect && !articleError;
 
         // Disable input and check button
         if (this.examInput) this.examInput.disabled = true;
@@ -1985,6 +2024,11 @@ class StudyModule {
                 this.examFeedback.style.color = 'var(--accent-bright)';
                 this.examFeedback.style.border = '1px solid var(--accent-bright)';
                 this.examFeedback.textContent = '✓ Правильно!';
+            } else if (articleError) {
+                this.examFeedback.style.background = 'rgba(139, 92, 246, 0.1)';
+                this.examFeedback.style.color = '#8b5cf6';
+                this.examFeedback.style.border = '1px solid #8b5cf6';
+                this.examFeedback.innerHTML = `⚠️ Ошибка в артикле<br><small>Правильно: <strong>${correctAnswer}</strong></small>`;
             } else {
                 this.examFeedback.style.background = 'rgba(239, 68, 68, 0.1)';
                 this.examFeedback.style.color = '#ef4444';
@@ -2039,13 +2083,17 @@ class StudyModule {
             };
         }
 
-        // Show Override Button if Incorrect
+        // Show Override Button if Incorrect AND user typed something
         if (!isCorrect) {
             const btnOverride = document.getElementById('btn-exam-override');
-            if (btnOverride) {
+            // Only if user attempts an answer (len > 0)
+            if (btnOverride && userAnswer.length > 0) {
                 btnOverride.classList.remove('hidden');
                 btnOverride.onclick = async () => {
-                    // Update as Correct (Active)
+                    // 1. Capture the "Incorrect" state (snapshot)
+                    const incorrectState = JSON.parse(JSON.stringify(word.progress_global));
+
+                    // 2. Set to Correct (Active)
                     word.progress_global = {
                         ...(word.progress_global || {}),
                         excellentStreak: 10,
@@ -2063,16 +2111,44 @@ class StudyModule {
                         console.error('Override save/update error', e);
                     }
 
-                    // Update Feedback UI
+                    // Update Feedback UI (Green)
                     if (this.examFeedback) {
                         this.examFeedback.style.background = 'rgba(16, 185, 129, 0.1)';
-                        this.examFeedback.style.color = '#10b981'; // green-500
+                        this.examFeedback.style.color = '#10b981';
                         this.examFeedback.style.border = '1px solid #10b981';
                         this.examFeedback.textContent = '✓ Исправлено: Засчитано как верно!';
                     }
 
-                    // Hide button
+                    // Hide Override, Show Undo
                     btnOverride.classList.add('hidden');
+                    const btnUndo = document.getElementById('btn-exam-undo-override');
+                    if (btnUndo) {
+                        btnUndo.classList.remove('hidden');
+                        btnUndo.onclick = async () => {
+                            // REVERT to Incorrect
+                            word.progress_global = incorrectState;
+                            try { await this.db.updateProgress(word.id, 'progress_global', word.progress_global); } catch (e) { }
+
+                            // Revert UI to Red OR Purple
+                            if (this.examFeedback) {
+                                if (articleError) {
+                                    this.examFeedback.style.background = 'rgba(139, 92, 246, 0.1)';
+                                    this.examFeedback.style.color = '#8b5cf6';
+                                    this.examFeedback.style.border = '1px solid #8b5cf6';
+                                    this.examFeedback.innerHTML = `⚠️ Ошибка в артикле<br><small>Правильно: <strong>${correctAnswer}</strong></small>`;
+                                } else {
+                                    this.examFeedback.style.background = 'rgba(239, 68, 68, 0.1)';
+                                    this.examFeedback.style.color = '#ef4444';
+                                    this.examFeedback.style.border = '1px solid #ef4444';
+                                    this.examFeedback.innerHTML = `✗ Неправильно<br><small>Правильный ответ: <strong>${correctAnswer}</strong></small>`;
+                                }
+                            }
+
+                            // Toggle buttons back
+                            btnUndo.classList.add('hidden');
+                            btnOverride.classList.remove('hidden');
+                        };
+                    }
                 };
             }
         }

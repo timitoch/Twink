@@ -729,15 +729,9 @@
                         <!-- Exam Content (Pushed to Top) -->
                         <div style="padding: 0; display: flex; flex-direction: column;">
 
-                            <!-- Question Label -->
-                            <div
-                                style="color: var(--accent-bright); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1rem; opacity: 0.9;">
-                                Переведите на немецкий
-                            </div>
-
                             <!-- Russian Word (Question) -->
                             <h1 id="exam-question-text"
-                                style="font-size: 1.75rem; font-weight: 700; color: var(--text-main); margin: 0 0 0.25rem 0; line-height: 1.2; text-align: left;">
+                                style="font-size: 1.4rem; font-weight: 700; color: var(--text-main); margin: 0 0 0.5rem 0; line-height: 1.3; text-align: left; word-break: break-word;">
                                 яблоко
                             </h1>
 
@@ -754,21 +748,25 @@
 
                             <!-- Feedback -->
                             <div id="exam-feedback" class="hidden"
-                                style="margin-bottom: 1.5rem; padding: 1rem; border-radius: 8px; font-weight: 500; text-align: left; font-size: 0.95rem;">
+                                style="margin-bottom: 1.5rem; padding: 1rem; border-radius: 30px; font-weight: 500; text-align: left; font-size: 0.95rem;">
                             </div>
 
                             <!-- Action Buttons -->
                             <div style="display: flex; gap: 0.75rem;">
                                 <button id="btn-exam-check" class="btn-primary"
-                                    style="flex: 1; padding: 0.9rem; font-size: 1rem; font-weight: 600; border-radius: 12px;">
+                                    style="flex: 1; padding: 0.9rem; font-size: 1rem; font-weight: 600; border-radius: 30px;">
                                     Проверить
                                 </button>
                                 <button id="btn-exam-override" class="btn-secondary hidden"
-                                    style="flex: 1; padding: 0.9rem; font-size: 0.9rem; font-weight: 600; border-radius: 12px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);">
+                                    style="flex: 1; padding: 0.9rem; font-size: 0.9rem; font-weight: 600; border-radius: 30px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);">
                                     Я был прав
                                 </button>
+                                <button id="btn-exam-undo-override" class="btn-secondary hidden"
+                                    style="flex: 1; padding: 0.9rem; font-size: 0.9rem; font-weight: 600; border-radius: 30px; background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5;">
+                                    Я был не прав
+                                </button>
                                 <button id="btn-exam-next" class="btn-secondary hidden"
-                                    style="flex: 1; padding: 0.9rem; font-size: 1rem; font-weight: 600; border-radius: 12px;">
+                                    style="flex: 1; padding: 0.9rem; font-size: 1rem; font-weight: 600; border-radius: 30px;">
                                     Далее
                                 </button>
                             </div>
