@@ -694,15 +694,17 @@
                 </div>
 
                 <!-- 3.5 VIEW: EXAM (NEW DEDICATED VIEW) -->
-                <div id="view-exam" class="view-section hidden"
-                    style="min-height: 100vh; display: flex; flex-direction: column;">
-                    <!-- Exam Header -->
+                <div id="view-exam" class="view-section hidden" style="padding-bottom: 120px;">
+
+                    <!-- Main Container constrained to card width -->
                     <div
-                        style="padding: 1.5rem; background: var(--bg-card); border-bottom: 1px solid var(--border); margin-bottom: 2rem;">
+                        style="width: 100%; max-width: 500px; margin: 0 auto; display: flex; flex-direction: column; flex: 1;">
+
+                        <!-- Header (Compact & Aligned) -->
                         <div
-                            style="max-width: 600px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center;">
+                            style="padding: 1rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                             <button id="btn-exit-exam" class="btn-square icon-btn" title="Выйти"
-                                style="border: 1px solid var(--border);">
+                                style="background: transparent; border: none; color: var(--text-muted); padding: 0.5rem; margin-left: -0.5rem;">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
                                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                     stroke-linejoin="round">
@@ -710,61 +712,65 @@
                                     <polyline points="12 19 5 12 12 5"></polyline>
                                 </svg>
                             </button>
+
+                            <!-- Title & Progress -->
                             <div style="text-align: center;">
-                                <h3 style="margin: 0; font-size: 1.1rem; font-weight: 600; color: var(--text-main);">
+                                <h3
+                                    style="margin: 0 0 0.25rem 0; font-size: 0.9rem; font-weight: 600; color: var(--text-main); text-transform: uppercase; letter-spacing: 0.5px;">
                                     Экзамен</h3>
                                 <p id="exam-progress-text"
-                                    style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: var(--text-muted);">Слово 1
-                                    из 10</p>
+                                    style="margin: 0; font-size: 0.75rem; color: var(--text-muted); opacity: 0.7;">
+                                    Слово 1 из 10</p>
                             </div>
-                            <div style="width: 44px;"></div> <!-- Spacer for centering -->
+
+                            <div style="width: 40px;"></div> <!-- Spacer -->
                         </div>
-                    </div>
 
-                    <!-- Exam Content -->
-                    <div
-                        style="flex: 1; display: flex; align-items: center; justify-content: center; padding: 2rem 1rem;">
-                        <div style="width: 100%; max-width: 500px;">
-                            <!-- Question Card -->
+                        <!-- Exam Content (Pushed to Top) -->
+                        <div style="padding: 0; display: flex; flex-direction: column;">
+
+                            <!-- Question Label -->
                             <div
-                                style="background: var(--bg-card); border-radius: 16px; padding: 2.5rem 2rem; box-shadow: 0 4px 20px rgba(0,0,0,0.15); border: 1px solid var(--border); margin-bottom: 2rem;">
-                                <div style="text-align: center; margin-bottom: 2rem;">
-                                    <div
-                                        style="color: var(--accent-bright); font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1rem;">
-                                        Переведите на немецкий
-                                    </div>
-                                    <h2 id="exam-question-text"
-                                        style="font-size: 1.8rem; font-weight: 700; color: var(--text-main); margin: 0; line-height: 1.4;">
-                                        яблоко
-                                    </h2>
-                                    <p id="exam-question-info"
-                                        style="color: var(--text-muted); font-size: 0.95rem; margin: 0.75rem 0 0 0;">
-                                    </p>
-                                </div>
+                                style="color: var(--accent-bright); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1rem; opacity: 0.9;">
+                                Переведите на немецкий
+                            </div>
 
-                                <!-- Input Area -->
-                                <div style="margin-bottom: 1.5rem;">
-                                    <input type="text" id="exam-input" placeholder="Введите немецкое слово..."
-                                        autocomplete="off"
-                                        style="width: 100%; padding: 1rem 1.25rem; border-radius: 12px; background: var(--bg-main); border: 2px solid var(--border); color: var(--text-main); font-size: 1.2rem; text-align: center; transition: all 0.2s; font-weight: 500;">
-                                </div>
+                            <!-- Russian Word (Question) -->
+                            <h1 id="exam-question-text"
+                                style="font-size: 1.75rem; font-weight: 700; color: var(--text-main); margin: 0 0 0.25rem 0; line-height: 1.2; text-align: left;">
+                                яблоко
+                            </h1>
 
-                                <!-- Feedback -->
-                                <div id="exam-feedback" class="hidden"
-                                    style="margin-bottom: 1.5rem; padding: 1rem; border-radius: 10px; font-weight: 500; text-align: center; font-size: 0.95rem;">
-                                </div>
+                            <!-- Additional Info -->
+                            <p id="exam-question-info"
+                                style="color: var(--text-muted); font-size: 0.9rem; margin: 0 0 1.5rem 0; min-height: 1.2rem;">
+                            </p>
 
-                                <!-- Action Buttons -->
-                                <div style="display: flex; gap: 0.75rem;">
-                                    <button id="btn-exam-check" class="btn-primary"
-                                        style="flex: 1; padding: 0.9rem; font-size: 1rem; font-weight: 600;">
-                                        Проверить
-                                    </button>
-                                    <button id="btn-exam-next" class="btn-secondary hidden"
-                                        style="flex: 1; padding: 0.9rem; font-size: 1rem; font-weight: 600;">
-                                        Далее
-                                    </button>
-                                </div>
+                            <!-- Input Field (TextArea) -->
+                            <div style="margin-bottom: 1.5rem; position: relative;">
+                                <textarea id="exam-input" rows="1" placeholder="Введите перевод..."
+                                    style="width: 100%; padding: 0.5rem 0; border: none; border-bottom: 1px solid var(--border); background: transparent; color: var(--text-main); font-size: 1.1rem; text-align: left; font-weight: 400; outline: none; transition: border-color 0.2s; border-radius: 0; resize: none; overflow: hidden; font-family: inherit; line-height: 1.5; box-shadow: none;"></textarea>
+                            </div>
+
+                            <!-- Feedback -->
+                            <div id="exam-feedback" class="hidden"
+                                style="margin-bottom: 1.5rem; padding: 1rem; border-radius: 8px; font-weight: 500; text-align: left; font-size: 0.95rem;">
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div style="display: flex; gap: 0.75rem;">
+                                <button id="btn-exam-check" class="btn-primary"
+                                    style="flex: 1; padding: 0.9rem; font-size: 1rem; font-weight: 600; border-radius: 12px;">
+                                    Проверить
+                                </button>
+                                <button id="btn-exam-override" class="btn-secondary hidden"
+                                    style="flex: 1; padding: 0.9rem; font-size: 0.9rem; font-weight: 600; border-radius: 12px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);">
+                                    Я был прав
+                                </button>
+                                <button id="btn-exam-next" class="btn-secondary hidden"
+                                    style="flex: 1; padding: 0.9rem; font-size: 1rem; font-weight: 600; border-radius: 12px;">
+                                    Далее
+                                </button>
                             </div>
                         </div>
                     </div>

@@ -12,6 +12,7 @@ const viewImport = document.getElementById('view-import');
 const viewWords = document.getElementById('view-words');
 const viewStudy = document.getElementById('view-study');
 const viewStudySession = document.getElementById('view-study-session');
+const viewExam = document.getElementById('view-exam');
 const viewSettings = document.getElementById('view-settings');
 
 // Menu Buttons
@@ -372,7 +373,7 @@ window.addEventListener('resize', updateNavIndicator);
 
 async function switchView(targetView) {
     // Hide all views
-    [viewProfile, viewImport, viewWords, viewStudy, viewStudySession, viewSettings, viewGroupEdit].forEach(v => v && v.classList.add('hidden'));
+    [viewProfile, viewImport, viewWords, viewStudy, viewStudySession, viewSettings, viewGroupEdit, viewExam].forEach(v => v && v.classList.add('hidden'));
     targetView.classList.remove('hidden');
     targetView.classList.add('fade-in');
     // Remove fade-in after animation to prevent persistent stacking context (fixes mobile filter clipping)
@@ -382,7 +383,8 @@ async function switchView(targetView) {
 
     const appContainer = document.querySelector('.app-container');
     // Wide mode for Words, Settings, IMPORT, STUDY, GROUP EDIT, and PROFILE
-    if (targetView === viewWords || targetView === viewSettings || targetView === viewImport || targetView === viewStudy || targetView === viewGroupEdit || targetView === viewProfile) {
+    // Wide mode for Words, Settings, IMPORT, STUDY, GROUP EDIT, and PROFILE, EXAM
+    if (targetView === viewWords || targetView === viewSettings || targetView === viewImport || targetView === viewStudy || targetView === viewGroupEdit || targetView === viewProfile || targetView === viewExam) {
         appContainer.classList.add('wide-mode');
     } else {
         appContainer.classList.remove('wide-mode');
@@ -391,7 +393,7 @@ async function switchView(targetView) {
     const globalHeader = document.getElementById('global-header');
 
     // Header Logic
-    if (targetView === viewGroupEdit) {
+    if (targetView === viewGroupEdit || targetView === viewExam) {
         if (globalHeader) globalHeader.classList.add('hidden');
         if (groupEditHeader && targetView === viewGroupEdit) {
             groupEditHeader.classList.remove('hidden');
@@ -424,7 +426,7 @@ async function switchView(targetView) {
 
     // Disable scroll on Study SESSION (cards) view for mobile
     // Keep scroll on Study (mode selector) view
-    if (targetView === viewStudySession) {
+    if (targetView === viewStudySession || targetView === viewExam) {
         document.body.classList.add('no-scroll');
     } else {
         document.body.classList.remove('no-scroll');

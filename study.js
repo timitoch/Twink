@@ -1908,7 +1908,14 @@ class StudyModule {
             this.examInput.value = '';
             this.examInput.disabled = false;
             this.examInput.style.borderColor = 'var(--border)';
+            this.examInput.style.height = 'auto'; // Reset height
             this.examInput.focus();
+
+            // Auto-resize handler
+            this.examInput.oninput = () => {
+                this.examInput.style.height = 'auto';
+                this.examInput.style.height = (this.examInput.scrollHeight) + 'px';
+            };
         }
 
         // Reset buttons
@@ -1918,6 +1925,8 @@ class StudyModule {
         }
         if (this.btnExamNext) this.btnExamNext.classList.add('hidden');
         if (this.examFeedback) this.examFeedback.classList.add('hidden');
+        const btnOverride = document.getElementById('btn-exam-override');
+        if (btnOverride) btnOverride.classList.add('hidden');
 
         // Bind check button
         if (this.btnExamCheck) {
@@ -1927,8 +1936,13 @@ class StudyModule {
         // Allow Enter key to submit
         if (this.examInput) {
             this.examInput.onkeydown = (e) => {
-                if (e.key === 'Enter' && !this.btnExamCheck.classList.contains('hidden')) {
-                    this.checkExamAnswer();
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault(); // Prevent newline
+                    if (!this.btnExamCheck.classList.contains('hidden')) {
+                        this.checkExamAnswer();
+                    } else if (!this.btnExamNext.classList.contains('hidden')) {
+                        this.showNextExamQuestion();
+                    }
                 }
             };
         }
@@ -2023,6 +2037,44 @@ class StudyModule {
                 this.currentExamSession.currentIndex++;
                 this.showNextExamQuestion();
             };
+        }
+
+        // Show Override Button if Incorrect
+        if (!isCorrect) {
+            const btnOverride = document.getElementById('btn-exam-override');
+            if (btnOverride) {
+                btnOverride.classList.remove('hidden');
+                btnOverride.onclick = async () => {
+                    // Update as Correct (Active)
+                    word.progress_global = {
+                        ...(word.progress_global || {}),
+                        excellentStreak: 10,
+                        isActive: true,
+                        interval: 21,
+                        nextDate: Date.now() + (21 * 86400000),
+                        lastRating: 6,
+                        lastReviewed: Date.now()
+                    };
+
+                    // Save to DB
+                    try {
+                        await this.db.updateProgress(word.id, 'progress_global', word.progress_global);
+                    } catch (e) {
+                        console.error('Override save/update error', e);
+                    }
+
+                    // Update Feedback UI
+                    if (this.examFeedback) {
+                        this.examFeedback.style.background = 'rgba(16, 185, 129, 0.1)';
+                        this.examFeedback.style.color = '#10b981'; // green-500
+                        this.examFeedback.style.border = '1px solid #10b981';
+                        this.examFeedback.textContent = '✓ Исправлено: Засчитано как верно!';
+                    }
+
+                    // Hide button
+                    btnOverride.classList.add('hidden');
+                };
+            }
         }
     }
 }
