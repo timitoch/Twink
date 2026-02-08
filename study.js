@@ -1807,6 +1807,9 @@ class StudyModule {
             activityScore = Math.max(0, activityScore + scoreChange);
         }
 
+        // Round to 1 decimal to avoid float precision issues (e.g. 4.50000001)
+        activityScore = parseFloat(activityScore.toFixed(1));
+
         // CAP at 9 in regular sessions - can only reach 10 via exam
         if (activityScore > 9) activityScore = 9;
 
@@ -2108,8 +2111,14 @@ class StudyModule {
                 lastReviewed: Date.now()
             };
         } else {
-            // -3 points
-            score = Math.max(0, score - 3);
+            // -3 points from 9.0 is 6.0. If word was already at 10 (Active) and somehow fails, set to 7.5
+            if (score >= 10) {
+                score = 7.5;
+            } else {
+                score = Math.max(0, score - 3);
+            }
+            // Ensure float precision
+            score = parseFloat(score.toFixed(1));
             word.progress_global = {
                 ...currentProgress,
                 excellentStreak: score,

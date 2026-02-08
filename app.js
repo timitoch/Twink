@@ -788,7 +788,8 @@ function renderTable(arr) {
         } else {
             // Show Score
             const color = score >= 9 ? 'var(--accent-bright)' : (score > 0 ? 'var(--text-main)' : 'var(--text-muted)');
-            activeDisplay = `<span style="font-size: 0.85rem; font-weight: 600; color: ${color};">${score > 0 ? score : '-'}</span>`;
+            const scoreFormatted = score > 0 ? String(score).replace('.', ',') : '-';
+            activeDisplay = `<span style="font-size: 0.85rem; font-weight: 600; color: ${color};">${scoreFormatted}</span>`;
         }
 
         tr.innerHTML = `
