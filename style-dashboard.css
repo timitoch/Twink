@@ -1551,7 +1551,7 @@ td {
     .settings-sidebar {
         flex-direction: row !important;
         width: 100%;
-        overflow-x: auto;
+        overflow-x: hidden !important;
         overflow-y: hidden;
         -webkit-overflow-scrolling: touch;
         scrollbar-width: none;
@@ -1561,6 +1561,7 @@ td {
         margin-bottom: 1rem;
         gap: 0.4rem !important;
         display: flex !important;
+        justify-content: space-between !important;
     }
 
     .settings-sidebar::-webkit-scrollbar {
@@ -1568,12 +1569,13 @@ td {
     }
 
     .settings-tab {
-        flex-shrink: 0;
-        padding: 0.6rem 1rem !important;
-        font-size: 0.85rem !important;
+        flex: 1 !important;
+        padding: 0.6rem 0.5rem !important;
+        font-size: 0.82rem !important;
         white-space: nowrap;
         border-radius: 99px !important;
-        gap: 0.5rem !important;
+        gap: 0.4rem !important;
+        justify-content: center !important;
     }
 
     .settings-tab svg {

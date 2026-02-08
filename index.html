@@ -1051,15 +1051,14 @@
                     </div>
                 </div>
                 <div id="view-words" class="view-section hidden">
-                    <div id="dict-empty-state-view" class="hidden"></div>
                     <div id="dict-main-container">
                         <!-- Dictionary Toolbar -->
                         <div class="dict-toolbar"
                             style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: center; position: relative;">
 
-                            <!-- 1. Search (Shorter) -->
+                            <!-- 1. Search -->
                             <div class="dict-search-wrapper"
-                                style="flex: 1 1 160px; min-width: 160px; position: relative;">
+                                style="flex: 0 1 550px; min-width: 250px; position: relative;">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
                                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                     stroke-linejoin="round"
@@ -1103,6 +1102,8 @@
                                         <line x1="6" y1="6" x2="18" y2="18"></line>
                                     </svg>
                                 </button>
+
+
 
                                 <!-- Column Filter -->
                                 <div class="filter-group-wrapper"
@@ -1202,6 +1203,44 @@
                                                 class="checkmark"></span><span>12 дн</span></label>
                                         <label class="custom-checkbox secondary"><input type="checkbox" value="21"><span
                                                 class="checkmark"></span><span>21 дн</span></label>
+                                    </div>
+                                </div>
+
+                                <!-- Score Filter -->
+                                <div class="filter-group-wrapper"
+                                    style="flex: 1; min-width: 120px; position: relative;">
+                                    <span class="mobile-filter-title">Баллы</span>
+                                    <button id="dict-filter-score-btn"
+                                        style="width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 1rem; border-radius: 10px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-main); height: 42px; cursor: pointer; text-align: left;">
+                                        <span id="score-btn-label">Баллы</span>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="6 9 12 15 18 9"></polyline>
+                                        </svg>
+                                    </button>
+                                    <div id="dict-filter-score-menu" class="hidden"
+                                        style="position: absolute; top: 110%; left: 0; width: 100%; background: rgba(30, 41, 59, 0.95); backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 0.5rem; z-index: 1000; box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.7); display: flex; flex-direction: column; gap: 2px;">
+                                        <label class="custom-checkbox"><input type="checkbox" value="all" checked><span
+                                                class="checkmark"></span><span>Все</span></label>
+                                        <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 4px 0;">
+                                        </div>
+                                        <label class="custom-checkbox secondary"><input type="checkbox" value="0"><span
+                                                class="checkmark"></span><span>0 (Новые)</span></label>
+                                        <label class="custom-checkbox secondary"><input type="checkbox"
+                                                value="1.5"><span class="checkmark"></span><span>1,5</span></label>
+                                        <label class="custom-checkbox secondary"><input type="checkbox" value="3"><span
+                                                class="checkmark"></span><span>3</span></label>
+                                        <label class="custom-checkbox secondary"><input type="checkbox"
+                                                value="4.5"><span class="checkmark"></span><span>4,5</span></label>
+                                        <label class="custom-checkbox secondary"><input type="checkbox" value="6"><span
+                                                class="checkmark"></span><span>6</span></label>
+                                        <label class="custom-checkbox secondary"><input type="checkbox"
+                                                value="7.5"><span class="checkmark"></span><span>7,5</span></label>
+                                        <label class="custom-checkbox secondary"><input type="checkbox" value="9"><span
+                                                class="checkmark"></span><span>9</span></label>
+                                        <label class="custom-checkbox secondary"><input type="checkbox" value="10"><span
+                                                class="checkmark"></span><span>10 (Актив)</span></label>
                                     </div>
                                 </div>
 
@@ -1309,6 +1348,8 @@
                             </div>
                         </div>
 
+                        <div id="dict-empty-state-view" class="hidden"></div>
+
                         <div class="table-container wide-table">
                             <table id="words-table">
                                 <thead>
@@ -1383,7 +1424,7 @@
                                     <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
                                     <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
                                 </svg>
-                                Слова и прогресс
+                                Прогресс
                             </button>
                             <button class="settings-tab" data-target="settings-personalization-section">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"

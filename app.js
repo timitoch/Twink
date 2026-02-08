@@ -630,6 +630,7 @@ function renderTable(arr) {
     const dictToolbar = document.querySelector('.dict-toolbar');
     const dictEmptyView = document.getElementById('dict-empty-state-view');
     const dictMainContainer = document.getElementById('dict-main-container');
+    const dictTableContainer = document.querySelector('.table-container');
 
     // Проверяем: словарь полностью пуст или просто поиск ничего не нашёл
     const isDictionaryEmpty = allWordsCache.length === 0;
@@ -665,6 +666,7 @@ function renderTable(arr) {
             // Скрываем таблицу, показываем сообщение
             wordsTableBody.innerHTML = '';
             if (tableHead) tableHead.style.display = 'none';
+            if (dictTableContainer) dictTableContainer.classList.add('hidden');
         }
         if (dictEmptyView) {
             dictEmptyView.classList.remove('hidden');
@@ -692,6 +694,7 @@ function renderTable(arr) {
     if (dictToolbar) dictToolbar.classList.remove('hidden');
     if (dictMainContainer) dictMainContainer.classList.remove('hidden');
     if (dictEmptyView) dictEmptyView.classList.add('hidden');
+    if (dictTableContainer) dictTableContainer.classList.remove('hidden');
 
     if (tableHead) tableHead.style.display = '';
     wordsTableBody.innerHTML = '';
@@ -1101,12 +1104,28 @@ const dictFilterIntervalBtn = document.getElementById('dict-filter-interval-btn'
 const dictFilterIntervalMenu = document.getElementById('dict-filter-interval-menu');
 const dictFilterIntervalLabel = document.getElementById('interval-btn-label');
 
+const dictFilterScoreBtn = document.getElementById('dict-filter-score-btn');
+const dictFilterScoreMenu = document.getElementById('dict-filter-score-menu');
+const dictFilterScoreLabel = document.getElementById('score-btn-label');
+
 
 // --- Toggle Menus ---
 if (dictFilterIntervalBtn) {
     dictFilterIntervalBtn.onclick = (e) => {
         e.stopPropagation();
         dictFilterIntervalMenu.classList.toggle('hidden');
+        if (dictFilterScoreMenu) dictFilterScoreMenu.classList.add('hidden');
+        if (dictFilterColumnsMenu) dictFilterColumnsMenu.classList.add('hidden');
+        if (dictFilterSortMenu) dictFilterSortMenu.classList.add('hidden');
+    };
+}
+
+// --- Toggle Score Menu ---
+if (dictFilterScoreBtn) {
+    dictFilterScoreBtn.onclick = (e) => {
+        e.stopPropagation();
+        dictFilterScoreMenu.classList.toggle('hidden');
+        if (dictFilterIntervalMenu) dictFilterIntervalMenu.classList.add('hidden');
         if (dictFilterColumnsMenu) dictFilterColumnsMenu.classList.add('hidden');
         if (dictFilterSortMenu) dictFilterSortMenu.classList.add('hidden');
     };
@@ -1121,6 +1140,7 @@ if (dictFilterColumnsBtn) {
         e.stopPropagation();
         dictFilterColumnsMenu.classList.toggle('hidden');
         if (dictFilterIntervalMenu) dictFilterIntervalMenu.classList.add('hidden');
+        if (dictFilterScoreMenu) dictFilterScoreMenu.classList.add('hidden');
         if (dictFilterSortMenu) dictFilterSortMenu.classList.add('hidden');
     };
 }
@@ -1147,6 +1167,7 @@ if (dictFilterSortBtn) {
         e.stopPropagation();
         dictFilterSortMenu.classList.toggle('hidden');
         if (dictFilterIntervalMenu) dictFilterIntervalMenu.classList.add('hidden');
+        if (dictFilterScoreMenu) dictFilterScoreMenu.classList.add('hidden');
         if (dictFilterColumnsMenu) dictFilterColumnsMenu.classList.add('hidden');
     };
 }
@@ -1200,6 +1221,11 @@ window.addEventListener('click', (e) => {
             dictFilterIntervalMenu.classList.add('hidden');
         }
     }
+    if (dictFilterScoreMenu && !dictFilterScoreMenu.classList.contains('hidden')) {
+        if (!dictFilterScoreMenu.contains(e.target) && !dictFilterScoreBtn.contains(e.target)) {
+            dictFilterScoreMenu.classList.add('hidden');
+        }
+    }
     if (dictFilterColumnsMenu && !dictFilterColumnsMenu.classList.contains('hidden')) {
         if (!dictFilterColumnsMenu.contains(e.target) && !dictFilterColumnsBtn.contains(e.target)) {
             dictFilterColumnsMenu.classList.add('hidden');
@@ -1247,6 +1273,36 @@ function updateIntervalLabel() {
     }
 }
 
+// --- Score Logic (Event Delegation) ---
+if (dictFilterScoreMenu) {
+    dictFilterScoreMenu.addEventListener('change', (e) => {
+        if (e.target.tagName === 'INPUT' && e.target.type === 'checkbox') {
+            const checkboxes = dictFilterScoreMenu.querySelectorAll('input[type="checkbox"]');
+            if (e.target.value === 'all') {
+                if (e.target.checked) {
+                    checkboxes.forEach(c => { if (c !== e.target) c.checked = false; });
+                }
+            } else {
+                const allCb = dictFilterScoreMenu.querySelector('input[value="all"]');
+                if (e.target.checked && allCb) allCb.checked = false;
+            }
+            updateScoreLabel();
+            applyDictionaryFilters();
+        }
+    });
+}
+
+function updateScoreLabel() {
+    if (!dictFilterScoreMenu) return;
+    const checkboxes = dictFilterScoreMenu.querySelectorAll('input[type="checkbox"]');
+    const checked = Array.from(checkboxes).filter(c => c.checked);
+    if (checked.some(c => c.value === 'all') || checked.length === 0) {
+        dictFilterScoreLabel.textContent = 'Баллы: Все';
+    } else {
+        dictFilterScoreLabel.textContent = `Баллы: ${checked.length} выбр.`;
+    }
+}
+
 
 function applyDictionaryFilters(returnOnly) {
     // If called from event listener, returnOnly is an Event object (truthy). 
@@ -1255,22 +1311,40 @@ function applyDictionaryFilters(returnOnly) {
 
     let result = [...allWordsCache];
 
-    // 1. Search (Fuzzy-ish)
+    // 1. Search (Adaptive Fuzzy)
     const q = dictSearchInput ? dictSearchInput.value.toLowerCase().trim() : '';
     if (q) {
-        const normalize = (str) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const normalize = (str) => (str || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9äöüß\s]/g, "");
         const nQ = normalize(q);
+        const queryWords = nQ.split(/\s+/).filter(w => w.length > 0);
 
-        result = result.filter(w => {
-            const word = w.word ? w.word.toLowerCase() : '';
-            const tr = w.translation ? w.translation.toLowerCase() : '';
-            const nWord = normalize(word);
-            const nTr = normalize(tr);
-            return nWord.includes(nQ) || nTr.includes(nQ);
-        });
+        if (queryWords.length > 0) {
+            result = result.filter(w => {
+                const targetText = normalize(`${w.word} ${w.translation} ${w.info1 || ''} ${w.info2 || ''}`);
+                const targetWords = targetText.split(/\s+/).filter(tw => tw.length > 0);
+
+                // Check if ALL query words are matched (either as substring or fuzzy)
+                return queryWords.every(qw => {
+                    // 1. Direct substring match in full text (best & fastest)
+                    if (targetText.includes(qw)) return true;
+
+                    // 2. Fuzzy match against individual target words
+                    // Only for query words of 3+ chars
+                    if (qw.length >= 3) {
+                        const threshold = qw.length > 6 ? 2 : 1;
+                        return targetWords.some(tw => {
+                            // Quick length filter for performance
+                            if (Math.abs(tw.length - qw.length) > threshold) return false;
+                            return levenshteinDistance(tw, qw) <= threshold;
+                        });
+                    }
+                    return false;
+                });
+            });
+        }
     }
 
-    // 2. Interval Filter (Query fresh elements)
+    // 2. Interval Filter
     if (dictFilterIntervalMenu) {
         const checkboxes = dictFilterIntervalMenu.querySelectorAll('input[type="checkbox"]');
         const checkedIntervals = Array.from(checkboxes).filter(c => c.checked).map(c => c.value);
@@ -1282,6 +1356,24 @@ function applyDictionaryFilters(returnOnly) {
                 if (checkedIntervals.includes('new') && !w.progress_global) return true;
                 if (checkedIntervals.includes('0') && days === 0 && w.progress_global) return true;
                 if (checkedIntervals.includes(String(days))) return true;
+                return false;
+            });
+        }
+    }
+
+    // 3. Score Filter
+    if (dictFilterScoreMenu) {
+        const checkboxes = dictFilterScoreMenu.querySelectorAll('input[type="checkbox"]');
+        const checkedScores = Array.from(checkboxes).filter(c => c.checked).map(c => parseFloat(c.value));
+        const showAllScores = checkedScores.includes(NaN) || checkedScores.length === 0; // 'all' is NaN when parseFloat
+
+        if (!showAllScores) {
+            result = result.filter(w => {
+                const isActive = w.progress_global?.isActive || false;
+                const score = w.progress_global ? (w.progress_global.excellentStreak || 0) : 0;
+
+                if (checkedScores.includes(10) && isActive) return true;
+                if (!isActive && checkedScores.includes(score)) return true;
                 return false;
             });
         }
@@ -1437,4 +1529,28 @@ if (mobileFilterToggle && filtersGroup) {
             }
         }
     });
+}
+
+// --- HELPERS ---
+function levenshteinDistance(s1, s2) {
+    if (!s1 || !s2) return Math.max((s1 || "").length, (s2 || "").length);
+    const m = s1.length, n = s2.length;
+    // Basic dp matrix
+    const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+    for (let i = 0; i <= m; i++) dp[i][0] = i;
+    for (let j = 0; j <= n; j++) dp[0][j] = j;
+    for (let i = 1; i <= m; i++) {
+        for (let j = 1; j <= n; j++) {
+            if (s1[i - 1] === s2[j - 1]) {
+                dp[i][j] = dp[i - 1][j - 1];
+            } else {
+                dp[i][j] = Math.min(
+                    dp[i - 1][j],    // deletion
+                    dp[i][j - 1],    // insertion
+                    dp[i - 1][j - 1] // substitution
+                ) + 1;
+            }
+        }
+    }
+    return dp[m][n];
 }
