@@ -12,6 +12,60 @@
     <link rel="stylesheet" href="style-editor.css">
     <link rel="stylesheet" href="profile.css">
 
+    <style>
+        .guide-section {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 24px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .guide-section h2 {
+            margin: 0 0 12px 0;
+            color: var(--secondary);
+            font-size: 1.1rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .guide-section p {
+            color: var(--text-muted);
+            line-height: 1.5;
+            margin-bottom: 14px;
+            font-size: 0.85rem;
+        }
+
+        .guide-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .guide-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.82rem;
+        }
+
+        .guide-list li:last-child {
+            border-bottom: none;
+        }
+
+        .guide-list li span:first-child {
+            color: var(--text-main);
+            font-weight: 500;
+        }
+    </style>
+
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -587,7 +641,7 @@
                 </div>
 
                 <!-- 3.5 VIEW: EXAM (NEW DEDICATED VIEW) -->
-                <div id="view-exam" class="view-section hidden" style="padding-bottom: 120px;">
+                <div id="view-exam" class="view-section hidden" style="padding-bottom: 120px; margin-top: -90px;">
 
                     <!-- Main Container constrained to card width -->
                     <div
@@ -595,7 +649,7 @@
 
                         <!-- Header (Compact & Aligned) -->
                         <div
-                            style="padding: 1rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                            style="position: sticky; top: 0; background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); z-index: 100; padding: 0.75rem 0; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; margin-bottom: 2.5rem;">
                             <button id="btn-exit-exam" class="btn-square icon-btn" title="Выйти"
                                 style="background: transparent; border: none; color: var(--text-muted); padding: 0.5rem; margin-left: -0.5rem;">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
@@ -616,11 +670,23 @@
                                     Слово 1 из 10</p>
                             </div>
 
-                            <div style="width: 40px;"></div> <!-- Spacer -->
+                            <button id="btn-exam-help" class="btn-square icon-btn" title="Инструкции"
+                                style="background: transparent; border: none; color: var(--text-muted); padding: 0.5rem; margin-right: -0.5rem;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <path d="M14.5 9a2.5 2.5 0 0 0-5 0c0 .733.223 1.05.5 1.5.5.866 1.5.5 1.5 2.5v.5">
+                                    </path>
+                                    <path d="M12 17h.01"></path>
+                                </svg>
+                            </button>
+
+
                         </div>
 
                         <!-- Exam Content (Pushed to Top) -->
-                        <div style="padding: 0; display: flex; flex-direction: column;">
+                        <div style="padding: 3.5rem 0 1rem 0; display: flex; flex-direction: column;">
 
                             <!-- Russian Word (Question) -->
                             <h1 id="exam-question-text"
@@ -639,13 +705,8 @@
                                     style="width: 100%; padding: 0.5rem 0; border: none; border-bottom: 1px solid var(--border); background: transparent; color: var(--text-main); font-size: 1.1rem; text-align: left; font-weight: 400; outline: none; transition: border-color 0.2s; border-radius: 0; resize: none; overflow: hidden; font-family: inherit; line-height: 1.5; box-shadow: none;"></textarea>
                             </div>
 
-                            <!-- Feedback -->
-                            <div id="exam-feedback" class="hidden"
-                                style="margin-bottom: 1.5rem; padding: 1rem; border-radius: 30px; font-weight: 500; text-align: left; font-size: 0.95rem;">
-                            </div>
-
                             <!-- Action Buttons -->
-                            <div style="display: flex; gap: 0.75rem;">
+                            <div style="display: flex; gap: 0.75rem; margin-bottom: 1.5rem;">
                                 <button id="btn-exam-check" class="btn-primary"
                                     style="flex: 1; padding: 0.9rem; font-size: 1rem; font-weight: 600; border-radius: 30px;">
                                     Проверить
@@ -663,6 +724,181 @@
                                     Далее
                                 </button>
                             </div>
+
+                            <!-- Feedback -->
+                            <div id="exam-feedback" class="hidden"
+                                style="margin-bottom: 1.5rem; padding: 1rem; border-radius: 30px; font-weight: 500; text-align: left; font-size: 0.95rem;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                <!-- 3.6 VIEW: EXAM HELP (DEDICATED FULL SCREEN) -->
+                <div id="view-exam-help" class="view-section hidden" style="padding-bottom: 40px; margin-top: -90px;">
+                    <div style="width: 100%; max-width: 500px; margin: 0 auto; display: flex; flex-direction: column;">
+
+                        <!-- Header -->
+                        <div
+                            style="position: sticky; top: 0; background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); z-index: 100; padding: 0.75rem 0; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                            <button id="btn-back-from-help" class="btn-square icon-btn" title="Назад"
+                                style="background: transparent; border: none; color: var(--text-muted); padding: 0.5rem; margin-left: -0.5rem;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                                    <polyline points="12 19 5 12 12 5"></polyline>
+                                </svg>
+                            </button>
+                            <h3
+                                style="margin: 0; font-size: 0.9rem; font-weight: 600; color: var(--text-main); text-transform: uppercase; letter-spacing: 0.5px;">
+                                Инструктаж</h3>
+                            <div style="width: 40px;"></div>
+                        </div>
+
+                        <!-- Content -->
+                        <div
+                            style="display: flex; flex-direction: column; gap: 1rem; overflow-y: auto; padding-top: 3.5rem;">
+
+                            <div class="guide-section">
+                                <h2>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                        <polyline points="14 2 14 8 20 8"></polyline>
+                                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                                        <polyline points="10 9 9 9 8 9"></polyline>
+                                    </svg>
+                                    Правила Экзамена
+                                </h2>
+                                <p>На экзамене проверяется знание основной формы слова и всех его форм (для глаголов).
+                                </p>
+
+                                <div style="margin-bottom: 20px;">
+                                    <h4 style="font-size: 0.9rem; color: var(--text-main); margin-bottom: 8px;">Основные
+                                        правила:
+                                    </h4>
+                                    <ul class="guide-list">
+                                        <li><span>Одна строка</span> <span>Все слова пишутся подряд</span></li>
+                                        <li><span>Артикли</span> <span>Первый артикль обязателен</span></li>
+                                        <li><span>Порядок</span> <span>Внутри форм порядок важен</span></li>
+                                    </ul>
+                                </div>
+
+                                <div style="margin-bottom: 20px;">
+                                    <h4 style="font-size: 0.9rem; color: var(--text-main); margin-bottom: 8px;">
+                                        Подсказки:</h4>
+                                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                                        <div
+                                            style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 12px; border-left: 3px solid var(--text-muted);">
+                                            <code style="color: var(--text-main); font-size: 0.8rem;">________</code>
+                                            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">
+                                                Введите
+                                                основное немецкое слово (инфинитив).</div>
+                                        </div>
+                                        <div
+                                            style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 12px; border-left: 3px solid var(--secondary);">
+                                            <code
+                                                style="color: var(--text-main); font-size: 0.8rem;">Präsens, Präteritum, Partizip II</code>
+                                            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">
+                                                Введите все
+                                                три формы глагола. Порядок форм не критичен.</div>
+                                        </div>
+                                        <div
+                                            style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 12px; border-left: 3px solid var(--text-muted);">
+                                            <code style="color: var(--text-main); font-size: 0.8rem;">(plural)</code>
+                                            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">
+                                                Обязательно
+                                                записать множественное число.</div>
+                                        </div>
+                                        <div
+                                            style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 12px; border-left: 3px solid var(--text-muted);">
+                                            <code style="color: var(--text-main); font-size: 0.8rem;">(жен. р.)</code>
+                                            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">
+                                                Обязательно
+                                                записать женский род.</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <h4 style="font-size: 0.9rem; color: var(--text-main); margin-bottom: 8px;">Цветовые
+                                        индикаторы:</h4>
+                                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                                        <!-- Green -->
+                                        <div
+                                            style="display: flex; align-items: center; gap: 12px; padding: 10px; background: rgba(16, 185, 129, 0.03); border-radius: 12px; border: 1px solid rgba(16, 185, 129, 0.05);">
+                                            <div style="position: relative; width: 10px; height: 10px; flex-shrink: 0;">
+                                                <div
+                                                    style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 6px; height: 6px; border-radius: 50%; background: #10b981; box-shadow: 0 0 6px #10b981;">
+                                                </div>
+                                                <div
+                                                    style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid #55efc4; opacity: 0.8;">
+                                                </div>
+                                            </div>
+                                            <span style="font-size: 0.75rem; color: var(--text-main);"><span
+                                                    style="color: #10b981; font-weight: 600;">Зеленый</span> &mdash;
+                                                абсолютно
+                                                точный ответ. <span
+                                                    style="color: #10b981; font-weight: 700;">+1б</span></span>
+                                        </div>
+                                        <!-- Blue -->
+                                        <div
+                                            style="display: flex; align-items: center; gap: 12px; padding: 10px; background: rgba(59, 130, 246, 0.03); border-radius: 12px; border: 1px solid rgba(59, 130, 246, 0.05);">
+                                            <div style="position: relative; width: 10px; height: 10px; flex-shrink: 0;">
+                                                <div
+                                                    style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 6px; height: 6px; border-radius: 50%; background: #3b82f6; box-shadow: 0 0 6px #3b82f6;">
+                                                </div>
+                                                <div
+                                                    style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid #74b9ff; opacity: 0.8;">
+                                                </div>
+                                            </div>
+                                            <span style="font-size: 0.75rem; color: var(--text-main);"><span
+                                                    style="color: #3b82f6; font-weight: 600;">Синий</span> &mdash;
+                                                верно, но форме глагола с вариантом ответа ist/hat указан только один из
+                                                вариантов. <span
+                                                    style="color: #3b82f6; font-weight: 700;">+1б</span></span>
+                                        </div>
+                                        <!-- Purple -->
+                                        <div
+                                            style="display: flex; align-items: center; gap: 12px; padding: 10px; background: rgba(139, 92, 246, 0.03); border-radius: 12px; border: 1px solid rgba(139, 92, 246, 0.05);">
+                                            <div style="position: relative; width: 10px; height: 10px; flex-shrink: 0;">
+                                                <div
+                                                    style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 6px; height: 6px; border-radius: 50%; background: #8b5cf6; box-shadow: 0 0 6px #8b5cf6;">
+                                                </div>
+                                                <div
+                                                    style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid #a29bfe; opacity: 0.8;">
+                                                </div>
+                                            </div>
+                                            <span style="font-size: 0.75rem; color: var(--text-main);"><span
+                                                    style="color: #8b5cf6; font-weight: 600;">Фиолетовый</span> &mdash;
+                                                ошибка в
+                                                артикле или в порядке слов. <span
+                                                    style="color: #8b5cf6; font-weight: 700;">-1.5б</span></span>
+                                        </div>
+                                        <!-- Red -->
+                                        <div
+                                            style="display: flex; align-items: center; gap: 12px; padding: 10px; background: rgba(239, 68, 68, 0.03); border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.05);">
+                                            <div style="position: relative; width: 10px; height: 10px; flex-shrink: 0;">
+                                                <div
+                                                    style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 6px; height: 6px; border-radius: 50%; background: #ef4444; box-shadow: 0 0 6px #ef4444;">
+                                                </div>
+                                                <div
+                                                    style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid #ff7675; opacity: 0.8;">
+                                                </div>
+                                            </div>
+                                            <span style="font-size: 0.75rem; color: var(--text-main);"><span
+                                                    style="color: #ef4444; font-weight: 600;">Красный</span> &mdash;
+                                                орфографическая ошибка или неполный ответ. <span
+                                                    style="color: #ef4444; font-weight: 700;">-3б</span></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+
+
                         </div>
                     </div>
                 </div>
@@ -761,8 +997,8 @@
                                                         <th>B: Активное</th>
                                                         <th>C: Слово</th>
                                                         <th>D: Перевод</th>
-                                                        <th>E: Инфо</th>
-                                                        <th>F: Инфо2</th>
+                                                        <th>E: Формы глагола</th>
+                                                        <th>F: Дополнительно</th>
                                                         <th>G: Пример 1</th>
                                                         <th>H: Пример 2</th>
                                                         <th>I: Папка</th>
@@ -804,8 +1040,8 @@
                                         <div class="guide-mobile-item"><span>B</span> Активное слово (yes/no)</div>
                                         <div class="guide-mobile-item"><span>C</span> Немецкое слово</div>
                                         <div class="guide-mobile-item"><span>D</span> Перевод</div>
-                                        <div class="guide-mobile-item"><span>E</span> Доп. информация</div>
-                                        <div class="guide-mobile-item"><span>F</span> Доп. информация 2</div>
+                                        <div class="guide-mobile-item"><span>E</span> Формы глагола</div>
+                                        <div class="guide-mobile-item"><span>F</span> Дополнительно</div>
                                         <div class="guide-mobile-item"><span>G</span> Пример 1</div>
                                         <div class="guide-mobile-item"><span>H</span> Пример 2</div>
                                         <div class="guide-mobile-item"><span>I</span> Название папки</div>
@@ -909,10 +1145,10 @@
                                                 class="checkmark"></span><span>Перевод</span></label>
                                         <label class="custom-checkbox secondary"><input type="checkbox" value="info1"
                                                 checked onchange="toggleColumn('info1')"><span
-                                                class="checkmark"></span><span>Доп. инфо 1</span></label>
+                                                class="checkmark"></span><span>Формы глагола</span></label>
                                         <label class="custom-checkbox secondary"><input type="checkbox" value="info2"
                                                 checked onchange="toggleColumn('info2')"><span
-                                                class="checkmark"></span><span>Доп. инфо 2</span></label>
+                                                class="checkmark"></span><span>Дополнительно</span></label>
                                         <label class="custom-checkbox secondary"><input type="checkbox" value="ex1"
                                                 checked onchange="toggleColumn('ex1')"><span
                                                 class="checkmark"></span><span>Пример
@@ -1107,8 +1343,8 @@
                                         </th>
                                         <th>Немецкое слово</th>
                                         <th>Перевод</th>
-                                        <th>Доп. инфо 1</th>
-                                        <th>Доп. инфо 2</th>
+                                        <th>Формы глагола</th>
+                                        <th>Дополнительно</th>
                                         <th>Пример 1</th>
                                         <th data-col="ex2" onclick="sortWords('ex2')">Пример 2</th>
                                         <th data-col="folder" onclick="sortWords('folder')">Папка</th>
@@ -1463,11 +1699,13 @@
                             <div class="def-col">
                                 <!-- EXAMPLES / EXTRA -->
                                 <div class="field-group">
-                                    <label>Доп. инфо</label>
-                                    <input type="text" class="input-stealth input-sub" id="edit-info1">
+                                    <label>Формы глагола / Дополнительно</label>
+                                    <input type="text" class="input-stealth input-sub" id="edit-info1"
+                                        placeholder="Формы глагола">
                                 </div>
                                 <div class="field-group">
-                                    <input type="text" class="input-stealth input-sub" id="edit-info2">
+                                    <input type="text" class="input-stealth input-sub" id="edit-info2"
+                                        placeholder="Дополнительно">
                                 </div>
                                 <div class="field-group">
                                     <label>Примеры</label>
@@ -1539,13 +1777,13 @@
                                     </button>
                                 </div>
                                 <div class="setting-row">
-                                    <span class="setting-label">Инфо 1</span>
+                                    <span class="setting-label">Формы глагола</span>
                                     <button id="btn-toggle-audio-info1" class="toggle-switch-btn active">
                                         <div class="toggle-thumb"></div>
                                     </button>
                                 </div>
                                 <div class="setting-row">
-                                    <span class="setting-label">Инфо 2</span>
+                                    <span class="setting-label">Дополнительно</span>
                                     <button id="btn-toggle-audio-info2" class="toggle-switch-btn active">
                                         <div class="toggle-thumb"></div>
                                     </button>
@@ -1609,13 +1847,13 @@
                                     </button>
                                 </div>
                                 <div class="setting-row">
-                                    <span class="setting-label">Инфо 1</span>
+                                    <span class="setting-label">Формы глагола</span>
                                     <button id="btn-toggle-info1" class="toggle-switch-btn active">
                                         <div class="toggle-thumb"></div>
                                     </button>
                                 </div>
                                 <div class="setting-row">
-                                    <span class="setting-label">Инфо 2</span>
+                                    <span class="setting-label">Дополнительно</span>
                                     <button id="btn-toggle-info2" class="toggle-switch-btn active">
                                         <div class="toggle-thumb"></div>
                                     </button>

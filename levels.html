@@ -241,6 +241,128 @@
                 Ошибка на экзамене отнимает <strong>3 балла</strong>, возвращая слово на этап обучения.
             </div>
         </div>
+
+        <div class="guide-section">
+            <h2>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+                Правила Экзамена
+            </h2>
+            <p>На экзамене проверяется знание основной формы слова и всех его форм (для глаголов).</p>
+
+            <div style="margin-bottom: 20px;">
+                <h4 style="font-size: 0.9rem; color: var(--text-main); margin-bottom: 8px;">Основные правила:</h4>
+                <ul class="guide-list">
+                    <li><span>Одна строка</span> <span>Все слова пишутся подряд</span></li>
+                    <li><span>Артикли</span> <span>Первый артикль обязателен</span></li>
+                    <li><span>Порядок</span> <span>Внутри форм порядок важен</span></li>
+                </ul>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <h4 style="font-size: 0.9rem; color: var(--text-main); margin-bottom: 8px;">Подсказки:</h4>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <div
+                        style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 12px; border-left: 3px solid var(--text-muted);">
+                        <code style="color: var(--text-main); font-size: 0.8rem;">________</code>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Введите основное
+                            немецкое слово (инфинитив).</div>
+                    </div>
+                    <div
+                        style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 12px; border-left: 3px solid var(--secondary);">
+                        <code
+                            style="color: var(--text-main); font-size: 0.8rem;">Präsens, Präteritum, Partizip II</code>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Введите все три
+                            формы глагола. Порядок форм не критичен.</div>
+                    </div>
+                    <div
+                        style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 12px; border-left: 3px solid var(--text-muted);">
+                        <code style="color: var(--text-main); font-size: 0.8rem;">(plural)</code>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Обязательно записать
+                            множественное число.</div>
+                    </div>
+                    <div
+                        style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 12px; border-left: 3px solid var(--text-muted);">
+                        <code style="color: var(--text-main); font-size: 0.8rem;">(жен. р.)</code>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Обязательно записать
+                            женский род.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <h4 style="font-size: 0.9rem; color: var(--text-main); margin-bottom: 8px;">Цветовые индикаторы:</h4>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <!-- Green -->
+                    <div
+                        style="display: flex; align-items: center; gap: 12px; padding: 10px; background: rgba(16, 185, 129, 0.03); border-radius: 12px; border: 1px solid rgba(16, 185, 129, 0.05);">
+                        <div style="position: relative; width: 10px; height: 10px; flex-shrink: 0;">
+                            <div
+                                style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 6px; height: 6px; border-radius: 50%; background: #10b981; box-shadow: 0 0 6px #10b981;">
+                            </div>
+                            <div
+                                style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid #55efc4; opacity: 0.8;">
+                            </div>
+                        </div>
+                        <span style="font-size: 0.75rem; color: var(--text-main);"><span
+                                style="color: #10b981; font-weight: 600;">Зеленый</span> &mdash; абсолютно точный ответ.
+                            <span style="color: #10b981; font-weight: 700;">+1б</span></span>
+                    </div>
+                    <!-- Blue -->
+                    <div
+                        style="display: flex; align-items: center; gap: 12px; padding: 10px; background: rgba(59, 130, 246, 0.03); border-radius: 12px; border: 1px solid rgba(59, 130, 246, 0.05);">
+                        <div style="position: relative; width: 10px; height: 10px; flex-shrink: 0;">
+                            <div
+                                style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 6px; height: 6px; border-radius: 50%; background: #3b82f6; box-shadow: 0 0 6px #3b82f6;">
+                            </div>
+                            <div
+                                style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid #74b9ff; opacity: 0.8;">
+                            </div>
+                        </div>
+                        <span style="font-size: 0.75rem; color: var(--text-main);"><span
+                                style="color: #3b82f6; font-weight: 600;">Синий</span> &mdash; верно, но форме глагола с
+                            вариантом ответа ist/hat указан только один из вариантов. <span
+                                style="color: #3b82f6; font-weight: 700;">+1б</span></span>
+                    </div>
+                    <!-- Purple -->
+                    <div
+                        style="display: flex; align-items: center; gap: 12px; padding: 10px; background: rgba(139, 92, 246, 0.03); border-radius: 12px; border: 1px solid rgba(139, 92, 246, 0.05);">
+                        <div style="position: relative; width: 10px; height: 10px; flex-shrink: 0;">
+                            <div
+                                style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 6px; height: 6px; border-radius: 50%; background: #8b5cf6; box-shadow: 0 0 6px #8b5cf6;">
+                            </div>
+                            <div
+                                style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid #a29bfe; opacity: 0.8;">
+                            </div>
+                        </div>
+                        <span style="font-size: 0.75rem; color: var(--text-main);"><span
+                                style="color: #8b5cf6; font-weight: 600;">Фиолетовый</span> &mdash; ошибка в артикле или
+                            в порядке слов. <span style="color: #8b5cf6; font-weight: 700;">-1.5б</span></span>
+                    </div>
+                    <!-- Red -->
+                    <div
+                        style="display: flex; align-items: center; gap: 12px; padding: 10px; background: rgba(239, 68, 68, 0.03); border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.05);">
+                        <div style="position: relative; width: 10px; height: 10px; flex-shrink: 0;">
+                            <div
+                                style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 6px; height: 6px; border-radius: 50%; background: #ef4444; box-shadow: 0 0 6px #ef4444;">
+                            </div>
+                            <div
+                                style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid #ff7675; opacity: 0.8;">
+                            </div>
+                        </div>
+                        <span style="font-size: 0.75rem; color: var(--text-main);"><span
+                                style="color: #ef4444; font-weight: 600;">Красный</span> &mdash; орфографическая ошибка
+                            или неполный ответ. <span style="color: #ef4444; font-weight: 700;">-3б</span></span>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
     <script src="levels.js"></script>
 </body>

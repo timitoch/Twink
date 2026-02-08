@@ -183,8 +183,9 @@ class StudyModule {
             if (document.visibilityState === 'hidden') {
                 this.stopTracking();
             } else {
-                // Return to app: if we are in study session view, restart tracking
-                if (this.viewStudySession && !this.viewStudySession.classList.contains('hidden') && this.currentSession) {
+                // Return to app: if we are in study session view OR exam view, restart tracking
+                if ((this.viewStudySession && !this.viewStudySession.classList.contains('hidden') && this.currentSession) ||
+                    (this.viewExam && !this.viewExam.classList.contains('hidden') && this.currentExamSession)) {
                     this.startTracking();
                 }
             }
@@ -1870,6 +1871,7 @@ class StudyModule {
         if (this.btnExitExam) {
             this.btnExitExam.onclick = () => {
                 if (confirm('Вы уверены, что хотите выйти из экзамена?')) {
+                    this.stopTracking();
                     this.currentExamSession = null;
                     if (window.switchView) window.switchView(this.viewStudy);
                     this.renderStudyDashboard();
@@ -1877,7 +1879,29 @@ class StudyModule {
             };
         }
 
+        // Bind help button
+        const btnHelp = document.getElementById('btn-exam-help');
+        const viewHelp = document.getElementById('view-exam-help');
+        const btnBackHelp = document.getElementById('btn-back-from-help');
+
+        if (btnHelp && viewHelp) {
+            btnHelp.onclick = () => {
+                this.viewExam.classList.add('hidden');
+                viewHelp.classList.remove('hidden');
+                document.body.classList.remove('no-scroll');
+            };
+        }
+
+        const closeHelp = () => {
+            viewHelp.classList.add('hidden');
+            this.viewExam.classList.remove('hidden');
+            document.body.classList.add('no-scroll');
+        };
+
+        if (btnBackHelp) btnBackHelp.onclick = closeHelp;
+
         this.showNextExamQuestion();
+        this.startTracking();
     }
 
     showNextExamQuestion() {
@@ -1886,6 +1910,7 @@ class StudyModule {
         if (this.currentExamSession.currentIndex >= this.currentExamSession.queue.length) {
             // Exam finished
             alert("Экзамен завершен!");
+            this.stopTracking();
             this.currentExamSession = null;
             if (window.switchView) window.switchView(this.viewStudy);
             this.renderStudyDashboard();
@@ -1903,29 +1928,51 @@ class StudyModule {
         // Display question
         if (this.examQuestionText) this.examQuestionText.textContent = word.translation;
         // Hints Logic
-        // Hints Logic
         let hints = [];
         const germanWord = word.word;
-        let isFemininePair = false;
+        const parts = germanWord.split(',').map(p => p.trim());
+        const hasArticle = /\b(der|die|das)\b/i.test(germanWord);
 
-        // Rule 2: Feminine form hint (check first)
-        // E.g. "der Arbeiter, die Arbeiterin" -> (жен. р.) only
-        if (germanWord.includes(',')) {
-            const parts = germanWord.split(',');
-            if (parts.length > 1 && parts[1].trim().endsWith('in')) {
+        if (parts.length === 2 && hasArticle) {
+            // Case with 2 words (e.g., der Partner, die Partner or die Frau, die Frauen)
+            const is1Fem = parts[0].toLowerCase().startsWith('die ');
+            const is2FemSuffix = parts[1].toLowerCase().endsWith('in');
+
+            // Hint for the first part
+            hints.push(is1Fem ? "(жен. р.)" : "________");
+
+            // Hint for the second part
+            if (is2FemSuffix && !is1Fem) {
+                // der Arbeiter, die Arbeiterin -> second is feminine form
                 hints.push("(жен. р.)");
-                isFemininePair = true;
+            } else {
+                // der Partner, die Partner OR die Partnerin, die Partnerinnen -> second is plural
+                hints.push("(plural)");
+            }
+        } else {
+            // General logic for 1 word or 3+ words
+            const is1Fem = parts[0].toLowerCase().startsWith('die ');
+            if (is1Fem) hints.push("(жен. р.)");
+
+            if (parts.length > 1) {
+                const is2FemSuffix = parts[1].toLowerCase().endsWith('in');
+                if (is2FemSuffix && !is1Fem) {
+                    hints.push("(жен. р.)");
+                } else if (hasArticle) {
+                    hints.push("(plural)");
+                }
             }
         }
 
-        // Rule 1: Plural hint (multiple words with articles)
-        // Only check if it's NOT identified as a feminine pair
-        // FIX: Check for comma to ensure it's actually a list/pair, not just "die Word"
-        if (!isFemininePair && germanWord.includes(',') && /\b(der|die|das)\b/i.test(germanWord)) {
-            hints.push("(plural)");
+        // Add verb form hints if info1 is present
+        if (word.info1) {
+            if (hints.length === 0) {
+                hints.push("________");
+            }
+            hints.push("präsens", "präteritum", "partizip II");
         }
 
-        const hint = hints.join(' ');
+        const hint = hints.join(', ');
 
         // Display hint
         if (this.examQuestionInfo) {
@@ -2013,10 +2060,87 @@ class StudyModule {
         const correctAnswer = word.word;
 
         // 1. Content Check
-        // Use normalizeAnswer to strip articles and punctuation for content comparison
-        const normUser = this.normalizeAnswer(userAnswer);
-        const normCorrect = this.normalizeAnswer(correctAnswer);
-        const isContentCorrect = normUser === normCorrect;
+        let isContentCorrect = false;
+        let sequenceError = false;
+        let partialMatch = false;
+
+        if (word.info1) {
+            // Unit-based comparison: internal order of words in each form must be preserved.
+            // But the forms themselves can appear in any order in the user's answer.
+            const clean = (str) => {
+                return str.replace(/\([^)]*\)/g, '')
+                    .toLowerCase()
+                    .replace(/\b(der|die|das|den|dem|des|ein|eine|einer|einem|einen)\b/gi, '')
+                    .replace(/[^a-z0-9äöüß\s]/gi, ' ')
+                    .trim()
+                    .replace(/\s+/g, ' ');
+            };
+
+            const unitsCorrect = (correctAnswer + "," + word.info1).split(',').map(u => u.trim()).filter(u => u.length > 0);
+            const userClean = clean(userAnswer);
+
+            const getVariants = (unitStr) => {
+                if (!unitStr.includes('/')) return [{ text: clean(unitStr), partial: false }];
+                const normUnit = unitStr.replace(/\s*\/\s*/g, '/');
+                const tokens = normUnit.split(/\s+/);
+                const slashIdx = tokens.findIndex(t => t.includes('/'));
+                if (slashIdx === -1) return [{ text: clean(unitStr), partial: false }];
+                const [opt1, opt2] = tokens[slashIdx].split('/');
+                const build = (middle) => {
+                    const t = [...tokens];
+                    t[slashIdx] = middle;
+                    return clean(t.join(' '));
+                };
+                return [
+                    { text: build(opt1), partial: true },
+                    { text: build(opt2), partial: true },
+                    { text: build(`${opt1} ${opt2}`), partial: false },
+                    { text: build(`${opt2} ${opt1}`), partial: false }
+                ];
+            };
+
+            const checkPermutation = (remainder, units) => {
+                if (units.length === 0) return { ok: true, partial: false };
+                for (let i = 0; i < units.length; i++) {
+                    const variants = getVariants(units[i]);
+                    for (const v of variants) {
+                        const esc = v.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                        const regex = new RegExp(`(^|\\s)${esc}(\\s|$)`);
+                        if (regex.test(remainder)) {
+                            const newRemainder = remainder.replace(regex, ' ').trim().replace(/\s+/g, ' ');
+                            const newUnits = units.filter((_, idx) => idx !== i);
+                            const res = checkPermutation(newRemainder, newUnits);
+                            if (res.ok) return { ok: true, partial: v.partial || res.partial };
+                        }
+                    }
+                }
+                return { ok: false, partial: false };
+            };
+            const result = checkPermutation(userClean, unitsCorrect);
+            isContentCorrect = result.ok;
+            partialMatch = result.partial;
+
+            // 1.1 Sequence Error Check (Purple color case)
+            if (!isContentCorrect) {
+                const tokenize = (str) => {
+                    return str.replace(/\([^)]*\)/g, '')
+                        .toLowerCase()
+                        .replace(/\b(der|die|das|den|dem|des|ein|eine|einer|einem|einen)\b/gi, '')
+                        .split(/[^a-z0-9äöüß]+/gi)
+                        .filter(t => t.length > 0)
+                        .sort();
+                };
+                const userTokens = tokenize(userAnswer);
+                const correctTokens = tokenize(correctAnswer + " " + word.info1);
+                if (JSON.stringify(userTokens) === JSON.stringify(correctTokens)) {
+                    sequenceError = true;
+                }
+            }
+        } else {
+            const normUser = this.normalizeAnswer(userAnswer);
+            const normCorrect = this.normalizeAnswer(correctAnswer);
+            isContentCorrect = normUser === normCorrect;
+        }
 
         // 2. Article Check (Only if content matched)
         let articleError = false;
@@ -2061,15 +2185,13 @@ class StudyModule {
             this.btnExamCheck.disabled = true;
         }
 
-        // Show feedback
+        // Build additional info HTML
+        let extraHTML = '';
         if (this.examFeedback) {
             this.examFeedback.classList.remove('hidden');
 
-            // Build additional info HTML
-            let extraHTML = '';
-            if (word.info1 || word.info2 || word.ex1 || word.ex2) {
+            if (word.info2 || word.ex1 || word.ex2) {
                 extraHTML = '<div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1); text-align: left; font-size: 0.9rem; opacity: 0.9;">';
-                if (word.info1) extraHTML += `<div style="color: var(--text-main); font-weight: 600; margin-bottom: 0.2rem;">${word.info1}</div>`;
                 if (word.info2) extraHTML += `<div style="color: var(--text-muted); margin-bottom: 0.5rem;">${word.info2}</div>`;
                 if (word.ex1) extraHTML += `<div style="color: var(--text-muted); font-style: italic; margin-bottom: 0.3rem;">• ${word.ex1}</div>`;
                 if (word.ex2) extraHTML += `<div style="color: var(--text-muted); font-style: italic;">• ${word.ex2}</div>`;
@@ -2077,20 +2199,32 @@ class StudyModule {
             }
 
             if (isCorrect) {
-                this.examFeedback.style.background = 'rgba(16, 185, 129, 0.1)';
-                this.examFeedback.style.color = 'var(--accent-bright)';
-                this.examFeedback.style.border = '1px solid var(--accent-bright)';
-                this.examFeedback.innerHTML = `✓ Правильно!${extraHTML}`;
+                if (partialMatch) {
+                    this.examFeedback.style.background = 'rgba(59, 130, 246, 0.1)';
+                    this.examFeedback.style.color = '#3b82f6';
+                    this.examFeedback.style.border = '1px solid #3b82f6';
+                    this.examFeedback.innerHTML = `✓ Почти правильно!<br><span style="color: var(--text-muted);">Эталон:</span> <strong style="color: var(--text-main);">${correctAnswer}${word.info1 ? ', ' + word.info1 : ''}</strong>${extraHTML}`;
+                } else {
+                    this.examFeedback.style.background = 'rgba(16, 185, 129, 0.1)';
+                    this.examFeedback.style.color = 'var(--accent-bright)';
+                    this.examFeedback.style.border = '1px solid var(--accent-bright)';
+                    this.examFeedback.innerHTML = `✓ Правильно!${extraHTML}`;
+                }
             } else if (articleError) {
                 this.examFeedback.style.background = 'rgba(139, 92, 246, 0.1)';
                 this.examFeedback.style.color = '#8b5cf6';
                 this.examFeedback.style.border = '1px solid #8b5cf6';
-                this.examFeedback.innerHTML = `⚠️ Ошибка в артикле<br><span style="color: var(--text-muted);">Правильно:</span> <strong style="color: var(--text-main);">${correctAnswer}</strong>${extraHTML}`;
+                this.examFeedback.innerHTML = `Ошибка в артикле<br><span style="color: var(--text-muted);">Правильно:</span> <strong style="color: var(--text-main);">${correctAnswer}${word.info1 ? ', ' + word.info1 : ''}</strong>${extraHTML}`;
+            } else if (sequenceError) {
+                this.examFeedback.style.background = 'rgba(139, 92, 246, 0.1)';
+                this.examFeedback.style.color = '#8b5cf6';
+                this.examFeedback.style.border = '1px solid #8b5cf6';
+                this.examFeedback.innerHTML = `Ошибка в последовательности<br><span style="color: var(--text-muted);">Правильно:</span> <strong style="color: var(--text-main);">${correctAnswer}${word.info1 ? ', ' + word.info1 : ''}</strong>${extraHTML}`;
             } else {
                 this.examFeedback.style.background = 'rgba(239, 68, 68, 0.1)';
                 this.examFeedback.style.color = '#ef4444';
                 this.examFeedback.style.border = '1px solid #ef4444';
-                this.examFeedback.innerHTML = `✗ Неправильно<br><span style="color: var(--text-muted);">Правильный ответ:</span> <strong style="color: var(--text-main);">${correctAnswer}</strong>${extraHTML}`;
+                this.examFeedback.innerHTML = `✗ Неправильно<br><span style="color: var(--text-muted);">Правильный ответ:</span> <strong style="color: var(--text-main);">${correctAnswer}${word.info1 ? ', ' + word.info1 : ''}</strong>${extraHTML}`;
             }
         }
 
@@ -2111,11 +2245,11 @@ class StudyModule {
                 lastReviewed: Date.now()
             };
         } else {
-            // -3 points from 9.0 is 6.0. If word was already at 10 (Active) and somehow fails, set to 7.5
+            const deduction = (articleError || sequenceError) ? 1.5 : 3.0;
             if (score >= 10) {
-                score = 7.5;
+                score = 10 - deduction;
             } else {
-                score = Math.max(0, score - 3);
+                score = Math.max(0, score - deduction);
             }
             // Ensure float precision
             score = parseFloat(score.toFixed(1));
@@ -2128,13 +2262,6 @@ class StudyModule {
                 lastRating: 2,
                 lastReviewed: Date.now()
             };
-        }
-
-        // Save to database
-        try {
-            await this.db.updateProgress(word.id, 'progress_global', word.progress_global);
-        } catch (e) {
-            console.error('Error updating exam progress:', e);
         }
 
         // Show Next button
@@ -2167,14 +2294,7 @@ class StudyModule {
                         lastReviewed: Date.now()
                     };
 
-                    // Save to DB
-                    try {
-                        await this.db.updateProgress(word.id, 'progress_global', word.progress_global);
-                    } catch (e) {
-                        console.error('Override save/update error', e);
-                    }
-
-                    // Update Feedback UI (Green)
+                    // Update Feedback UI (Green) - DO THIS BEFORE AWAIT
                     if (this.examFeedback) {
                         this.examFeedback.style.background = 'rgba(16, 185, 129, 0.1)';
                         this.examFeedback.style.color = '#10b981';
@@ -2190,30 +2310,62 @@ class StudyModule {
                         btnUndo.onclick = async () => {
                             // REVERT to Incorrect
                             word.progress_global = incorrectState;
-                            try { await this.db.updateProgress(word.id, 'progress_global', word.progress_global); } catch (e) { }
 
-                            // Revert UI to Red OR Purple
+                            // Revert UI to Red OR Purple - DO THIS BEFORE AWAIT
                             if (this.examFeedback) {
-                                if (articleError) {
+                                if (isCorrect) {
+                                    if (partialMatch) {
+                                        this.examFeedback.style.background = 'rgba(59, 130, 246, 0.1)';
+                                        this.examFeedback.style.color = '#3b82f6';
+                                        this.examFeedback.style.border = '1px solid #3b82f6';
+                                        this.examFeedback.innerHTML = `✓ Почти правильно!<br><span style="color: var(--text-muted);">Эталон:</span> <strong style="color: var(--text-main);">${correctAnswer}${word.info1 ? ', ' + word.info1 : ''}</strong>${extraHTML}`;
+                                    } else {
+                                        this.examFeedback.style.background = 'rgba(16, 185, 129, 0.1)';
+                                        this.examFeedback.style.color = 'var(--accent-bright)';
+                                        this.examFeedback.style.border = '1px solid var(--accent-bright)';
+                                        this.examFeedback.innerHTML = `✓ Правильно!${extraHTML}`;
+                                    }
+                                } else if (articleError) {
                                     this.examFeedback.style.background = 'rgba(139, 92, 246, 0.1)';
                                     this.examFeedback.style.color = '#8b5cf6';
                                     this.examFeedback.style.border = '1px solid #8b5cf6';
-                                    this.examFeedback.innerHTML = `⚠️ Ошибка в артикле<br><span style="color: var(--text-muted);">Правильно:</span> <strong style="color: var(--text-main);">${correctAnswer}</strong>${extraHTML}`;
+                                    this.examFeedback.innerHTML = `Ошибка в артикле<br><span style="color: var(--text-muted);">Правильно:</span> <strong style="color: var(--text-main);">${correctAnswer}${word.info1 ? ', ' + word.info1 : ''}</strong>${extraHTML}`;
+                                } else if (sequenceError) {
+                                    this.examFeedback.style.background = 'rgba(139, 92, 246, 0.1)';
+                                    this.examFeedback.style.color = '#8b5cf6';
+                                    this.examFeedback.style.border = '1px solid #8b5cf6';
+                                    this.examFeedback.innerHTML = `Ошибка в последовательности<br><span style="color: var(--text-muted);">Правильно:</span> <strong style="color: var(--text-main);">${correctAnswer}${word.info1 ? ', ' + word.info1 : ''}</strong>${extraHTML}`;
                                 } else {
                                     this.examFeedback.style.background = 'rgba(239, 68, 68, 0.1)';
                                     this.examFeedback.style.color = '#ef4444';
                                     this.examFeedback.style.border = '1px solid #ef4444';
-                                    this.examFeedback.innerHTML = `✗ Неправильно<br><span style="color: var(--text-muted);">Правильный ответ:</span> <strong style="color: var(--text-main);">${correctAnswer}</strong>${extraHTML}`;
+                                    this.examFeedback.innerHTML = `✗ Неправильно<br><span style="color: var(--text-muted);">Правильный ответ:</span> <strong style="color: var(--text-main);">${correctAnswer}${word.info1 ? ', ' + word.info1 : ''}</strong>${extraHTML}`;
                                 }
                             }
 
                             // Toggle buttons back
                             btnUndo.classList.add('hidden');
                             btnOverride.classList.remove('hidden');
+
+                            try { await this.db.updateProgress(word.id, 'progress_global', word.progress_global); } catch (e) { }
                         };
+                    }
+
+                    // Save to DB (Deferred after UI update)
+                    try {
+                        await this.db.updateProgress(word.id, 'progress_global', word.progress_global);
+                    } catch (e) {
+                        console.error('Override save/update error', e);
                     }
                 };
             }
+        }
+
+        // Save to database
+        try {
+            await this.db.updateProgress(word.id, 'progress_global', word.progress_global);
+        } catch (e) {
+            console.error('Error updating exam progress:', e);
         }
     }
 }

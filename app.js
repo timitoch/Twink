@@ -1374,8 +1374,8 @@ function exportWordsToExcel() {
         })(),
         "Немецкое слово": w.word,
         "Перевод": w.translation,
-        "Доп. инфо 1": w.info1,
-        "Доп. инфо 2": w.info2,
+        "Формы глагола": w.info1,
+        "Дополнительно": w.info2,
         "Пример 1": w.ex1,
         "Пример 2": w.ex2,
         "Папка": w.folder || ""

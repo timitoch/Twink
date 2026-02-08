@@ -503,7 +503,22 @@ input:-webkit-autofill:active {
     background: rgba(255, 255, 255, 0.1);
 }
 
-/* Helper to disable body scroll on mobile session */
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(15px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+#exam-feedback:not(.hidden) {
+    animation: slideInUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
 .no-scroll {
     overflow: hidden !important;
     height: 100vh !important;
