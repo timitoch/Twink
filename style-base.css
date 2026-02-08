@@ -258,10 +258,11 @@ body::before {
 /* Mobile Background: Dimmer color spots, more pure black space */
 @media (max-width: 768px) {
     body::before {
-        opacity: 0.4;
+        opacity: 0.8;
         background:
             radial-gradient(ellipse 400px 300px at 10% 20%, var(--bg-gradient-1), transparent),
-            radial-gradient(ellipse 300px 400px at 90% 70%, var(--bg-gradient-2), transparent);
+            radial-gradient(ellipse 300px 400px at 90% 70%, var(--bg-gradient-2), transparent),
+            radial-gradient(circle 500px at 50% 100%, #131321, transparent);
     }
 }
 

@@ -1314,7 +1314,7 @@ function applyDictionaryFilters(returnOnly) {
     // 1. Search (Adaptive Fuzzy)
     const q = dictSearchInput ? dictSearchInput.value.toLowerCase().trim() : '';
     if (q) {
-        const normalize = (str) => (str || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9äöüß\s]/g, "");
+        const normalize = (str) => (str || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9äöüßа-яё\s]/g, "");
         const nQ = normalize(q);
         const queryWords = nQ.split(/\s+/).filter(w => w.length > 0);
 
