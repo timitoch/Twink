@@ -486,6 +486,8 @@ if (navSettingsMobileBtn) {
 
 // --- AUTH ---
 let authHandled = false;
+let isFirstDataLoad = true;
+const loadingScreen = document.getElementById('loading-screen');
 
 firebase.auth().onAuthStateChanged((user) => {
     authHandled = true;
@@ -505,29 +507,18 @@ firebase.auth().onAuthStateChanged((user) => {
             window.ProfileModule.init(db, user, allWordsCache);
         }
 
-        // SHOW DASHBOARD IMMEDIATELY
+        // Prepare dashboard Views (hidden behind loader for now)
         if (dashboardScreen) dashboardScreen.classList.remove('hidden');
 
-        // RESTORE LAST VIEW IMMEDIATELY
         const lastViewId = localStorage.getItem('lastActiveView');
-        let targetView = viewStudy; // Default
+        let targetView = viewStudy;
         if (lastViewId) {
             const savedView = document.getElementById(lastViewId);
             if (savedView) targetView = savedView;
         }
-
-        // Initial render for the target view (with empty data for now)
-        if (targetView === viewStudy && window.StudyModule) {
-            window.StudyModule.renderStudyDashboard();
-        } else if (targetView === viewWords) {
-            applyDictionaryFilters();
-        } else if (targetView === viewProfile && window.ProfileModule) {
-            window.ProfileModule.loadStats();
-        }
-
         switchView(targetView);
 
-        // LOAD DATA IN BACKGROUND
+        // LOAD DATA
         db.subscribeToWords(w => {
             if (!w) {
                 allWordsCache = [];
@@ -539,21 +530,33 @@ firebase.auth().onAuthStateChanged((user) => {
             if (window.StudyModule) window.StudyModule.updateWordsCache(allWordsCache);
             if (window.ProfileModule) window.ProfileModule.updateStats(allWordsCache);
 
-            // Re-render current view if it's a dashboard view to show new data
+            // Render current view
             if (!viewStudy.classList.contains('hidden') && window.StudyModule) {
                 window.StudyModule.renderStudyDashboard();
-            }
-            if (!viewWords.classList.contains('hidden')) applyDictionaryFilters();
-            if (!viewProfile.classList.contains('hidden') && window.ProfileModule) {
+            } else if (!viewWords.classList.contains('hidden')) {
+                applyDictionaryFilters();
+            } else if (!viewProfile.classList.contains('hidden') && window.ProfileModule) {
                 window.ProfileModule.loadStats();
+            }
+
+            // HIDE LOADER on first data load
+            if (isFirstDataLoad) {
+                isFirstDataLoad = false;
+                if (loadingScreen) {
+                    loadingScreen.style.opacity = '0';
+                    loadingScreen.style.transition = 'opacity 0.4s ease';
+                    setTimeout(() => {
+                        loadingScreen.style.display = 'none';
+                    }, 400);
+                }
             }
         });
 
     } else {
-        // Not logged in - Redirect to auth page after a tiny delay to prevent FOUC/flicker
-        // on initial load before SDK is ready.
+        // Not logged in - Redirect
         setTimeout(() => {
             if (!firebase.auth().currentUser) {
+                if (loadingScreen) loadingScreen.style.display = 'none';
                 window.location.href = 'auth.html';
             }
         }, 300);
