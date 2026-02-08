@@ -596,6 +596,15 @@ if (visibleColumns.folder === undefined) {
     localStorage.setItem('visibleColumns', JSON.stringify(visibleColumns));
 }
 
+// Ensure 'active' column exists (migration)
+if (visibleColumns.active === undefined) {
+    visibleColumns.active = true;
+    localStorage.setItem('visibleColumns', JSON.stringify(visibleColumns));
+}
+
+// Sync UI with state on load
+updateColumnFilterUI();
+
 function toggleColumn(colKey) {
     visibleColumns[colKey] = !visibleColumns[colKey];
     localStorage.setItem('visibleColumns', JSON.stringify(visibleColumns)); // Save
