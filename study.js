@@ -1106,7 +1106,11 @@ class StudyModule {
         const globalDue = sortedWords.filter(w => !w.progress_global?.isActive && (w.progress_global?.excellentStreak || 0) < 9 && (!w.progress_global || w.progress_global.nextDate <= now));
         if (this.globalDueCountLbl) this.globalDueCountLbl.textContent = globalDue.length;
 
-        const examWords = sortedWords.filter(w => (w.progress_global?.excellentStreak || 0) >= 9 && !w.progress_global?.isActive);
+        const examWords = sortedWords.filter(w =>
+            (w.progress_global?.excellentStreak || 0) >= 9 &&
+            !w.progress_global?.isActive &&
+            (!w.progress_global?.nextDate || w.progress_global.nextDate <= now)
+        );
         const examCard = document.getElementById('exam-mode-card');
         const examCountEl = document.getElementById('exam-ready-count');
         const examBtn = document.getElementById('btn-start-exam');
@@ -1848,9 +1852,11 @@ class StudyModule {
 
     // --- EXAM SESSION LOGIC ---
     startExamSession() {
+        const now = Date.now();
         const examWords = this.allWordsCache.filter(w =>
             (w.progress_global?.excellentStreak || 0) >= 9 &&
-            !w.progress_global?.isActive
+            !w.progress_global?.isActive &&
+            (!w.progress_global?.nextDate || w.progress_global.nextDate <= now)
         );
 
         if (examWords.length === 0) {
