@@ -1,6 +1,6 @@
 // DOM Elements - Screens
-const loginScreen = document.getElementById('login-screen');
-const registerScreen = document.getElementById('register-screen');
+// const loginScreen = document.getElementById('login-screen');
+// const registerScreen = document.getElementById('register-screen');
 const dashboardScreen = document.getElementById('dashboard-screen');
 
 // Header Items
@@ -19,12 +19,8 @@ const viewSettings = document.getElementById('view-settings');
 const navSettingsBtn = document.getElementById('nav-settings-btn');
 
 // Forms & Inputs
-const loginForm = document.getElementById('login-form');
-const registerForm = document.getElementById('register-form');
-const toRegisterBtn = document.getElementById('to-register');
-const toLoginBtn = document.getElementById('to-login');
-const loginError = document.getElementById('login-error');
-const regError = document.getElementById('reg-error');
+const loginError = null; // Removed
+const regError = null; // Removed
 const excelFileInput = document.getElementById('excel-file-input');
 const importStatus = document.getElementById('import-status');
 const wordsTableBody = document.getElementById('words-table-body');
@@ -372,6 +368,14 @@ function updateNavIndicator() {
 window.addEventListener('resize', updateNavIndicator);
 
 async function switchView(targetView) {
+    if (!targetView) return;
+
+    // Save current view to localStorage (skip transient views)
+    const transientViews = ['view-study-session', 'view-exam', 'view-group-edit'];
+    if (!transientViews.includes(targetView.id)) {
+        localStorage.setItem('lastActiveView', targetView.id);
+    }
+
     // Hide all views
     [viewProfile, viewImport, viewWords, viewStudy, viewStudySession, viewSettings, viewGroupEdit, viewExam].forEach(v => v && v.classList.add('hidden'));
     targetView.classList.remove('hidden');
@@ -481,16 +485,49 @@ if (navSettingsMobileBtn) {
 
 
 // --- AUTH ---
-let isInitialLoad = true;
-const loadingScreen = document.getElementById('loading-screen');
+let authHandled = false;
 
 firebase.auth().onAuthStateChanged((user) => {
+    authHandled = true;
     if (user) {
         // Reset state
         allWordsCache = [];
 
-        // LOAD DATA
-        let isFirstDataLoad = true;
+        // Initialize modules immediately
+        if (window.StudyModule) {
+            window.StudyModule.init(db, allWordsCache);
+        }
+        if (window.SettingsModule) {
+            window.SettingsModule.init(db);
+            window.SettingsModule.loadAvatar(user.uid);
+        }
+        if (window.ProfileModule) {
+            window.ProfileModule.init(db, user, allWordsCache);
+        }
+
+        // SHOW DASHBOARD IMMEDIATELY
+        if (dashboardScreen) dashboardScreen.classList.remove('hidden');
+
+        // RESTORE LAST VIEW IMMEDIATELY
+        const lastViewId = localStorage.getItem('lastActiveView');
+        let targetView = viewStudy; // Default
+        if (lastViewId) {
+            const savedView = document.getElementById(lastViewId);
+            if (savedView) targetView = savedView;
+        }
+
+        // Initial render for the target view (with empty data for now)
+        if (targetView === viewStudy && window.StudyModule) {
+            window.StudyModule.renderStudyDashboard();
+        } else if (targetView === viewWords) {
+            applyDictionaryFilters();
+        } else if (targetView === viewProfile && window.ProfileModule) {
+            window.ProfileModule.loadStats();
+        }
+
+        switchView(targetView);
+
+        // LOAD DATA IN BACKGROUND
         db.subscribeToWords(w => {
             if (!w) {
                 allWordsCache = [];
@@ -498,77 +535,28 @@ firebase.auth().onAuthStateChanged((user) => {
                 allWordsCache = Object.values(w).sort((a, b) => parseInt(a.id) - parseInt(b.id));
             }
 
-            // Update StudyModule cache
-            if (window.StudyModule) {
-                window.StudyModule.updateWordsCache(allWordsCache);
-            }
+            // Update Module caches
+            if (window.StudyModule) window.StudyModule.updateWordsCache(allWordsCache);
+            if (window.ProfileModule) window.ProfileModule.updateStats(allWordsCache);
 
-            // Update Profile Stats
-            if (window.ProfileModule) {
-                window.ProfileModule.updateStats(allWordsCache);
-            }
-
-            // Always render current view if it's a dashboard view
+            // Re-render current view if it's a dashboard view to show new data
             if (!viewStudy.classList.contains('hidden') && window.StudyModule) {
                 window.StudyModule.renderStudyDashboard();
             }
             if (!viewWords.classList.contains('hidden')) applyDictionaryFilters();
-
-            // On first data load, show the dashboard and hide loading screen
-            if (isFirstDataLoad) {
-                isFirstDataLoad = false;
-
-                // Hide auth screens
-                loginScreen.classList.add('hidden');
-                registerScreen.classList.add('hidden');
-
-                // Show dashboard
-                dashboardScreen.classList.remove('hidden');
-
-                // Set default view
-                switchView(viewStudy);
-
-                // Hide loading screen
-                if (loadingScreen) {
-                    loadingScreen.style.opacity = '0';
-                    loadingScreen.style.transition = 'opacity 0.3s ease';
-                    setTimeout(() => {
-                        loadingScreen.style.display = 'none';
-                    }, 300);
-                }
-
-                isInitialLoad = false;
+            if (!viewProfile.classList.contains('hidden') && window.ProfileModule) {
+                window.ProfileModule.loadStats();
             }
         });
 
-        // Initialize modules (but don't render until data is loaded)
-        if (window.StudyModule) {
-            window.StudyModule.init(db, allWordsCache);
-        }
-
-        // Initialize Settings Module
-        if (window.SettingsModule) {
-            window.SettingsModule.init(db);
-            window.SettingsModule.loadAvatar(user.uid);
-        }
-
-        // Initialize Profile Module
-        if (window.ProfileModule) {
-            window.ProfileModule.init(db, user, allWordsCache);
-        }
     } else {
-        // Not logged in
-        dashboardScreen.classList.add('hidden');
-        loginScreen.classList.remove('hidden');
-
-        // Hide loading screen
-        if (loadingScreen) {
-            loadingScreen.style.opacity = '0';
-            loadingScreen.style.transition = 'opacity 0.3s ease';
-            setTimeout(() => {
-                loadingScreen.style.display = 'none';
-            }, 300);
-        }
+        // Not logged in - Redirect to auth page after a tiny delay to prevent FOUC/flicker
+        // on initial load before SDK is ready.
+        setTimeout(() => {
+            if (!firebase.auth().currentUser) {
+                window.location.href = 'auth.html';
+            }
+        }, 300);
     }
 });
 
@@ -1066,38 +1054,7 @@ deleteWordBtn.onclick = async () => {
     }
 };
 
-loginForm.onsubmit = (e) => { e.preventDefault(); firebase.auth().signInWithEmailAndPassword(document.getElementById('login-email').value, document.getElementById('login-password').value).catch(e => loginError.textContent = e.code); };
-registerForm.onsubmit = (e) => {
-    e.preventDefault();
-    const nn = document.getElementById('reg-nickname').value;
-    const email = document.getElementById('reg-email').value;
-    const password = document.getElementById('reg-password').value;
-    const confirm = document.getElementById('reg-password-confirm').value;
-
-    if (password !== confirm) {
-        regError.textContent = "Пароли не совпадают";
-        return;
-    }
-
-    firebase.auth().createUserWithEmailAndPassword(email, password)
-        .then(u => firebase.database().ref('users/' + u.user.uid + '/nickname').set(nn))
-        .catch(e => regError.textContent = e.message);
-};
-
-// Password Visibility Toggle
-document.querySelectorAll('.password-toggle').forEach(btn => {
-    btn.onclick = () => {
-        const input = btn.parentElement.querySelector('input');
-        if (input) {
-            const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
-            input.setAttribute('type', type);
-            btn.querySelector('.eye-open').classList.toggle('hidden');
-            btn.querySelector('.eye-closed').classList.toggle('hidden');
-        }
-    };
-});
-toRegisterBtn.onclick = () => { loginScreen.classList.add('hidden'); registerScreen.classList.remove('hidden'); };
-toLoginBtn.onclick = () => { registerScreen.classList.add('hidden'); loginScreen.classList.remove('hidden'); };
+// Auth related event listeners moved to auth.js
 
 if (excelFileInput) {
     excelFileInput.onchange = async (e) => {
