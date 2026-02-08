@@ -15,7 +15,9 @@
     padding: 1rem 2.2rem 1rem 1.5rem;
     /* Asymmetrical padding for visual balance */
     position: relative;
-    overflow: hidden;
+    /* overflow: visible to allow tooltips; effects moved to .card-glare */
+    overflow: visible;
+    z-index: 10;
     margin-bottom: 1.25rem;
     border-radius: 20px;
     background: linear-gradient(135deg,
@@ -31,7 +33,16 @@
         inset 0 -1.5px 0 rgba(0, 0, 0, 0.2);
 }
 
-.profile-header-card::before {
+.card-glare {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    border-radius: inherit;
+    z-index: 0;
+}
+
+.card-glare::before {
     content: '';
     position: absolute;
     top: 0;
@@ -141,6 +152,39 @@
     font-weight: 600;
     line-height: 1;
     /* Match line height for better alignment */
+}
+
+/* Profile Level Tooltip positioning */
+.profile-tooltip {
+    left: auto !important;
+    right: 0 !important;
+    transform: translateY(15px) translateX(0) !important;
+    pointer-events: auto !important;
+    /* Allow interaction if needed, though mostly for stability */
+}
+
+.has-tooltip:hover .profile-tooltip {
+    transform: translateY(8px) translateX(0) !important;
+}
+
+@media (max-width: 768px) {
+    .profile-tooltip {
+        position: fixed !important;
+        top: auto !important;
+        bottom: 80px !important;
+        left: 5% !important;
+        right: 5% !important;
+        width: 90% !important;
+        transform: translateY(10px) !important;
+    }
+
+    .profile-tooltip {
+        display: none !important;
+    }
+
+    .has-tooltip:hover .profile-tooltip {
+        display: none !important;
+    }
 }
 
 .badge-icon {

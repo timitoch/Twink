@@ -550,7 +550,7 @@ class StudyModule {
             const key = 'progress_global';
             const prog = w[key] || {};
 
-            if (!prog.isActive && (!prog.nextDate || prog.nextDate <= now)) due++;
+            if (!prog.isActive && (prog.excellentStreak || 0) < 9 && (!prog.nextDate || prog.nextDate <= now)) due++;
             if (prog.lastReviewed && prog.lastReviewed >= startOfToday) learnedToday++;
             // Mastered: active OR (interval >= 12 AND not overdue)
             if (prog.isActive || (prog.interval && prog.interval >= 12 && prog.nextDate > now)) mastered++;
@@ -1102,7 +1102,7 @@ class StudyModule {
         const now = Date.now();
         const sortedWords = [...this.allWordsCache].sort((a, b) => parseInt(a.id) - parseInt(b.id));
 
-        const globalDue = sortedWords.filter(w => !w.progress_global?.isActive && (!w.progress_global || w.progress_global.nextDate <= now));
+        const globalDue = sortedWords.filter(w => !w.progress_global?.isActive && (w.progress_global?.excellentStreak || 0) < 9 && (!w.progress_global || w.progress_global.nextDate <= now));
         if (this.globalDueCountLbl) this.globalDueCountLbl.textContent = globalDue.length;
 
         const examWords = sortedWords.filter(w => (w.progress_global?.excellentStreak || 0) >= 9 && !w.progress_global?.isActive);
@@ -1163,7 +1163,7 @@ class StudyModule {
 
                 // Stats Logic
                 const total = folderOrGroupWords.length;
-                const due = folderOrGroupWords.filter(w => !w.progress_global?.isActive && (!w.progress_global || w.progress_global.nextDate <= now)).length;
+                const due = folderOrGroupWords.filter(w => !w.progress_global?.isActive && (w.progress_global?.excellentStreak || 0) < 9 && (!w.progress_global || w.progress_global.nextDate <= now)).length;
                 const mastered = folderOrGroupWords.filter(w => w.progress_global && (w.progress_global.isActive || (w.progress_global.interval >= 12 && w.progress_global.nextDate > now))).length;
                 const progressPct = total === 0 ? 0 : Math.round((mastered / total) * 100);
 

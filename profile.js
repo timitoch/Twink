@@ -170,7 +170,8 @@ class ProfileModule {
         const masteryPercent = totalWords === 0 ? 0 : Math.round((mastered / totalWords) * 100);
 
         this.viewProfile.innerHTML = `
-            <div class="profile-header-card">
+            <div class="profile-header-card" onclick="if(window.innerWidth <= 768) window.location.href='levels.html'" style="cursor: ${window.innerWidth <= 768 ? 'pointer' : 'default'}">
+                <div class="card-glare"></div>
                 <div class="avatar-container-outer">
                     <div class="avatar-ring-svg">
                         <svg viewBox="0 0 100 100">
@@ -193,7 +194,7 @@ class ProfileModule {
                     <div class="profile-top-row">
                         <h2 class="profile-nickname">${this.user.nickname || 'Пользователь'}</h2>
                         <div class="profile-header-badges">
-                            <div class="glass-badge highlight-level" title="Прогресс уровней (идеальные слова):&#10;A1: 500+&#10;A2: 1000+&#10;B1: 2000+&#10;B2: 4000+&#10;C1: 8000+&#10;C2: 16000+">
+                            <div class="glass-badge highlight-level has-tooltip">
                                 <span class="badge-icon">
                                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path></svg>
                                 </span>
@@ -201,6 +202,19 @@ class ProfileModule {
                                     ${this.getLevel(mastered)}
                                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.6;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
                                 </span>
+                                <div class="tooltip-box profile-tooltip">
+                                    <h4>Уровни владения</h4>
+                                    <p>Ваш уровень рассчитывается на основе количества "идеально" выученных слов:</p>
+                                    <ul class="tooltip-list">
+                                        <li><span>A0 (Начальный)</span> <span>0+ слов</span></li>
+                                        <li><span>A1 (Элементарный)</span> <span>500+ слов</span></li>
+                                        <li><span>A2 (Предсредний)</span> <span>1000+ слов</span></li>
+                                        <li><span>B1 (Средний)</span> <span>2000+ слов</span></li>
+                                        <li><span>B2 (Выше среднего)</span> <span>4000+ слов</span></li>
+                                        <li><span>C1 (Продвинутый)</span> <span>8000+ слов</span></li>
+                                        <li><span>C2 (В совершенстве)</span> <span>16000+ слов</span></li>
+                                    </ul>
+                                </div>
                             </div>
                             <div class="glass-badge">
                                 <span class="badge-icon">

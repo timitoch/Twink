@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Инструкции - WordLab</title>
+    <link rel="stylesheet" href="style-base.css">
+    <link rel="stylesheet" href="style-dashboard.css">
+    <link rel="stylesheet" href="profile.css">
+    <style>
+        body {
+            padding: 20px;
+            min-height: 100vh;
+            background: var(--background);
+            color: var(--text-main);
+            overflow-y: auto;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body::before {
+            display: none;
+            /* Simplify for static info page */
+        }
+
+        .guide-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 10px 0 60px 0;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .guide-section {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 24px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .guide-section h2 {
+            margin: 0 0 12px 0;
+            color: var(--secondary);
+            font-size: 1.1rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .guide-section p {
+            color: var(--text-muted);
+            line-height: 1.5;
+            margin-bottom: 14px;
+            font-size: 0.85rem;
+        }
+
+        .guide-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .guide-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.82rem;
+        }
+
+        .guide-list li:last-child {
+            border-bottom: none;
+        }
+
+        .guide-list li span:first-child {
+            color: var(--text-main);
+            font-weight: 500;
+        }
+
+        .back-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
+            padding: 8px 14px;
+            border-radius: 99px;
+            cursor: pointer;
+            width: fit-content;
+            font-weight: 600;
+            font-size: 0.8rem;
+            transition: all 0.2s ease;
+        }
+
+        .back-btn:active {
+            transform: scale(0.95);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .label-bold {
+            color: #fff;
+            font-weight: 700;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-size: 0.78rem;
+        }
+
+        .score-val {
+            font-weight: 800;
+            font-family: 'Outfit', monospace;
+            font-size: 0.9rem;
+        }
+
+        .plus {
+            color: var(--secondary);
+        }
+
+        .minus {
+            color: var(--accent-2);
+        }
+
+        .accent-box {
+            background: rgba(var(--secondary-rgb), 0.1);
+            border: 1px solid rgba(var(--secondary-rgb), 0.2);
+            padding: 10px;
+            border-radius: 12px;
+            margin-top: 10px;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="guide-container">
+        <button class="back-btn" onclick="window.history.back()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+            Назад
+        </button>
+
+        <div class="guide-section">
+            <h2>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
+                    <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
+                    <path d="M4 22h16"></path>
+                    <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path>
+                    <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path>
+                    <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path>
+                </svg>
+                Уровни владения
+            </h2>
+            <p>Ваш уровень рассчитывается на основе общего количества слов, достигнувших статуса <span
+                    class="label-bold"
+                    style="background: rgba(var(--secondary-rgb), 0.2); color: var(--secondary);">Mastered</span> (10
+                баллов):</p>
+            <ul class="guide-list">
+                <li><span>A0 (Начальный)</span> <span class="label-bold">0+ слов</span></li>
+                <li><span>A1 (Элементарный)</span> <span class="label-bold">500+ слов</span></li>
+                <li><span>A2 (Предсредний)</span> <span class="label-bold">1000+ слов</span></li>
+                <li><span>B1 (Средний)</span> <span class="label-bold">2000+ слов</span></li>
+                <li><span>B2 (Выше среднего)</span> <span class="label-bold">4000+ слов</span></li>
+                <li><span>C1 (Продвинутый)</span> <span class="label-bold">8000+ слов</span></li>
+                <li><span>C2 (В совершенстве)</span> <span class="label-bold">16000+ слов</span></li>
+            </ul>
+        </div>
+
+        <div class="guide-section">
+            <h2>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                </svg>
+                Баллы в обучении
+            </h2>
+            <p>В режиме флеш-карт ваши ответы влияют на прогресс слова следующим образом:</p>
+            <ul class="guide-list">
+                <li><span>Отлично</span> <span class="score-val plus">+3.0</span></li>
+                <li><span>Помню</span> <span class="score-val plus">+1.5</span></li>
+                <li><span>Почти</span> <span class="score-val">0.0</span></li>
+                <li><span>Частично</span> <span class="score-val minus">-1.5</span></li>
+                <li><span>С трудом</span> <span class="score-val minus">-3.0</span></li>
+                <li><span>Не помню</span> <span class="score-val" style="color:#ef4444">Сброс до 0</span></li>
+            </ul>
+        </div>
+
+        <div class="guide-section">
+            <h2>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                Как выучить слово?
+            </h2>
+            <p>Процесс освоения слова разделен на два этапа для лучшего запоминания:</p>
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+                <div
+                    style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05);">
+                    <div style="font-weight: 700; margin-bottom: 5px; color: var(--text-main);">1. Обучение (Flashcards)
+                    </div>
+                    <div style="font-size: 0.9rem; color: var(--text-muted);">Наберите <span class="label-bold">9.0
+                            баллов</span>. После этого слово перестанет попадаться в обычных сессиях и будет ждать
+                        экзамена.</div>
+                </div>
+                <div
+                    style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05);">
+                    <div style="font-weight: 700; margin-bottom: 5px; color: var(--text-main);">2. Экзамен (Final Test)
+                    </div>
+                    <div style="font-size: 0.9rem; color: var(--text-muted);">Успешный ответ на экзамене дает финальный
+                        <span class="label-bold">+1.0 балл</span>. Слово становится <span class="label-bold"
+                            style="color: var(--secondary);">Активным</span>.
+                    </div>
+                </div>
+            </div>
+            <div class="accent-box">
+                Ошибка на экзамене отнимает <strong>3 балла</strong>, возвращая слово на этап обучения.
+            </div>
+        </div>
+    </div>
+    <script src="levels.js"></script>
+</body>
+
+</html>
