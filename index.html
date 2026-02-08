@@ -272,7 +272,7 @@
                                         </svg>
                                     </div>
                                     <div class="mode-title-group">
-                                        <h3 class="mode-title">Весь список</h3>
+                                        <h3 class="mode-title">Весь словарь</h3>
                                         <p class="mode-description">Тренировка по всем словам в случайном порядке.</p>
                                     </div>
                                 </div>
@@ -299,41 +299,9 @@
                                 </button>
                             </div>
 
-                            <!-- Exam Mode Card -->
-                            <div class="group-card" id="exam-mode-card"
-                                style="display: none; width: 100%; max-width: 500px; border: 1px solid var(--accent-bright);">
-                                <div class="mode-header">
-                                    <div class="mode-icon-container"
-                                        style="color: var(--accent-bright); background: rgba(16, 185, 129, 0.1);">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                                        </svg>
-                                    </div>
-                                    <div class="mode-title-group">
-                                        <h3 class="mode-title">Экзамен</h3>
-                                        <p class="mode-description">Сдайте экзамен, чтобы перенести слова в активный
-                                            запас.</p>
-                                    </div>
-                                </div>
-                                <div class="mode-stats-grid">
-                                    <div class="stats-box due-box" style="width: 100%;">
-                                        <div class="stats-label">Готовы к сдаче</div>
-                                        <div id="exam-ready-count" class="stats-value"
-                                            style="color: var(--accent-bright);">0</div>
-                                    </div>
-                                </div>
-                                <button id="btn-start-exam" class="btn-primary start-session-btn"
-                                    style="background: var(--accent-bright); border-color: var(--accent-bright);">
-                                    Начать экзамен
-                                </button>
-                            </div>
-
                             <!-- Last Opened Group/Folder Card (Redesigned) -->
                             <div id="last-opened-card" class="group-card last-opened-card hidden"
-                                style="width: 100%; max-width: 500px; display: flex; flex-direction: column; justify-content: space-between; min-height: auto;">
+                                style="width: 100%; max-width: 500px; display: flex; flex-direction: column; justify-content: space-between;">
 
                                 <!-- Top Content Wrapper -->
                                 <div style="width: 100%;">
@@ -392,7 +360,7 @@
                                     </div>
 
                                     <!-- Progress Bar -->
-                                    <div
+                                    <div class="last-opened-progress-wrapper"
                                         style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 2rem;">
                                         <div
                                             style="display: flex; justify-content: space-between; align-items: center;">
@@ -416,6 +384,35 @@
                                         <polygon points="5 3 19 12 5 21 5 3"></polygon>
                                     </svg>
                                     Продолжить
+                                </button>
+                            </div>
+
+                            <!-- Exam Mode Card -->
+                            <div class="group-card" id="exam-mode-card"
+                                style="display: none; width: 100%; max-width: 500px;">
+                                <div class="mode-header">
+                                    <div class="mode-icon-container">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                        </svg>
+                                    </div>
+                                    <div class="mode-title-group">
+                                        <h3 class="mode-title">Экзамен</h3>
+                                        <p class="mode-description">Сдайте экзамен, чтобы перенести слова в активный
+                                            запас.</p>
+                                    </div>
+                                </div>
+                                <div class="mode-stats-grid">
+                                    <div class="stats-box due-box" style="width: 100%; grid-column: span 2;">
+                                        <div class="stats-label">Готовы к сдаче</div>
+                                        <div id="exam-ready-count" class="stats-value">0</div>
+                                    </div>
+                                </div>
+                                <button id="btn-start-exam" class="btn-primary start-session-btn">
+                                    Начать экзамен
                                 </button>
                             </div>
                         </div>

@@ -2061,21 +2061,33 @@ class StudyModule {
         // Show feedback
         if (this.examFeedback) {
             this.examFeedback.classList.remove('hidden');
+
+            // Build additional info HTML
+            let extraHTML = '';
+            if (word.info1 || word.info2 || word.ex1 || word.ex2) {
+                extraHTML = '<div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1); text-align: left; font-size: 0.9rem; opacity: 0.9;">';
+                if (word.info1) extraHTML += `<div style="color: var(--text-main); font-weight: 600; margin-bottom: 0.2rem;">${word.info1}</div>`;
+                if (word.info2) extraHTML += `<div style="color: var(--text-muted); margin-bottom: 0.5rem;">${word.info2}</div>`;
+                if (word.ex1) extraHTML += `<div style="color: var(--text-muted); font-style: italic; margin-bottom: 0.3rem;">• ${word.ex1}</div>`;
+                if (word.ex2) extraHTML += `<div style="color: var(--text-muted); font-style: italic;">• ${word.ex2}</div>`;
+                extraHTML += '</div>';
+            }
+
             if (isCorrect) {
                 this.examFeedback.style.background = 'rgba(16, 185, 129, 0.1)';
                 this.examFeedback.style.color = 'var(--accent-bright)';
                 this.examFeedback.style.border = '1px solid var(--accent-bright)';
-                this.examFeedback.textContent = '✓ Правильно!';
+                this.examFeedback.innerHTML = `✓ Правильно!${extraHTML}`;
             } else if (articleError) {
                 this.examFeedback.style.background = 'rgba(139, 92, 246, 0.1)';
                 this.examFeedback.style.color = '#8b5cf6';
                 this.examFeedback.style.border = '1px solid #8b5cf6';
-                this.examFeedback.innerHTML = `⚠️ Ошибка в артикле<br><small>Правильно: <strong>${correctAnswer}</strong></small>`;
+                this.examFeedback.innerHTML = `⚠️ Ошибка в артикле<br><span style="color: var(--text-muted);">Правильно:</span> <strong style="color: var(--text-main);">${correctAnswer}</strong>${extraHTML}`;
             } else {
                 this.examFeedback.style.background = 'rgba(239, 68, 68, 0.1)';
                 this.examFeedback.style.color = '#ef4444';
                 this.examFeedback.style.border = '1px solid #ef4444';
-                this.examFeedback.innerHTML = `✗ Неправильно<br><small>Правильный ответ: <strong>${correctAnswer}</strong></small>`;
+                this.examFeedback.innerHTML = `✗ Неправильно<br><span style="color: var(--text-muted);">Правильный ответ:</span> <strong style="color: var(--text-main);">${correctAnswer}</strong>${extraHTML}`;
             }
         }
 
@@ -2158,7 +2170,7 @@ class StudyModule {
                         this.examFeedback.style.background = 'rgba(16, 185, 129, 0.1)';
                         this.examFeedback.style.color = '#10b981';
                         this.examFeedback.style.border = '1px solid #10b981';
-                        this.examFeedback.textContent = '✓ Исправлено: Засчитано как верно!';
+                        this.examFeedback.innerHTML = `✓ Исправлено: Засчитано как верно!${extraHTML}`;
                     }
 
                     // Hide Override, Show Undo
@@ -2177,12 +2189,12 @@ class StudyModule {
                                     this.examFeedback.style.background = 'rgba(139, 92, 246, 0.1)';
                                     this.examFeedback.style.color = '#8b5cf6';
                                     this.examFeedback.style.border = '1px solid #8b5cf6';
-                                    this.examFeedback.innerHTML = `⚠️ Ошибка в артикле<br><small>Правильно: <strong>${correctAnswer}</strong></small>`;
+                                    this.examFeedback.innerHTML = `⚠️ Ошибка в артикле<br><span style="color: var(--text-muted);">Правильно:</span> <strong style="color: var(--text-main);">${correctAnswer}</strong>${extraHTML}`;
                                 } else {
                                     this.examFeedback.style.background = 'rgba(239, 68, 68, 0.1)';
                                     this.examFeedback.style.color = '#ef4444';
                                     this.examFeedback.style.border = '1px solid #ef4444';
-                                    this.examFeedback.innerHTML = `✗ Неправильно<br><small>Правильный ответ: <strong>${correctAnswer}</strong></small>`;
+                                    this.examFeedback.innerHTML = `✗ Неправильно<br><span style="color: var(--text-muted);">Правильный ответ:</span> <strong style="color: var(--text-main);">${correctAnswer}</strong>${extraHTML}`;
                                 }
                             }
 

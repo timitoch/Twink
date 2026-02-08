@@ -344,7 +344,7 @@
     display: flex;
     align-items: center;
     gap: 1rem;
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
 }
 
 .mode-icon-container {
@@ -381,7 +381,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 1rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
 }
 
 .stats-box {
@@ -433,13 +433,32 @@
 
 /* Mobile Compact Mode */
 @media (max-width: 600px) {
-    .study-mode-card {
-        padding: 1.25rem;
+
+    .study-mode-card,
+    .study-modes-grid .group-card {
+        padding: 1.25rem !important;
+        min-height: 190px !important;
+        display: flex !important;
+        flex-direction: column !important;
     }
 
     .mode-header {
-        margin-bottom: 1.25rem;
+        margin-bottom: 1rem !important;
         gap: 0.75rem;
+    }
+
+    .last-opened-card #last-opened-title {
+        font-size: 1.15rem !important;
+        margin-bottom: 0 !important;
+    }
+
+    .last-opened-progress-wrapper {
+        display: none !important;
+    }
+
+    .last-opened-card .group-stats-grid {
+        margin-bottom: 1rem !important;
+        margin-top: 0.75rem !important;
     }
 
     .mode-icon-container {
@@ -453,14 +472,12 @@
     }
 
     .mode-description {
-        font-size: 0.85rem;
-        display: none;
-        /* Hide description on mobile to save space */
+        display: none !important;
     }
 
     .mode-stats-grid {
         gap: 0.75rem;
-        margin-bottom: 1rem;
+        margin-bottom: 1rem !important;
     }
 
     .stats-box {
@@ -480,6 +497,7 @@
     .start-session-btn {
         height: 44px;
         font-size: 0.95rem;
+        margin-top: auto;
     }
 }
 
@@ -1752,9 +1770,7 @@ td {
         margin: 0 0 0.75rem 0 !important;
         /* Smaller gap between cards */
         padding: 0.75rem !important;
-        /* Reduced padding */
-        gap: 0.4rem;
-        /* Tighter spacing */
+        gap: 0.5rem;
         align-items: baseline;
     }
 
@@ -1772,24 +1788,45 @@ td {
     /* 1. ID (Bottom-Right Corner) */
     #words-table td:nth-child(1) {
         position: absolute;
-        bottom: 0.4rem;
-        right: 0.4rem;
-        /* Closer to edge */
+        bottom: 5px;
+        right: 8px;
         font-size: 0.7rem;
         color: var(--text-muted);
-        opacity: 0.35;
+        opacity: 0.45;
         font-weight: 400;
         pointer-events: none;
-        /* Don't interfere with clicks */
+        z-index: 10;
+        line-height: 1;
     }
 
-    /* 2. Active Indicator (Next to Interval) */
+    /* 2. Active Indicator / Score (Second in status row) */
     #words-table td:nth-child(2) {
         width: auto;
-        order: 6;
-        /* Move after stats */
-        margin-top: 0.5rem;
-        margin-left: 0.5rem;
+        order: 21;
+        margin-top: 0.6rem;
+        margin-right: 0.5rem;
+        margin-left: 0;
+        background: rgba(255, 255, 255, 0.05);
+        padding: 0.1rem 0.6rem;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 22px;
+        /* Uniform height for row */
+    }
+
+    #words-table td:nth-child(2) span {
+        font-size: 0.75rem !important;
+        color: var(--text-muted) !important;
+        font-weight: 500 !important;
+        opacity: 0.8;
+    }
+
+    #words-table td:nth-child(2) svg {
+        width: 12px;
+        height: 12px;
+        opacity: 0.6;
     }
 
     /* 3. Word (Full Width) */
@@ -1835,10 +1872,8 @@ td {
     #words-table td:nth-child(8) {
         width: 100%;
         font-size: 0.8rem;
-        /* Slightly larger for better readability */
         color: rgba(255, 255, 255, 0.6);
         font-style: normal;
-        /* Match screenshot: not italic */
         padding-left: 0.5rem;
         border-left: 2px solid rgba(255, 255, 255, 0.1);
         margin-top: 0.3rem;
@@ -1850,34 +1885,59 @@ td {
         display: none;
     }
 
-    /* 9. Folder (NEW POSITION - Mobile Layout) */
+    /* 9. Folder (Last in status row) */
     #words-table td:nth-child(9) {
-        order: 7;
-        /* In the status row */
+        order: 23;
         font-size: 0.75rem;
         color: var(--text-muted);
         opacity: 0.6;
         margin-top: 0.6rem;
-        margin-right: 0.5rem;
         white-space: nowrap !important;
         max-width: 100px;
         overflow: hidden;
         text-overflow: ellipsis;
+        display: flex;
+        align-items: center;
+        height: 22px;
     }
 
     #words-table td:nth-child(9):empty {
         display: none;
     }
 
-    /* 10-11. Stats (Interval & Date) - Was 9-10 */
-    #words-table td:nth-child(10),
-    #words-table td:nth-child(11) {
-        font-size: 0.8rem;
+    /* 10. Interval (First in status row) */
+    #words-table td:nth-child(10) {
+        font-size: 0.75rem;
         color: var(--text-muted);
-        order: 5;
+        order: 20;
         margin-top: 0.6rem;
-        margin-right: 0.8rem;
-        opacity: 0.8;
+        margin-right: 0.5rem;
+        display: flex;
+        align-items: center;
+        height: 22px;
+    }
+
+    #words-table td:nth-child(10) .level-badge {
+        background: rgba(99, 102, 241, 0.12) !important;
+        border: 1px solid rgba(99, 102, 241, 0.1) !important;
+        padding: 0.1rem 0.6rem !important;
+        font-size: 0.75rem !important;
+        color: var(--text-muted) !important;
+        opacity: 1;
+        border-radius: 6px;
+    }
+
+    /* 11. Next Date (After Score) */
+    #words-table td:nth-child(11) {
+        display: flex !important;
+        order: 22;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        opacity: 0.6;
+        margin-top: 0.6rem;
+        margin-right: 0.5rem;
+        align-items: center;
+        height: 22px;
     }
 
     /* 12. ACTION BUTTONS (Top-Right Corner) - Combined Cell */
