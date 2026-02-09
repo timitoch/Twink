@@ -1190,7 +1190,7 @@
                                         </div>
                                         <label class="custom-checkbox secondary"><input type="checkbox"
                                                 value="new"><span class="checkmark"></span><span>0 дн
-                                                (Новые)</span></label>
+                                                (Новые/К повтору)</span></label>
                                         <label class="custom-checkbox secondary"><input type="checkbox" value="0"><span
                                                 class="checkmark"></span><span>1 час</span></label>
                                         <label class="custom-checkbox secondary"><input type="checkbox" value="1"><span
@@ -1294,6 +1294,13 @@
                                                 onchange="setSortOrder('alphabet')">
                                             <span class="checkmark" style="border-radius: 50%;"></span>
                                             <span>По алфавиту</span>
+                                        </label>
+
+                                        <label class="custom-checkbox secondary" style="cursor: pointer;">
+                                            <input type="radio" name="sort-order" value="interval"
+                                                onchange="setSortOrder('interval')">
+                                            <span class="checkmark" style="border-radius: 50%;"></span>
+                                            <span>По интервалу</span>
                                         </label>
                                     </div>
                                 </div>

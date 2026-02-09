@@ -1198,10 +1198,22 @@ function updateSortLabel(order) {
         case 'alphabet':
             dictFilterSortLabel.textContent = 'А-Я';
             break;
+        case 'interval':
+            dictFilterSortLabel.innerHTML = `Интервал ${arrowIcon}`;
+            break;
         default:
             dictFilterSortLabel.textContent = 'Сортировка';
     }
 }
+
+// Table Header Sort Helper
+window.sortWords = (col) => {
+    if (col === 'interval') {
+        setSortOrder('interval');
+    } else if (col === 'folder') {
+        // Simple folder sort could be added here if needed
+    }
+};
 
 // Duplicates Filter Handler
 window.toggleDuplicatesFilter = () => {
@@ -1351,12 +1363,21 @@ function applyDictionaryFilters(returnOnly) {
         const showAllIntervals = checkedIntervals.includes('all') || checkedIntervals.length === 0;
 
         if (!showAllIntervals) {
+            const now = Date.now();
             result = result.filter(w => {
-                const days = w.progress_global ? (w.progress_global.interval || 0) : 0;
-                if (checkedIntervals.includes('new') && !w.progress_global) return true;
-                if (checkedIntervals.includes('0') && days === 0 && w.progress_global) return true;
-                if (checkedIntervals.includes(String(days))) return true;
-                return false;
+                const intervalValue = w.progress_global ? (w.progress_global.interval || 0) : 0;
+                const nextDate = w.progress_global?.nextDate;
+                const isOverdue = nextDate && nextDate <= now;
+
+                if (isOverdue || !w.progress_global) {
+                    // All due items (New and Overdue) are displayed as "0 дн." in the table.
+                    // In the filter menu, "0 дн (Новые)" corresponds to value "new".
+                    return checkedIntervals.includes('new');
+                }
+
+                // Not due, use the stored interval value. 
+                // value "0" in the menu is for "1 час", which is interval 0 and not due.
+                return checkedIntervals.includes(String(intervalValue));
             });
         }
     }
@@ -1426,6 +1447,20 @@ function applyDictionaryFilters(returnOnly) {
         } else if (currentSortOrder === 'alphabet') {
             // Word Alphabetical
             result.sort((a, b) => (a.word || "").localeCompare(b.word || ""));
+        } else if (currentSortOrder === 'interval') {
+            // Sort by effective interval
+            const now = Date.now();
+            result.sort((a, b) => {
+                const getEff = (w) => {
+                    if (!w.progress_global) return -1; // New words first
+                    const isOverdue = w.progress_global.nextDate && w.progress_global.nextDate <= now;
+                    return isOverdue ? 0 : (w.progress_global.interval || 0);
+                };
+                const effA = getEff(a);
+                const effB = getEff(b);
+                if (effA !== effB) return effA - effB;
+                return parseInt(a.id) - parseInt(b.id); // Stable sort
+            });
         }
     }
 
