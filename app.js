@@ -57,8 +57,8 @@ function normalizeGerman(str) {
     // 2. Remove content in parentheses (like "Wort (-er)")
     clean = clean.replace(/\s*\(.*?\)/g, '');
 
-    // 3. Remove all articles with boundary checks
-    clean = clean.replace(/\b(der|die|das|den|dem|des|ein|eine|einer|einem|einen)\b/gi, '');
+    // 3. Remove all articles and common particles with boundary checks
+    clean = clean.replace(/\b(der|die|das|den|dem|des|ein|eine|einer|einem|einen|sich)\b/gi, '');
 
     // 4. Remove all non-alphanumeric except German characters (äöüß)
     clean = clean.replace(/[^a-z0-9äöüß]/gi, '');
