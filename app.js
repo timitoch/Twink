@@ -44,6 +44,28 @@ const editInputs = {
 // --- STATE ---
 let allWordsCache = [];
 
+// --- UTILS ---
+function normalizeGerman(str) {
+    if (!str) return "";
+    let clean = str.toLowerCase();
+
+    // 1. Handle variants after comma (like "Wort, die Wörter" or "Hause, nach")
+    if (clean.includes(',')) {
+        clean = clean.split(',')[0];
+    }
+
+    // 2. Remove content in parentheses (like "Wort (-er)")
+    clean = clean.replace(/\s*\(.*?\)/g, '');
+
+    // 3. Remove all articles with boundary checks
+    clean = clean.replace(/\b(der|die|das|den|dem|des|ein|eine|einer|einem|einen)\b/gi, '');
+
+    // 4. Remove all non-alphanumeric except German characters (äöüß)
+    clean = clean.replace(/[^a-z0-9äöüß]/gi, '');
+
+    return clean.trim();
+}
+
 // --- DATABASE HANDLER ---
 class WordLabDB {
     constructor() { this.db = firebase.database(); }
@@ -733,9 +755,8 @@ function renderTable(arr) {
 
     // --- DUPLICATE DETECTION --
     // Scan all words (not just filtered) to find duplicates in the entire dictionary
-    // STRICT RULE: Only column "German word" checked. Exact match ignoring articles (der, die, das).
+    // STRICT RULE: Only column "German word" checked. Exact match using normalized strings.
     const duplicateIds = new Set();
-    const normalizeGerman = (str) => (str || "").toLowerCase().replace(/^(der|die|das)\s+/i, '').replace(/\s*\(.*?\)/g, '').trim();
     const wordCounts = {};
 
     allWordsCache.forEach(w => {
@@ -842,62 +863,9 @@ function renderTable(arr) {
     });
 }
 // Need a way to get filtered words in toggleColumn 
-function getFilteredWords() {
-    // Reuse filter logic, but we need to return it, not render it. 
-    // We will refactor applyDictionaryFilters slightly to support this, 
-    // OR just trigger applyDictionaryFilters() which calls renderTable.
-    return applyDictionaryFilters(true); // pass flag to return instead of render? 
-    // Actually, toggleColumn calls renderTable directly with filtered result. 
-    // Let's make applyDictionaryFilters return the array if an arg is passed, otherwise render.
-}
-
-
 // Refactor applyDictionaryFilters to support return only
-function applyDictionaryFilters(returnOnly = false) {
-    let result = [...allWordsCache];
-
-    // 1. Search (Fuzzy-ish)
-    const q = dictSearchInput ? dictSearchInput.value.toLowerCase().trim() : '';
-    if (q) {
-        const normalize = (str) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        const nQ = normalize(q);
-
-        result = result.filter(w => {
-            const word = w.word ? w.word.toLowerCase() : '';
-            const tr = w.translation ? w.translation.toLowerCase() : '';
-            const nWord = normalize(word);
-            const nTr = normalize(tr);
-            return nWord.includes(nQ) || nTr.includes(nQ);
-        });
-    }
-
-    // 2. Interval Filter (Multi-select)
-    const checkedIntervals = Array.from(intervalCheckboxes).filter(c => c.checked).map(c => c.value);
-    const showAllIntervals = checkedIntervals.includes('all') || checkedIntervals.length === 0;
-
-    if (!showAllIntervals) {
-        result = result.filter(w => {
-            const days = w.progress_global ? (w.progress_global.interval || 0) : 0;
-            if (checkedIntervals.includes('new') && !w.progress_global) return true;
-            if (checkedIntervals.includes('0') && days === 0 && w.progress_global) return true;
-            if (checkedIntervals.includes(String(days))) return true;
-            return false;
-        });
-    }
-
-    // 3. Review Date Filter
-    if (activeReviewMode !== 'all') {
-        const now = Date.now();
-        result = result.filter(w => {
-            if (!w.progress_global || !w.progress_global.nextDate) return false;
-            if (activeReviewMode === 'due') return w.progress_global.nextDate <= now;
-            if (activeReviewMode === 'future') return w.progress_global.nextDate > now;
-            return true;
-        });
-    }
-
-    if (returnOnly) return result;
-    renderTable(result);
+function getFilteredWords() {
+    return applyDictionaryFilters(true);
 }
 // Open Modal (Edit or Create)
 function openEditModal(w = null) {
@@ -1322,8 +1290,9 @@ function applyDictionaryFilters(returnOnly) {
     const shouldReturn = returnOnly === true;
 
     let result = [...allWordsCache];
+    let relevanceScores = new Map();
 
-    // 1. Search (Adaptive Fuzzy)
+    // 1. Search (Adaptive Fuzzy with Ranking)
     const q = dictSearchInput ? dictSearchInput.value.toLowerCase().trim() : '';
     if (q) {
         const normalize = (str) => (str || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9äöüßа-яё\s]/g, "");
@@ -1332,26 +1301,50 @@ function applyDictionaryFilters(returnOnly) {
 
         if (queryWords.length > 0) {
             result = result.filter(w => {
+                const nWord = normalize(w.word);
+                const nTr = normalize(w.translation);
                 const targetText = normalize(`${w.word} ${w.translation} ${w.info1 || ''} ${w.info2 || ''}`);
                 const targetWords = targetText.split(/\s+/).filter(tw => tw.length > 0);
 
-                // Check if ALL query words are matched (either as substring or fuzzy)
-                return queryWords.every(qw => {
-                    // 1. Direct substring match in full text (best & fastest)
-                    if (targetText.includes(qw)) return true;
+                let totalScore = 0;
+                let matchesAll = queryWords.every(qw => {
+                    let wordScore = 0;
+                    let matched = false;
 
-                    // 2. Fuzzy match against individual target words
-                    // Only for query words of 3+ chars
-                    if (qw.length >= 3) {
+                    // 1. Exact Word Match (Highest)
+                    if (nWord === qw) { wordScore = 1500; matched = true; }
+                    // 2. Word starts with query
+                    else if (nWord.startsWith(qw)) { wordScore = 800; matched = true; }
+                    // 3. Word contains query
+                    else if (nWord.includes(qw)) { wordScore = 400; matched = true; }
+                    // 4. Exact Translation match
+                    else if (nTr === qw) { wordScore = 300; matched = true; }
+                    // 5. Translation contains query
+                    else if (nTr.includes(qw)) { wordScore = 150; matched = true; }
+                    // 6. Other fields substring
+                    else if (targetText.includes(qw)) { wordScore = 50; matched = true; }
+
+                    // 7. Fuzzy match (Lowest)
+                    if (!matched && qw.length >= 3) {
                         const threshold = qw.length > 6 ? 2 : 1;
-                        return targetWords.some(tw => {
-                            // Quick length filter for performance
+                        const fuzzyMatchFound = targetWords.some(tw => {
                             if (Math.abs(tw.length - qw.length) > threshold) return false;
-                            return levenshteinDistance(tw, qw) <= threshold;
+                            const dist = levenshteinDistance(tw, qw);
+                            if (dist <= threshold) {
+                                wordScore = 20 - dist;
+                                return true;
+                            }
+                            return false;
                         });
+                        if (fuzzyMatchFound) matched = true;
                     }
-                    return false;
+
+                    if (matched) totalScore += wordScore;
+                    return matched;
                 });
+
+                if (matchesAll) relevanceScores.set(w.id, totalScore);
+                return matchesAll;
             });
         }
     }
@@ -1403,7 +1396,6 @@ function applyDictionaryFilters(returnOnly) {
     // 2.5 Duplicates Filter
     if (showOnlyDuplicates) {
         const duplicateIds = new Set();
-        const normalizeGerman = (str) => (str || "").toLowerCase().replace(/^(der|die|das)\s+/i, '').replace(/\s*\(.*?\)/g, '').trim();
         const wordCounts = {};
 
         // Recalculate duplicates based on STRICT German word rule
@@ -1425,7 +1417,6 @@ function applyDictionaryFilters(returnOnly) {
     // 3. Sorting
     if (showOnlyDuplicates) {
         // Grouping Sort: Sort by normalized German word to bring duplicates together
-        const normalizeGerman = (str) => (str || "").toLowerCase().replace(/^(der|die|das)\s+/i, '').replace(/\s*\(.*?\)/g, '').trim();
 
         result.sort((a, b) => {
             const keyA = normalizeGerman(a.word);
@@ -1437,31 +1428,36 @@ function applyDictionaryFilters(returnOnly) {
             // Secondary sort by ID to ensure stable order
             return parseInt(a.id) - parseInt(b.id);
         });
+    } else if (q && relevanceScores.size > 0) {
+        // Search Relevance Sort
+        result.sort((a, b) => {
+            const scoreA = relevanceScores.get(a.id) || 0;
+            const scoreB = relevanceScores.get(b.id) || 0;
+            if (scoreB !== scoreA) return scoreB - scoreA;
+            // Tied relevance: use currentSortOrder
+            return applySecondarySort(a, b);
+        });
     } else {
-        if (currentSortOrder === 'newest') {
-            // ID descending
-            result.sort((a, b) => parseInt(b.id) - parseInt(a.id));
-        } else if (currentSortOrder === 'oldest') {
-            // ID ascending (default)
-            result.sort((a, b) => parseInt(a.id) - parseInt(b.id));
-        } else if (currentSortOrder === 'alphabet') {
-            // Word Alphabetical
-            result.sort((a, b) => (a.word || "").localeCompare(b.word || ""));
-        } else if (currentSortOrder === 'interval') {
-            // Sort by effective interval
+        result.sort((a, b) => applySecondarySort(a, b));
+    }
+
+    // Helper to apply user-selected sort
+    function applySecondarySort(a, b) {
+        if (currentSortOrder === 'newest') return parseInt(b.id) - parseInt(a.id);
+        if (currentSortOrder === 'oldest') return parseInt(a.id) - parseInt(b.id);
+        if (currentSortOrder === 'alphabet') return (a.word || "").localeCompare(b.word || "");
+        if (currentSortOrder === 'interval') {
             const now = Date.now();
-            result.sort((a, b) => {
-                const getEff = (w) => {
-                    if (!w.progress_global) return -1; // New words first
-                    const isOverdue = w.progress_global.nextDate && w.progress_global.nextDate <= now;
-                    return isOverdue ? 0 : (w.progress_global.interval || 0);
-                };
-                const effA = getEff(a);
-                const effB = getEff(b);
-                if (effA !== effB) return effA - effB;
-                return parseInt(a.id) - parseInt(b.id); // Stable sort
-            });
+            const getEff = (w) => {
+                if (!w.progress_global) return -1;
+                const isOverdue = w.progress_global.nextDate && w.progress_global.nextDate <= now;
+                return isOverdue ? 0 : (w.progress_global.interval || 0);
+            };
+            const effA = getEff(a), effB = getEff(b);
+            if (effA !== effB) return effA - effB;
+            return parseInt(a.id) - parseInt(b.id);
         }
+        return 0;
     }
 
 
