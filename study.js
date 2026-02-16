@@ -1999,6 +1999,19 @@ class StudyModule {
             hints.push("präsens", "präteritum", "partizip II");
         }
 
+        // Multi-word hint Logic (for phrases like "an sein", "ein paar")
+        // Only if no other specific hints (like noun gender/plural or verb forms) were added
+        if (hints.length === 0) {
+            // Remove content in parentheses (optional parts)
+            const cleanForCount = germanWord.replace(/\s*\(.*?\)/g, '').trim();
+            // Count words by splitting by spaces
+            const wordCount = cleanForCount.split(/\s+/).filter(s => s.length > 0).length;
+
+            if (wordCount > 1) {
+                hints.push(`Введите ${wordCount} слов(а)`);
+            }
+        }
+
         const hint = hints.join(', ');
 
         // Display hint

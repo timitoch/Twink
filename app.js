@@ -1475,34 +1475,36 @@ if (savedCols) updateColumnFilterUI();
 updateIntervalLabel();
 
 // --- EXPORT TO EXCEL ---
+// --- EXPORT TO EXCEL ---
 function exportWordsToExcel() {
-    // Get currently filtered words
-    const wordsToExport = applyDictionaryFilters(true);
+    // ALWAYS export ALL words, sorted by ID, regardless of current filters
+    const allWords = [...allWordsCache].sort((a, b) => parseInt(a.id) - parseInt(b.id));
 
-    if (!wordsToExport || wordsToExport.length === 0) {
-        alert("Нет слов для экспорта, соответствующих текущим фильтрам.");
+    if (!allWords || allWords.length === 0) {
+        alert("Нет слов для экспорта.");
         return;
     }
 
     // Format data for Excel
     // Columns: [ID, Active, Word, Translation, Info1, Info2, Ex1, Ex2]
-    const data = wordsToExport.map(w => ({
-        "ID": w.id,
-        "Активные слова": (() => {
-            const pg = w.progress_global;
-            let s = pg ? (pg.excellentStreak || 0) : 0;
-            // Ensure sync: if Active -> at least 10
-            if (pg && pg.isActive && s < 10) s = 10;
-            return s;
-        })(),
-        "Немецкое слово": w.word,
-        "Перевод": w.translation,
-        "Формы глагола": w.info1,
-        "Дополнительно": w.info2,
-        "Пример 1": w.ex1,
-        "Пример 2": w.ex2,
-        "Папка": w.folder || ""
-    }));
+    const data = allWords.map(w => {
+        const pg = w.progress_global;
+        let s = pg ? (pg.excellentStreak || 0) : 0;
+        // Ensure sync: if Active -> at least 10
+        if (pg && pg.isActive && s < 10) s = 10;
+
+        return {
+            "ID": w.id,
+            "Активные слова": s,
+            "Немецкое слово": w.word,
+            "Перевод": w.translation,
+            "Формы глагола": w.info1,
+            "Дополнительно": w.info2,
+            "Пример 1": w.ex1,
+            "Пример 2": w.ex2,
+            "Папка": w.folder || ""
+        };
+    });
 
     // Create worksheet
     const ws = XLSX.utils.json_to_sheet(data);
@@ -1513,7 +1515,7 @@ function exportWordsToExcel() {
 
     // Generate file name with date
     const date = new Date().toISOString().split('T')[0];
-    const fileName = `WordLab_Export_${date}_(${wordsToExport.length}).xlsx`;
+    const fileName = `WordLab_Full_Export_${date}_(${allWords.length}).xlsx`;
 
     // Save file
     XLSX.writeFile(wb, fileName);

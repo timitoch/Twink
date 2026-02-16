@@ -92,8 +92,13 @@ class ProfileModule {
     }
 
     getStreaks() {
+        const MIN_SECONDS = 900; // 15 minutes streak threshold
         const dates = Object.keys(this.statsData)
-            .filter(d => (typeof this.statsData[d] === 'number' ? this.statsData[d] : this.statsData[d].seconds) > 0)
+            .filter(d => {
+                const val = this.statsData[d];
+                const secs = typeof val === 'number' ? val : (val.seconds || 0);
+                return secs >= MIN_SECONDS;
+            })
             .sort();
         if (dates.length === 0) return { current: 0, best: 0 };
 
@@ -125,19 +130,32 @@ class ProfileModule {
 
         // Calculate Current
         const lastDate = dates[dates.length - 1];
-        if (lastDate === today || lastDate === yesterday) {
+        if (lastDate === today) {
+            // If we met target today, count backwards from today
             temp = 1;
             for (let i = dates.length - 1; i > 0; i--) {
                 const d1 = new Date(dates[i - 1]);
                 const d2 = new Date(dates[i]);
                 const diff = (d2 - d1) / (1000 * 60 * 60 * 24);
-                if (diff === 1) {
-                    temp++;
-                } else {
-                    break;
-                }
+                if (diff === 1) temp++;
+                else break;
             }
             current = temp;
+        } else if (lastDate === yesterday) {
+            // If we met target yesterday (but not yet today), count backwards from yesterday
+            // Streak is still active, just not incremented for today yet
+            temp = 1;
+            for (let i = dates.length - 1; i > 0; i--) {
+                const d1 = new Date(dates[i - 1]);
+                const d2 = new Date(dates[i]);
+                const diff = (d2 - d1) / (1000 * 60 * 60 * 24);
+                if (diff === 1) temp++;
+                else break;
+            }
+            current = temp;
+        } else {
+            // Last met target was before yesterday -> Streak broken
+            current = 0;
         }
 
         return { current, best };
