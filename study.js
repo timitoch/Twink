@@ -995,7 +995,8 @@ class StudyModule {
             const folderWords = this.allWordsCache.filter(w => folder.wordIds.includes(w.id));
             if (folderWords.length === 0) return;
 
-            const due = folderWords.filter(w => !w.progress_global?.isActive && (!w.progress_global || w.progress_global.nextDate <= now));
+            // Due: Not Active AND Not Exam Candidate (streak < 9) AND Due Date <= Now
+            const due = folderWords.filter(w => !w.progress_global?.isActive && (w.progress_global?.excellentStreak || 0) < 9 && (!w.progress_global || w.progress_global.nextDate <= now));
             // Mastered: active OR (interval >= 12 AND not overdue)
             const learned = folderWords.filter(w => w.progress_global && (w.progress_global.isActive || (w.progress_global.interval >= 12 && w.progress_global.nextDate > now)));
 
@@ -1649,6 +1650,26 @@ class StudyModule {
 
     showNextCard(stayOnCurrent = false) {
         if (!stayOnCurrent) {
+            // Skip words that are no longer due (e.g. studied in another mode/folder)
+            // or have become active/mastered
+            const now = Date.now();
+            while (this.currentSession.currentIndex < this.currentSession.queue.length) {
+                const word = this.currentSession.queue[this.currentSession.currentIndex];
+                const prog = word.progress_global; // Always use global progress
+
+                const isDue = !prog || !prog.nextDate || prog.nextDate <= now;
+                const isActive = prog && prog.isActive;
+                const isExamCandidate = prog && (prog.excellentStreak || 0) >= 9;
+
+                // Valid if: Due AND Not Active AND Not Exam Candidate
+                if (isDue && !isActive && !isExamCandidate) {
+                    break; // Found a valid word
+                }
+
+                // Skip stale word
+                this.currentSession.currentIndex++;
+            }
+
             if (this.currentSession.currentIndex >= this.currentSession.queue.length) {
                 this.stopTracking();
                 this.clearSessionState(this.currentSession.mode, this.currentSession.groupIndex);
