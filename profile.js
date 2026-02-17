@@ -370,12 +370,16 @@ class ProfileModule {
         if (!viewingFuture && hasStreakDay) {
             const thresholdSeconds = 900;
             const thresholdPct = (thresholdSeconds / effectiveMax) * 75;
+            // Calculate min-width based on bars (25px min-width + 4px gap) to ensure line spans full scroll width
+            const minWidth = days.length * 29;
+
             lineHtml = `
                 <div style="
                     position: absolute;
                     bottom: calc(20px + ${thresholdPct}%);
                     left: 0;
                     width: 100%;
+                    min-width: ${minWidth}px;
                     height: 0;
                     border-top: 1px dashed rgba(var(--secondary-rgb), 0.2);
                     pointer-events: none;
