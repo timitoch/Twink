@@ -1009,7 +1009,7 @@ class StudyModule {
                 <!-- Header -->
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
                     <div style="flex: 1; min-width: 0; padding-right: 1rem;">
-                        <h3 style="margin: 0; font-size: 1.4rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${folder.name}">${folder.name}</h3>
+                        <h3 style="margin: 0; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${folder.name}">${folder.name}</h3>
                          <div style="font-size: 0.8rem; color: var(--text-muted); opacity: 0.6; margin-top:0.2rem;">
                             ${(/^Папка \d+$/.test(folder.name)) ? 'Создано автоматически' :
                     (this.folderMetaCache && this.folderMetaCache[folder.name] && this.folderMetaCache[folder.name].type === 'manual') ? 'Создано вручную' :

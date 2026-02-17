@@ -294,7 +294,7 @@
 
 /* Study Mode Card - Redesigned */
 .study-mode-card {
-    background: rgba(255, 255, 255, 0.03);
+    background: rgba(255, 255, 255, 0.01);
     border: 1px solid var(--border);
     border-radius: 20px;
     padding: 1.75rem;
@@ -305,12 +305,19 @@
     position: relative;
 }
 
+.section-title h2 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin: 0;
+}
+
 .study-modes-grid {
     display: flex;
     flex-wrap: wrap;
     gap: 1.5rem;
     justify-content: flex-start;
-    margin-top: 2rem;
+    margin-top: 1.5rem;
 }
 
 .study-modes-grid .group-card {
@@ -328,7 +335,7 @@
 
 @media (max-width: 600px) {
     .study-modes-grid {
-        gap: 1rem;
+        gap: 0.75rem;
         margin-top: 1.25rem;
     }
 }
@@ -364,7 +371,7 @@
 }
 
 .mode-title {
-    font-size: 1.35rem;
+    font-size: 0.85rem;
     font-weight: 700;
     margin: 0;
     color: var(--text-main);
@@ -415,6 +422,10 @@
     letter-spacing: -0.5px;
 }
 
+.total-box .stats-value {
+    color: var(--text-muted);
+}
+
 .due-box .stats-value {
     color: var(--accent-2);
 }
@@ -434,52 +445,226 @@
 /* Mobile Compact Mode */
 @media (max-width: 600px) {
 
+    /* Базовые стили для всех карточек */
     .study-mode-card,
     .study-modes-grid .group-card {
-        padding: 1.25rem !important;
-        min-height: 190px !important;
+        padding: 1rem !important;
+        min-height: 72px !important;
         display: flex !important;
-        flex-direction: column !important;
+        background: rgba(255, 255, 255, 0.01) !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        border-radius: 20px !important;
     }
 
-    .mode-header {
-        margin-bottom: 1rem !important;
-        gap: 0.75rem;
+    /* Горизонтальная структура для карточек (кроме last-opened) */
+    .study-modes-grid .group-card:not(.last-opened-card) {
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 0 !important;
     }
 
-    .last-opened-card #last-opened-title {
-        font-size: 1.15rem !important;
-        margin-bottom: 0 !important;
+    /* Header с иконкой и названием слева */
+    .study-modes-grid .group-card:not(.last-opened-card) .mode-header {
+        flex: 1;
+        min-width: 0;
+        margin: 0 !important;
+        gap: 0.875rem !important;
+        padding-right: 2.5rem;
     }
 
-    .last-opened-progress-wrapper {
-        display: none !important;
-    }
-
-    .last-opened-card .group-stats-grid {
-        margin-bottom: 1rem !important;
-        margin-top: 0.75rem !important;
-    }
-
+    /* Иконка */
     .mode-icon-container {
-        width: 38px;
-        height: 38px;
-        border-radius: 10px;
+        width: 40px;
+        height: 40px;
+        border-radius: 11px;
+        flex-shrink: 0;
+        background: rgba(255, 255, 255, 0.08) !important;
     }
 
+    /* Название режима */
     .mode-title {
-        font-size: 1.15rem;
+        font-size: 0.85rem !important;
+        font-weight: 700 !important;
+        margin: 0 !important;
     }
 
+    /* Скрываем описание */
     .mode-description {
         display: none !important;
     }
 
-    .mode-stats-grid {
-        gap: 0.75rem;
-        margin-bottom: 1rem !important;
+    .mode-title-group {
+        flex: 1;
+        min-width: 0;
     }
 
+    /* Статистика справа - горизонтальный ряд */
+    .study-modes-grid .group-card:not(.last-opened-card) .mode-stats-grid {
+        display: flex !important;
+        gap: 0.5rem !important;
+        margin: 0 !important;
+        flex-shrink: 0;
+        align-items: center;
+    }
+
+    /* Отдельный счетчик - только цифра */
+    .study-modes-grid .group-card:not(.last-opened-card) .stats-box {
+        background: rgba(255, 255, 255, 0.04) !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        border-radius: 10px !important;
+        padding: 0.5rem 0.8rem !important;
+        min-width: 44px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    /* Цифра */
+    .study-modes-grid .group-card:not(.last-opened-card) .stats-value {
+        font-size: 0.85rem !important;
+        font-weight: 700 !important;
+        line-height: 1 !important;
+        margin: 0 !important;
+        color: var(--text-main);
+        /* Default to white */
+    }
+
+    .study-modes-grid .group-card:not(.last-opened-card) .total-box .stats-value {
+        color: var(--text-muted) !important;
+    }
+
+    /* Скрываем подписи */
+    .study-modes-grid .group-card:not(.last-opened-card) .stats-label {
+        display: none !important;
+    }
+
+    /* Скрываем кнопку "Начать" */
+    .study-modes-grid .group-card:not(.last-opened-card) .start-session-btn {
+        display: none !important;
+    }
+
+    /* Exam card - добавляем галочку перед цифрой */
+    #exam-mode-card .mode-stats-grid {
+        justify-content: flex-end !important;
+    }
+
+    /* ===== LAST OPENED CARD ===== */
+    .last-opened-card {
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 0.875rem !important;
+    }
+
+    /* Скрываем кнопки */
+    .last-opened-card .start-session-btn,
+    .last-opened-card .btn-icon {
+        display: none !important;
+    }
+
+    /* Скрываем прогресс */
+    .last-opened-card .last-opened-progress-wrapper {
+        display: none !important;
+    }
+
+    /* Первый div - делаем flex */
+    .last-opened-card>div:first-child {
+        flex: 1 !important;
+        width: auto !important;
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 0.875rem !important;
+        margin: 0 !important;
+    }
+
+    /* Header внутри (с заголовком) - добавляем иконку */
+    .last-opened-card>div:first-child>div:first-child {
+        flex: 1 !important;
+        min-width: 0 !important;
+        margin: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        padding: 0 !important;
+        padding-right: 2.5rem !important;
+    }
+
+    /* Создаем иконку папки через ::before */
+    .last-opened-card>div:first-child>div:first-child::before {
+        content: '';
+        display: block;
+        width: 40px;
+        height: 40px;
+        flex-shrink: 0;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 11px;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='%23FFFFFF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolygon points='5 3 19 12 5 21 5 3'%3E%3C/polygon%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: center;
+        margin-right: 0.875rem;
+    }
+
+    /* Заголовок папки */
+    .last-opened-card #last-opened-title,
+    .group-card h3 {
+        font-size: 0.85rem !important;
+        margin: 0 !important;
+        font-weight: 700 !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+
+    /* Статистика справа */
+    .last-opened-card .group-stats-grid {
+        display: flex !important;
+        gap: 0.5rem !important;
+        margin: 0 !important;
+        flex-shrink: 0 !important;
+        align-items: center !important;
+    }
+
+    /* Счетчик - только цифра */
+    .last-opened-card .group-stat-item {
+        background: rgba(255, 255, 255, 0.04) !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        border-radius: 10px !important;
+        padding: 0.5rem 0.8rem !important;
+        min-width: 44px;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+    }
+
+    /* Звездочка для третьего счетчика (Идеально) - после числа */
+    .last-opened-card .group-stat-item:nth-child(3) .group-stat-value::after {
+        content: '';
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23999999' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolygon points='12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2'%3E%3C/polygon%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: contain;
+        margin-left: 0.25rem;
+        opacity: 0.6;
+        vertical-align: middle;
+    }
+
+
+    /* Цифра счетчика */
+    .last-opened-card .group-stat-value {
+        font-size: 0.85rem !important;
+        font-weight: 700 !important;
+        line-height: 1 !important;
+        margin: 0 !important;
+    }
+
+    /* Скрываем подписи */
+    .last-opened-card .group-stat-label {
+        display: none !important;
+    }
+
+    /* Общие стили для stats */
     .stats-box {
         padding: 0.6rem;
         border-radius: 14px;
@@ -494,12 +679,27 @@
         margin-bottom: 0.2rem;
     }
 
-    .start-session-btn {
-        height: 44px;
-        font-size: 0.95rem;
-        margin-top: auto;
+    /* Фон для папок такой же едва заметный */
+    .groups-grid .group-card {
+        background: rgba(255, 255, 255, 0.01) !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    }
+
+    /* Отключаем анимации при наведении на мобильных */
+    .group-card:hover,
+    .study-mode-card:hover,
+    .group-stat-item:hover,
+    .import-panel:hover,
+    .theme-btn:hover,
+    .color-scheme-btn:hover,
+    .import-drop-zone:hover {
+        transform: none !important;
+        box-shadow: none !important;
     }
 }
+
+
+
 
 /* Groups Grid - More spacious */
 .groups-grid {
@@ -510,7 +710,7 @@
 }
 
 .group-card {
-    background: rgba(255, 255, 255, 0.03);
+    background: rgba(255, 255, 255, 0.01);
     border: 1px solid var(--border);
     border-radius: 20px;
     padding: 1.75rem;
@@ -519,6 +719,13 @@
     flex-direction: column;
     min-height: 180px;
     position: relative;
+}
+
+.group-card h3 {
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--text-main);
 }
 
 .group-card:hover {
@@ -589,6 +796,10 @@
     font-size: 1rem;
     font-weight: 700;
     line-height: 1.2;
+}
+
+.group-stat-item:first-child .group-stat-value {
+    color: var(--text-muted);
 }
 
 .group-stat-label {
@@ -1399,7 +1610,7 @@ td {
     }
 
     .section-title h2 {
-        font-size: 1.25rem !important;
+        font-size: 0.95rem !important;
     }
 
     .dashboard-header {
@@ -1469,8 +1680,10 @@ td {
         margin-top: 1rem !important;
     }
 
-    .study-mode-card h3 {
-        font-size: 1.1rem !important;
+    .study-mode-card h3,
+    .mode-title {
+        font-size: 0.85rem !important;
+        font-weight: 700 !important;
     }
 
     .study-mode-card div[style*="margin-bottom: 2rem"] {
@@ -1495,7 +1708,8 @@ td {
     }
 
     .group-card h3 {
-        font-size: 1.1rem !important;
+        font-size: 0.85rem !important;
+        font-weight: 700 !important;
     }
 
     .group-stats-grid {
