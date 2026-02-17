@@ -1418,22 +1418,34 @@ class StudyModule {
                     // UNDO / BACK Logic
                     if (this.currentSession.history && this.currentSession.history.length > 0) {
                         const lastAction = this.currentSession.history.pop();
-                        const word = this.allWordsCache.find(w => w.id === lastAction.wordId);
-                        if (word) {
-                            const key = this.currentSession.key;
-                            // Restore local state
-                            if (lastAction.oldProgress) {
-                                word[key] = lastAction.oldProgress;
-                                // Try to revert in DB (best effort)
-                                this.db.updateProgress(word.id, key, lastAction.oldProgress).catch(console.error);
-                            } else {
-                                delete word[key];
-                            }
+                        const key = this.currentSession.key;
 
-                            // Revert Stats UI
-                            const scope = this.getWordsForScope(this.currentSession.mode, this.currentSession.groupIndex);
-                            this.updateStatsUI(scope);
+                        // Fix: Update BOTH the global cache word AND the specific instance in the queue
+                        // The queue might hold stale references if allWordsCache was refreshed in the background
+                        const globalWord = this.allWordsCache.find(w => w.id === lastAction.wordId);
+                        const queueWord = this.currentSession.queue.find(w => w.id === lastAction.wordId);
+
+                        const targets = [];
+                        if (globalWord) targets.push(globalWord);
+                        if (queueWord && queueWord !== globalWord) targets.push(queueWord);
+
+                        targets.forEach(w => {
+                            if (lastAction.oldProgress) {
+                                // Use a copy to prevent shared reference issues
+                                w[key] = JSON.parse(JSON.stringify(lastAction.oldProgress));
+                            } else {
+                                delete w[key];
+                            }
+                        });
+
+                        // Try to revert in DB (best effort)
+                        if (lastAction.oldProgress) {
+                            this.db.updateProgress(lastAction.wordId, key, lastAction.oldProgress).catch(console.error);
                         }
+
+                        // Revert Stats UI
+                        const scope = this.getWordsForScope(this.currentSession.mode, this.currentSession.groupIndex);
+                        this.updateStatsUI(scope);
                     }
 
                     this.currentSession.currentIndex--;
