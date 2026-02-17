@@ -304,7 +304,7 @@ class ProfileModule {
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
                     </button>
                 </div>
-                <div class="monthly-bar-chart">
+                <div class="monthly-bar-chart" style="position: relative;">
                     ${this.generateMonthlyChart()}
                 </div>
             </div>
@@ -360,7 +360,23 @@ class ProfileModule {
 
         const effectiveMax = maxSeconds > 0 ? maxSeconds : 3600;
 
-        return days.map(d => {
+        // Threshold Line (15 mins = 900s)
+        const thresholdSeconds = 900;
+        const thresholdPct = (thresholdSeconds / effectiveMax) * 75;
+        const lineHtml = `
+            <div style="
+                position: absolute;
+                bottom: calc(20px + ${thresholdPct}%);
+                left: 0;
+                right: 0;
+                height: 0;
+                border-top: 1px dashed rgba(var(--secondary-rgb), 0.2);
+                pointer-events: none;
+                z-index: 0;
+            " title="15 min streak goal"></div>
+        `;
+
+        const barsHtml = days.map(d => {
             // Cap height at 75% to leave room for the label above the tallest bar
             const heightPct = (d.seconds / effectiveMax) * 75;
             const timeStr = d.seconds > 0 ? this.formatTime(d.seconds, false) : '';
@@ -374,6 +390,8 @@ class ProfileModule {
                 </div>
             `;
         }).join('');
+
+        return lineHtml + barsHtml;
     }
 
     getAvatarUrl() {

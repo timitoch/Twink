@@ -1960,30 +1960,40 @@ class StudyModule {
         const parts = germanWord.split(',').map(p => p.trim());
         const hasArticle = /\b(der|die|das)\b/i.test(germanWord);
 
-        if (parts.length === 2 && hasArticle) {
+        // Helper to check for 'in' ending on the noun (ignoring article)
+        const endsInIn = (str) => {
+            // Remove article if present
+            const clean = str.replace(/\b(der|die|das)\b/gi, '').trim();
+            // Check if ends with 'in'
+            return clean.toLowerCase().endsWith('in');
+        };
+
+        if (parts.length === 2 && parts[1].startsWith('-')) {
+            // Special Pattern: "die Restaurierung, -en"
+            if (endsInIn(parts[0])) hints.push("(жен. р.)");
+            hints.push("ввод множественого числа не обязателен");
+        } else if (parts.length === 2 && hasArticle) {
             // Case with 2 words (e.g., der Partner, die Partner or die Frau, die Frauen)
-            const is1Fem = parts[0].toLowerCase().startsWith('die ');
-            const is2FemSuffix = parts[1].toLowerCase().endsWith('in');
+            const p1In = endsInIn(parts[0]);
+            const p2In = endsInIn(parts[1]);
 
             // Hint for the first part
-            hints.push(is1Fem ? "(жен. р.)" : "________");
+            hints.push(p1In ? "(жен. р.)" : "________");
 
             // Hint for the second part
-            if (is2FemSuffix && !is1Fem) {
-                // der Arbeiter, die Arbeiterin -> second is feminine form
+            if (p2In) {
                 hints.push("(жен. р.)");
             } else {
-                // der Partner, die Partner OR die Partnerin, die Partnerinnen -> second is plural
                 hints.push("(plural)");
             }
         } else {
             // General logic for 1 word or 3+ words
-            const is1Fem = parts[0].toLowerCase().startsWith('die ');
-            if (is1Fem) hints.push("(жен. р.)");
+            const p1In = endsInIn(parts[0]);
+            if (p1In) hints.push("(жен. р.)");
 
             if (parts.length > 1) {
-                const is2FemSuffix = parts[1].toLowerCase().endsWith('in');
-                if (is2FemSuffix && !is1Fem) {
+                const p2In = endsInIn(parts[1]);
+                if (p2In) {
                     hints.push("(жен. р.)");
                 } else if (hasArticle) {
                     hints.push("(plural)");
@@ -2003,7 +2013,12 @@ class StudyModule {
         // Only if no other specific hints (like noun gender/plural or verb forms) were added
         if (hints.length === 0) {
             // Remove content in parentheses (optional parts)
-            const cleanForCount = germanWord.replace(/\s*\(.*?\)/g, '').trim();
+            let cleanForCount = germanWord.replace(/\s*\(.*?\)/g, '').trim();
+
+            // Optimization: Remove articles ONLY if it's a noun phrase start to avoid counting "der Hunger" as 2 words
+            // We remove common articles from the START of the string or separated words
+            cleanForCount = cleanForCount.replace(/\b(der|die|das|den|dem|des|ein|eine)\b/gi, '').trim();
+
             // Count words by splitting by spaces
             const wordCount = cleanForCount.split(/\s+/).filter(s => s.length > 0).length;
 
@@ -2177,9 +2192,51 @@ class StudyModule {
                 }
             }
         } else {
-            const normUser = this.normalizeAnswer(userAnswer);
-            const normCorrect = this.normalizeAnswer(correctAnswer);
-            isContentCorrect = normUser === normCorrect;
+            // Check for "Noun, -suffix" Pattern
+            const correctParts = correctAnswer.split(',').map(p => p.trim());
+
+            if (correctParts.length === 2 && correctParts[1].startsWith('-')) {
+                // Special validation logic
+                const singularPart = correctParts[0];            // "die Restaurierung"
+                const suffix = correctParts[1].substring(1);     // "en" (without hyphen)
+
+                // Extract Noun Base
+                const articleObj = this.extractArticle(singularPart);
+                const nounBase = articleObj.word;                // "Restaurierung"
+
+                // Construct Valid Variants to match against normalized input
+                const variants = [];
+
+                // 1. Singular Only ("die Restaurierung")
+                variants.push(singularPart);
+
+                // 2. Singular + Suffix ("die Restaurierung en")
+                variants.push(`${singularPart} ${suffix}`);
+
+                // 3. Singular + Hyphen Suffix ("die Restaurierung -en") - Matches correct string essentially
+                variants.push(correctAnswer.replace(',', ''));
+
+                // 4. Singular + Full Plural ("die Restaurierung Restaurierungen")
+                const pluralNoun = nounBase + suffix; // Simple concatenation logic
+                variants.push(`${singularPart} ${pluralNoun}`);
+
+                // 5. Singular + Full Plural with Article ("die Restaurierung die Restaurierungen")
+                if (articleObj.article) {
+                    variants.push(`${singularPart} ${articleObj.article} ${pluralNoun}`);
+                }
+
+                // Normalization helper
+                const norm = (s) => this.normalizeAnswer(s);
+                const userNorm = norm(userAnswer);
+
+                isContentCorrect = variants.some(v => norm(v) === userNorm);
+
+            } else {
+                // Standard Normalization Match
+                const normUser = this.normalizeAnswer(userAnswer);
+                const normCorrect = this.normalizeAnswer(correctAnswer);
+                isContentCorrect = normUser === normCorrect;
+            }
         }
 
         // 2. Article Check (Only if content matched)
