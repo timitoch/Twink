@@ -1116,19 +1116,31 @@ class StudyModule {
         const examCountEl = document.getElementById('exam-ready-count');
         const examBtn = document.getElementById('btn-start-exam');
 
-        // Exam card is always visible
+        // Global Study Card Clickable
+        const globalStudyCard = this.btnStartGlobal ? this.btnStartGlobal.closest('.group-card') : null;
+        if (globalStudyCard) {
+            globalStudyCard.style.cursor = 'pointer';
+            globalStudyCard.onclick = () => this.startSession('global', null);
+        }
+
+        // Toggle visibility based on words count
         if (examCard) {
-            examCard.style.display = 'block';
-            if (examCountEl) examCountEl.textContent = examWords.length;
-            if (examBtn) {
-                examBtn.disabled = examWords.length === 0;
-                if (examWords.length === 0) {
-                    examBtn.style.opacity = '0.5';
-                    examBtn.style.cursor = 'not-allowed';
-                } else {
+            if (examWords.length === 0) {
+                examCard.style.setProperty('display', 'none', 'important');
+            } else {
+                examCard.style.display = 'block';
+                examCard.style.cursor = 'pointer';
+                examCard.onclick = () => this.startExamSession();
+
+                if (examCountEl) examCountEl.textContent = examWords.length;
+                if (examBtn) {
+                    examBtn.disabled = false;
                     examBtn.style.opacity = '1';
                     examBtn.style.cursor = 'pointer';
-                    examBtn.onclick = () => this.startExamSession();
+                    examBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        this.startExamSession();
+                    };
                 }
             }
         }
@@ -1198,16 +1210,25 @@ class StudyModule {
                 if (progressTextEl) progressTextEl.textContent = `${progressPct}%`;
                 if (progressBarEl) progressBarEl.style.width = `${progressPct}%`;
 
-                // Handle Completed State (Green)
+                // Handle visibility/completion state
                 if (due === 0) {
-                    lastCard.classList.add('completed');
+                    lastCard.classList.add('hidden');
+                    lastCard.style.setProperty('display', 'none', 'important');
                 } else {
+                    lastCard.classList.remove('hidden');
+                    lastCard.style.display = ''; // Revert to CSS/inline default
                     lastCard.classList.remove('completed');
+
+                    lastCard.style.cursor = 'pointer';
+                    lastCard.onclick = () => this.startSession(mode, groupIndex);
                 }
 
                 // Bind Buttons
                 if (btnContinue) {
-                    btnContinue.onclick = () => this.startSession(mode, groupIndex);
+                    btnContinue.onclick = (e) => {
+                        e.stopPropagation();
+                        this.startSession(mode, groupIndex);
+                    };
                 }
 
                 if (btnEdit) {
@@ -1220,6 +1241,7 @@ class StudyModule {
                 }
             } else {
                 lastCard.classList.add('hidden');
+                lastCard.style.setProperty('display', 'none', 'important');
             }
         }
 

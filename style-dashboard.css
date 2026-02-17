@@ -686,6 +686,11 @@
         border: 1px solid rgba(255, 255, 255, 0.12) !important;
     }
 
+    .groups-grid .group-card.completed {
+        background: rgba(var(--accent-2-rgb, 16, 185, 129), 0.08) !important;
+        border-color: rgba(var(--accent-2-rgb, 16, 185, 129), 0.25) !important;
+    }
+
     /* Отключаем анимации при наведении на мобильных */
     .group-card:hover,
     .study-mode-card:hover,
@@ -738,29 +743,18 @@
 
 /* Completed Group State (No words due) */
 .group-card.completed {
-    background: linear-gradient(135deg, rgba(var(--accent-2-rgb, 16, 185, 129), 0.15) 0%, rgba(var(--accent-2-rgb, 16, 185, 129), 0.05) 100%);
-    border-color: rgba(var(--accent-2-rgb, 16, 185, 129), 0.4);
+    background: rgba(var(--accent-2-rgb, 16, 185, 129), 0.08);
+    /* Reduced opacity to avoid 'white' look on dark */
+    border-color: rgba(var(--accent-2-rgb, 16, 185, 129), 0.25);
     position: relative;
     overflow: hidden;
 }
 
-.group-card.completed::before {
-    content: '✓';
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--accent-2);
-    opacity: 0.15;
-    line-height: 1;
-}
-
 .group-card.completed:hover {
-    background: linear-gradient(135deg, rgba(var(--accent-2-rgb, 16, 185, 129), 0.2) 0%, rgba(var(--accent-2-rgb, 16, 185, 129), 0.08) 100%);
+    background: rgba(var(--accent-2-rgb, 16, 185, 129), 0.12);
     border-color: var(--accent-2);
-    transform: translateY(-4px);
-    box-shadow: 0 10px 30px -5px rgba(var(--accent-2-rgb, 16, 185, 129), 0.3);
+    transform: none;
+    box-shadow: none;
 }
 
 /* Group Stats (Restyled - Chips/Cards) */
