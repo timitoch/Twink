@@ -404,6 +404,7 @@
     height: 100%;
     flex: 1;
     min-width: 25px;
+    z-index: 1;
 }
 
 .bar-pillar {

@@ -361,20 +361,28 @@ class ProfileModule {
         const effectiveMax = maxSeconds > 0 ? maxSeconds : 3600;
 
         // Threshold Line (15 mins = 900s)
-        const thresholdSeconds = 900;
-        const thresholdPct = (thresholdSeconds / effectiveMax) * 75;
-        const lineHtml = `
-            <div style="
-                position: absolute;
-                bottom: calc(20px + ${thresholdPct}%);
-                left: 0;
-                right: 0;
-                height: 0;
-                border-top: 1px dashed rgba(var(--secondary-rgb), 0.2);
-                pointer-events: none;
-                z-index: 0;
-            " title="15 min streak goal"></div>
-        `;
+        // Only show if month is not in future AND at least one day reached the threshold
+        let lineHtml = '';
+        const now = new Date();
+        const viewingFuture = (year > now.getFullYear()) || (year === now.getFullYear() && month > now.getMonth());
+        const hasStreakDay = days.some(d => d.seconds >= 900);
+
+        if (!viewingFuture && hasStreakDay) {
+            const thresholdSeconds = 900;
+            const thresholdPct = (thresholdSeconds / effectiveMax) * 75;
+            lineHtml = `
+                <div style="
+                    position: absolute;
+                    bottom: calc(20px + ${thresholdPct}%);
+                    left: 0;
+                    width: 100%;
+                    height: 0;
+                    border-top: 1px dashed rgba(var(--secondary-rgb), 0.2);
+                    pointer-events: none;
+                    z-index: 0;
+                " title="15 min streak goal"></div>
+            `;
+        }
 
         const barsHtml = days.map(d => {
             // Cap height at 75% to leave room for the label above the tallest bar
