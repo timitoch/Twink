@@ -306,7 +306,7 @@
 }
 
 .section-title h2 {
-    font-size: 0.95rem;
+    font-size: 1.2rem;
     font-weight: 700;
     color: var(--text-main);
     margin: 0;
@@ -371,7 +371,7 @@
 }
 
 .mode-title {
-    font-size: 0.85rem;
+    font-size: 1.1rem;
     font-weight: 700;
     margin: 0;
     color: var(--text-main);
@@ -722,7 +722,7 @@
 }
 
 .group-card h3 {
-    font-size: 0.85rem;
+    font-size: 1.1rem;
     font-weight: 700;
     margin: 0;
     color: var(--text-main);
