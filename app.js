@@ -66,6 +66,18 @@ function normalizeGerman(str) {
     return clean.trim();
 }
 
+// Duplicate detection key: includes noun/non-noun distinction
+// "der Morgen" and "morgen" are DIFFERENT words (noun vs adverb/verb)
+function getDuplicateKey(str) {
+    if (!str) return "";
+    const raw = str.trim();
+    // Check if the word starts with a German article (= it's a noun)
+    const hasArticle = /^(der|die|das|den|dem|des|ein|eine|einer|einem|einen)\b/i.test(raw);
+    const normalized = normalizeGerman(raw);
+    // Nouns and non-nouns get different keys even if base word is the same
+    return hasArticle ? normalized + '::noun' : normalized;
+}
+
 // --- DATABASE HANDLER ---
 class WordLabDB {
     constructor() { this.db = firebase.database(); }
@@ -760,7 +772,7 @@ function renderTable(arr) {
     const wordCounts = {};
 
     allWordsCache.forEach(w => {
-        const key = normalizeGerman(w.word);
+        const key = getDuplicateKey(w.word);
         if (key) {
             if (!wordCounts[key]) wordCounts[key] = [];
             wordCounts[key].push(w.id);
@@ -1400,7 +1412,7 @@ function applyDictionaryFilters(returnOnly) {
 
         // Recalculate duplicates based on STRICT German word rule
         allWordsCache.forEach(w => {
-            const key = normalizeGerman(w.word);
+            const key = getDuplicateKey(w.word);
             if (key) {
                 if (!wordCounts[key]) wordCounts[key] = [];
                 wordCounts[key].push(w.id);
