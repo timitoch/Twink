@@ -2620,10 +2620,11 @@ td {
         z-index: 9999 !important;
         flex-direction: column !important;
         padding: 4rem 1.25rem 2rem 1.25rem !important;
-        box-shadow: -20px 0 60px rgba(0, 0, 0, 0.8) !important;
+        box-shadow: none !important;
+        /* Remove shadow when closed */
         border: none !important;
         transform: translateX(100%) !important;
-        transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease !important;
         overflow-y: auto !important;
         display: none;
         gap: 0 !important;
@@ -2632,6 +2633,8 @@ td {
     .dict-filters-group.show-filters {
         display: flex !important;
         transform: translateX(0) !important;
+        box-shadow: -20px 0 60px rgba(0, 0, 0, 0.8) !important;
+        /* Shadow only when shown */
     }
 
     .filter-group-wrapper {

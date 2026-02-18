@@ -789,7 +789,7 @@ function renderTable(arr) {
 
         // Check for duplicate
         if (duplicateIds.has(String(w.id))) {
-            tr.style.backgroundColor = "rgba(255, 235, 59, 0.15)";
+            tr.style.backgroundColor = "rgba(255, 235, 59, 0.07)";
         }
 
         // Check for overdue
