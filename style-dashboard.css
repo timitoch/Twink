@@ -469,7 +469,7 @@
         flex: 1;
         min-width: 0;
         margin: 0 !important;
-        gap: 0.875rem !important;
+        gap: 0.5rem !important;
         padding-right: 2.5rem;
     }
 
@@ -553,7 +553,7 @@
     .last-opened-card {
         flex-direction: row !important;
         align-items: center !important;
-        gap: 0.875rem !important;
+        gap: 0.6rem !important;
     }
 
     /* Скрываем кнопки */
@@ -574,7 +574,7 @@
         display: flex !important;
         flex-direction: row !important;
         align-items: center !important;
-        gap: 0.875rem !important;
+        gap: 0.6rem !important;
         margin: 0 !important;
     }
 
@@ -601,13 +601,13 @@
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='%23FFFFFF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolygon points='5 3 19 12 5 21 5 3'%3E%3C/polygon%3E%3C/svg%3E");
         background-repeat: no-repeat;
         background-position: center;
-        margin-right: 0.875rem;
+        margin-right: 0.5rem;
     }
 
-    /* Заголовок папки */
+    /* Заголовок папки - немного увеличен для лучшей читаемости в списке */
     .last-opened-card #last-opened-title,
     .group-card h3 {
-        font-size: 0.85rem !important;
+        font-size: 0.92rem !important;
         margin: 0 !important;
         font-weight: 700 !important;
         white-space: nowrap !important;
@@ -624,13 +624,14 @@
         align-items: center !important;
     }
 
-    /* Счетчик - только цифра */
-    .last-opened-card .group-stat-item {
+    /* Счетчик - только цифра, стал компактнее */
+    .last-opened-card .group-stat-item,
+    .groups-grid:not(.grid-mode) .group-card .group-stat-item {
         background: rgba(255, 255, 255, 0.04) !important;
         border: 1px solid rgba(255, 255, 255, 0.08) !important;
         border-radius: 10px !important;
-        padding: 0.5rem 0.8rem !important;
-        min-width: 44px;
+        padding: 0.55rem 0.6rem !important;
+        min-width: 38px !important;
         display: flex !important;
         justify-content: center !important;
         align-items: center !important;
@@ -652,9 +653,10 @@
     }
 
 
-    /* Цифра счетчика */
-    .last-opened-card .group-stat-value {
-        font-size: 0.85rem !important;
+    /* Цифра счетчика - уменьшена как запрашивалось */
+    .last-opened-card .group-stat-value,
+    .groups-grid:not(.grid-mode) .group-card .group-stat-value {
+        font-size: 0.75rem !important;
         font-weight: 700 !important;
         line-height: 1 !important;
         margin: 0 !important;
