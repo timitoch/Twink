@@ -28,10 +28,12 @@ class ProfileModule {
             this.loadStats();
         }
     }
-
     async loadStats() {
         if (!this.user || !this.db) return;
         try {
+            // Always start with current month when loading stats
+            this.chartDate = new Date();
+
             // Load Daily Stats
             const refStats = this.db.db.ref(`users/${this.user.uid}/stats/daily`);
             const snapStats = await refStats.once('value');
@@ -331,6 +333,23 @@ class ProfileModule {
                 </div>
             </div>
         `;
+
+        // Auto-scroll to today if on mobile
+        if (window.innerWidth <= 768) {
+            setTimeout(() => this.scrollToToday(), 100);
+        }
+    }
+
+    scrollToToday() {
+        const todayBar = document.getElementById('bar-today');
+        const chartContainer = this.viewProfile.querySelector('.monthly-bar-chart');
+        if (todayBar && chartContainer) {
+            const containerWidth = chartContainer.offsetWidth;
+            const barLeft = todayBar.offsetLeft;
+            const barWidth = todayBar.offsetWidth;
+            // Center the bar in the visible area
+            chartContainer.scrollLeft = barLeft - (containerWidth / 2) + (barWidth / 2);
+        }
     }
 
     prevMonth() {
@@ -389,16 +408,21 @@ class ProfileModule {
             `;
         }
 
+        const today = new Date();
+        const isCurrentMonth = (year === today.getFullYear() && month === today.getMonth());
+
         const barsHtml = days.map(d => {
             // Cap height at 75% to leave room for the label above the tallest bar
             const heightPct = (d.seconds / effectiveMax) * 75;
             const timeStr = d.seconds > 0 ? this.formatTime(d.seconds, false) : '';
             const isActive = d.seconds > 0 ? 'active' : '';
+            const isToday = isCurrentMonth && d.day === today.getDate();
+            const todayId = isToday ? 'id="bar-today"' : '';
 
             return `
-                <div class="bar-wrapper">
-                    <div class="bar-pillar ${isActive}" style="height: ${Math.max(heightPct, 1)}%"></div>
-                    <div class="bar-day-label">${d.day}</div>
+                <div class="bar-wrapper" ${todayId}>
+                    <div class="bar-pillar ${isActive} ${isToday ? 'today' : ''}" style="height: ${Math.max(heightPct, 1)}%"></div>
+                    <div class="bar-day-label" style="${isToday ? 'color: var(--secondary); font-weight: 800;' : ''}">${d.day}</div>
                     <div class="bar-value-hint" style="bottom: calc(${heightPct}% + 25px)">${timeStr}</div>
                 </div>
             `;

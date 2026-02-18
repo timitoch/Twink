@@ -826,6 +826,35 @@
     margin-bottom: 1rem;
 }
 
+@media (max-width: 768px) {
+
+    .btn-rate,
+    .btn-rate:hover,
+    .btn-rate:active,
+    .rate-btn-1,
+    .rate-btn-1:hover,
+    .rate-btn-1:active,
+    .rate-btn-2,
+    .rate-btn-2:hover,
+    .rate-btn-2:active,
+    .rate-btn-3,
+    .rate-btn-3:hover,
+    .rate-btn-3:active,
+    .rate-btn-4,
+    .rate-btn-4:hover,
+    .rate-btn-4:active,
+    .rate-btn-5,
+    .rate-btn-5:hover,
+    .rate-btn-5:active,
+    .rate-btn-6,
+    .rate-btn-6:hover,
+    .rate-btn-6:active {
+        transform: none !important;
+        box-shadow: none !important;
+        transition: none !important;
+    }
+}
+
 @keyframes liquidGlassOpen {
     from {
         opacity: 0;

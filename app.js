@@ -685,7 +685,7 @@ function renderTable(arr) {
                         <h3 style="color: var(--text-main); margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 700;">Здесь пока ничего нет</h3>
                         <p style="color: var(--text-muted); font-size: 1rem; margin-bottom: 1.5rem;">Добавьте свое первое слово, чтобы начать обучение</p>
                     </div>
-                    <button onclick="openEditModal()" class="btn-primary" style="width: auto; padding: 0.8rem 2.5rem; font-weight: 600;">Добавить слово</button>
+                    <button onclick="window.openEditModal()" class="btn-primary" style="width: auto; padding: 0.8rem 2.5rem; font-weight: 600;">Добавить слово</button>
                 </div>
             `;
         }
@@ -798,9 +798,8 @@ function renderTable(arr) {
         const isOverdue = nextDate && nextDate <= now;
 
         // Date Display
-        // If overdue, show '-' as requested ("сбрасываться и не писаться")
-        // Otherwise show formatted date
-        const d = (nextDate && !isOverdue) ? new Date(nextDate).toLocaleDateString() : '-';
+        // If overdue or not present, hide instead of showing '-'
+        const d = (nextDate && !isOverdue) ? new Date(nextDate).toLocaleDateString() : '';
 
         // Interval Display
         // If overdue, show '0 дн.'
@@ -824,10 +823,10 @@ function renderTable(arr) {
         if (isActive) {
             // Active word: Show Lightning
             activeDisplay = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="var(--secondary)" stroke="var(--secondary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>`;
-        } else {
-            // Show Score
-            const color = score >= 9 ? 'var(--accent-bright)' : (score > 0 ? 'var(--text-main)' : 'var(--text-muted)');
-            const scoreFormatted = score > 0 ? String(score).replace('.', ',') : '-';
+        } else if (score > 0) {
+            // Show Score only if > 0
+            const color = score >= 9 ? 'var(--accent-bright)' : 'var(--text-main)';
+            const scoreFormatted = String(score).replace('.', ',');
             activeDisplay = `<span style="font-size: 0.85rem; font-weight: 600; color: ${color};">${scoreFormatted}</span>`;
         }
 
@@ -848,14 +847,14 @@ function renderTable(arr) {
             <td class="date-info" style="${displayStyle('nextDate')}">${d}</td>
             
             <td style="text-align:center; padding: 0.5rem 0.2rem; min-width: 60px;">
-                <div style="display: inline-flex; gap: 2px; align-items: center; justify-content: center;">
-                    <button class="btn-icon btn-edit" data-id="${w.id}" title="Редактировать" style="padding: 4px; opacity: 0.7;">
+                <div style="display: inline-flex; align-items: center; justify-content: center;" class="card-mobile-actions">
+                    <button class="btn-icon btn-edit" data-id="${w.id}" title="Редактировать">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                         </svg>
                     </button>
-                    <button class="btn-icon btn-delete" data-id="${w.id}" title="Удалить" style="padding: 4px; opacity: 0.7;">
+                    <button class="btn-icon btn-delete" data-id="${w.id}" title="Удалить">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M3 6h18"></path>
                             <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>

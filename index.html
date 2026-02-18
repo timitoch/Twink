@@ -410,6 +410,19 @@
                                     </div>
                                 </div>
 
+                                <!-- Folder View Toggle (Mobile Only) -->
+                                <button class="btn-secondary small" id="folder-view-toggle" title="Вид сеткой"
+                                    style="display: none; padding: 0.5rem 0.8rem; height: 36px; align-items: center; justify-content: center;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <rect x="3" y="3" width="7" height="7"></rect>
+                                        <rect x="14" y="3" width="7" height="7"></rect>
+                                        <rect x="14" y="14" width="7" height="7"></rect>
+                                        <rect x="3" y="14" width="7" height="7"></rect>
+                                    </svg>
+                                </button>
+
                                 <button class="btn-secondary small" onclick="window.StudyModule.openFolderCreator()"
                                     style="height: 36px;">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
@@ -1064,6 +1077,7 @@
                     </div>
                 </div>
                 <div id="view-words" class="view-section hidden">
+                    <div id="dict-empty-state-view" class="hidden"></div>
                     <div id="dict-main-container">
                         <!-- Dictionary Toolbar -->
                         <div class="dict-toolbar"
@@ -1368,7 +1382,7 @@
                             </div>
                         </div>
 
-                        <div id="dict-empty-state-view" class="hidden"></div>
+
 
                         <div class="table-container wide-table">
                             <table id="words-table">

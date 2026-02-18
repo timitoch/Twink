@@ -572,7 +572,6 @@ class StudyModule {
         return array;
     }
 
-    // --- FOLDERS LOGIC ---
     initFolderCreation() {
         // Initialize Sort Menu Listeners
         const sortBtn = document.getElementById('folder-sort-toggle');
@@ -602,15 +601,27 @@ class StudyModule {
             if (radio) radio.checked = true;
         }
 
+        // Folder View Toggle (Grid/List)
+        const viewToggleBtn = document.getElementById('folder-view-toggle');
+        const foldersContainer = document.getElementById('folders-list');
+        if (viewToggleBtn && foldersContainer) {
+            viewToggleBtn.onclick = () => {
+                foldersContainer.classList.toggle('grid-mode');
+                localStorage.setItem('folderViewMode', foldersContainer.classList.contains('grid-mode') ? 'grid' : 'list');
+            };
+
+            // Restore preference
+            if (localStorage.getItem('folderViewMode') === 'grid') {
+                foldersContainer.classList.add('grid-mode');
+            }
+        }
+
         // Listener for Manual Folder Creation to save metadata
         document.addEventListener('click', (e) => {
-            // Check for the create button (ID based on likely naming convention or inspect)
-            // Assuming ID is 'btn-create-folder-confirm' based on standard pattern
             if (e.target && (e.target.id === 'btn-create-folder-confirm' || e.target.id === 'btn-save-new-folder')) {
                 const input = document.getElementById('folder-create-name') || document.getElementById('new-folder-name');
                 if (input && input.value && this.userId) {
                     const name = input.value.trim();
-                    // Save as Manual
                     this.db.db.ref(`users/${this.userId}/folderMeta/${name}`).update({
                         type: 'manual',
                         createdAt: Date.now()
@@ -1084,7 +1095,7 @@ class StudyModule {
                 <h3 style="color: var(--text-main); margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 700;">Здесь пока ничего нет</h3>
                 <p style="color: var(--text-muted); font-size: 1rem; margin-bottom: 1.5rem;">Добавьте свое первое слово, чтобы начать обучение</p>
             </div>
-            <button onclick="if(window.openEditModal) window.openEditModal()" class="btn-primary" style="width: auto; padding: 0.8rem 2.5rem; font-weight: 600;">Добавить слово</button>
+            <button onclick="window.openEditModal()" class="btn-primary" style="width: auto; padding: 0.8rem 2.5rem; font-weight: 600;">Добавить слово</button>
         </div>
     `;
             }

@@ -141,7 +141,8 @@
 .group-words-list {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1rem;
+    /* Reduced from 1.5rem */
 }
 
 .word-edit-card {
@@ -182,25 +183,29 @@
 .card-edit-content {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 2rem;
-    /* Split in middle */
-    padding: 1.5rem;
+    gap: 1.5rem;
+    /* Reduced from 2rem */
+    padding: 1rem 1.25rem;
+    /* Reduced padding */
 }
 
 /* Left Side (Term + Extra) */
 .term-col {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1rem;
+    /* Reduced gap */
     border-right: 1px solid rgba(255, 255, 255, 0.05);
-    padding-right: 2rem;
+    padding-right: 1.5rem;
+    /* Reduced */
 }
 
 /* Right Side (Definition) */
 .def-col {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1rem;
+    /* Reduced gap */
 }
 
 .field-group label {
@@ -262,13 +267,31 @@
 @media (max-width: 768px) {
     .card-edit-content {
         grid-template-columns: 1fr;
-        gap: 1.5rem;
+        gap: 1rem;
+        /* Reduced */
+        padding: 0.75rem 1rem;
+        /* More compact on mobile */
     }
 
     .term-col {
         border-right: none;
         border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         padding-right: 0;
-        padding-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        /* Reduced */
+        gap: 0.8rem;
+    }
+
+    .def-col {
+        gap: 0.8rem;
+    }
+
+    .field-group {
+        margin-bottom: 0.2rem;
+    }
+
+    .input-stealth {
+        padding: 0.6rem 0.75rem;
+        /* Smaller inputs */
     }
 }
