@@ -547,8 +547,8 @@ class StudyModule {
 
             if (!prog.isActive && (prog.excellentStreak || 0) < 9 && (!prog.nextDate || prog.nextDate <= now)) due++;
             if (prog.lastReviewed && prog.lastReviewed >= startOfToday) learnedToday++;
-            // Mastered: active OR (interval >= 12 AND not overdue)
-            if (prog.isActive || (prog.interval && prog.interval >= 12 && prog.nextDate > now)) mastered++;
+            // Mastered: is_ideal is the single source of truth
+            if (prog.is_ideal) mastered++;
         });
 
         if (this.totalWordsCount) this.totalWordsCount.textContent = total;
@@ -912,7 +912,7 @@ class StudyModule {
                 ex1: w.ex1,
                 ex2: w.ex2,
                 folder: name, // Set folder to the folder name
-                progress_global: w.progress_global || { interval: 0, nextDate: Date.now(), state: "new" },
+                progress_global: w.progress_global || { interval: 0, nextDate: Date.now(), state: "new", is_ideal: false },
                 progress_groups: w.progress_groups || { interval: 0, nextDate: Date.now(), state: "new" }
             };
         });
@@ -1001,8 +1001,8 @@ class StudyModule {
 
             // Due: Not Active AND Not Exam Candidate (streak < 9) AND Due Date <= Now
             const due = folderWords.filter(w => !w.progress_global?.isActive && (w.progress_global?.excellentStreak || 0) < 9 && (!w.progress_global || w.progress_global.nextDate <= now));
-            // Mastered: active OR (interval >= 12 AND not overdue)
-            const learned = folderWords.filter(w => w.progress_global && (w.progress_global.isActive || (w.progress_global.interval >= 12 && w.progress_global.nextDate > now)));
+            // Mastered: is_ideal is the single source of truth
+            const learned = folderWords.filter(w => w.progress_global && w.progress_global.is_ideal);
 
             const card = document.createElement('div');
             card.className = due.length === 0 ? 'group-card completed' : 'group-card';
@@ -1186,7 +1186,7 @@ class StudyModule {
                 // Stats Logic
                 const total = folderOrGroupWords.length;
                 const due = folderOrGroupWords.filter(w => !w.progress_global?.isActive && (w.progress_global?.excellentStreak || 0) < 9 && (!w.progress_global || w.progress_global.nextDate <= now)).length;
-                const mastered = folderOrGroupWords.filter(w => w.progress_global && (w.progress_global.isActive || (w.progress_global.interval >= 12 && w.progress_global.nextDate > now))).length;
+                const mastered = folderOrGroupWords.filter(w => w.progress_global && w.progress_global.is_ideal).length;
                 const progressPct = total === 0 ? 0 : Math.round((mastered / total) * 100);
 
                 // UI References
@@ -1897,13 +1897,19 @@ class StudyModule {
         // isActive remains unchanged in regular sessions (only exam can set it to true)
 
         const nextTimestamp = rating === 1 ? Date.now() + 3600000 : Date.now() + (nextIntervalDays * 86400000);
+        // is_ideal logic:
+        // - If word passed exam (isActive) → true forever
+        // - Ratings 5 (Помню) and 6 (Отлично) → true
+        // - All other ratings → false
+        const is_ideal = isActive ? true : (rating === 5 || rating === 6);
         const newProgress = {
             interval: nextIntervalDays,
             nextDate: nextTimestamp,
             lastRating: rating,
             lastReviewed: Date.now(),
             excellentStreak: activityScore,
-            isActive: isActive
+            isActive: isActive,
+            is_ideal: is_ideal
         };
 
         // Save history for Undo (cap at 10 entries)

@@ -122,6 +122,7 @@ class WordLabDB {
                 state: "new",
                 excellentStreak: 0,
                 isActive: false,
+                is_ideal: false,
                 lastRating: null,
                 lastReviewed: null
             };
@@ -277,8 +278,14 @@ class WordLabDB {
             scoreVal = Math.max(0, Math.min(10, scoreVal));
 
             const isActive = scoreVal >= 10;
+            const is_ideal = isActive;
             const excellentStreak = scoreVal;
             let wordFolder = String(row[8] || "").trim();
+            // is_ideal from column J (index 9)
+            const rawIdeal = String(row[9] || "").trim().toLowerCase();
+            let importedIdeal = null; // null means "don't override from import"
+            if (rawIdeal === 'true') importedIdeal = true;
+            else if (rawIdeal === 'false') importedIdeal = false;
 
             // Only auto-assign folder if it's empty AND it's a new word OR existing word without folder
             const existingWord = existingWords[id];
@@ -333,7 +340,16 @@ class WordLabDB {
                 if (existingScore !== excellentStreak) {
                     updates[`${dbPath}/progress_global/excellentStreak`] = excellentStreak;
                     updates[`${dbPath}/progress_global/isActive`] = excellentStreak >= 10;
+                    updates[`${dbPath}/progress_global/is_ideal`] = importedIdeal !== null ? importedIdeal : (excellentStreak >= 10);
                     hasChanges = true;
+                }
+                // Update is_ideal if explicitly provided in import and differs
+                if (importedIdeal !== null) {
+                    const existingIdeal = existing.progress_global ? (existing.progress_global.is_ideal || false) : false;
+                    if (existingIdeal !== importedIdeal) {
+                        updates[`${dbPath}/progress_global/is_ideal`] = importedIdeal;
+                        hasChanges = true;
+                    }
                 }
 
                 if (hasChanges) stats.updated++;
@@ -342,7 +358,7 @@ class WordLabDB {
                 updates[dbPath] = {
                     id: id,
                     ...wordData,
-                    progress_global: { ...defaultProgress, isActive: isActive, excellentStreak: excellentStreak },
+                    progress_global: { ...defaultProgress, isActive: isActive, is_ideal: importedIdeal !== null ? importedIdeal : is_ideal, excellentStreak: excellentStreak },
                     progress_groups: defaultProgress
                 };
                 stats.created++;
@@ -553,11 +569,45 @@ firebase.auth().onAuthStateChanged((user) => {
         switchView(targetView);
 
         // LOAD DATA
-        db.subscribeToWords(w => {
+        db.subscribeToWords(async (w) => {
             if (!w) {
                 allWordsCache = [];
             } else {
                 allWordsCache = Object.values(w).sort((a, b) => parseInt(a.id) - parseInt(b.id));
+
+                // --- MIGRATION + TIME DECAY: populate/update is_ideal ---
+                const now = Date.now();
+                const migrationUpdates = {};
+                allWordsCache.forEach(word => {
+                    const p = word.progress_global;
+                    if (!p) return;
+                    if (p.is_ideal === undefined) {
+                        // First-time migration:
+                        // 1. Active words (10 pts, passed exam) → is_ideal = true (permanent)
+                        // 2. Last action was «Отлично» (6) or «Помню» (5) AND nextDate not expired → true
+                        // 3. Everything else → false
+                        let wasIdeal = false;
+                        if (p.isActive) {
+                            wasIdeal = true;
+                        } else if ((p.lastRating === 5 || p.lastRating === 6) && p.nextDate && p.nextDate > now) {
+                            wasIdeal = true;
+                        }
+                        migrationUpdates[`users/${db.userId}/words/${word.id}/progress_global/is_ideal`] = wasIdeal;
+                        p.is_ideal = wasIdeal;
+                    } else if (p.is_ideal === true && !p.isActive && p.nextDate && p.nextDate <= now) {
+                        // Time-based decay: word is no longer ideal if it's overdue and not Active
+                        migrationUpdates[`users/${db.userId}/words/${word.id}/progress_global/is_ideal`] = false;
+                        p.is_ideal = false;
+                    }
+                });
+                if (Object.keys(migrationUpdates).length > 0) {
+                    try {
+                        await db.db.ref().update(migrationUpdates);
+                        console.log(`[is_ideal] Updated ${Object.keys(migrationUpdates).length} words`);
+                    } catch (e) {
+                        console.error('[is_ideal] update error:', e);
+                    }
+                }
             }
 
             // Update Module caches
@@ -602,6 +652,7 @@ firebase.auth().onAuthStateChanged((user) => {
 const defaultColumns = {
     id: true,
     active: true,
+    is_ideal: true,
     word: true,
     translation: true,
     info1: true,
@@ -614,6 +665,12 @@ const defaultColumns = {
 };
 let savedCols = localStorage.getItem('visibleColumns');
 const visibleColumns = savedCols ? JSON.parse(savedCols) : defaultColumns;
+
+// Ensure 'is_ideal' column exists in saved settings (migration for existing users)
+if (visibleColumns.is_ideal === undefined) {
+    visibleColumns.is_ideal = true;
+    localStorage.setItem('visibleColumns', JSON.stringify(visibleColumns));
+}
 
 // Ensure 'folder' column exists in saved settings (migration for existing users)
 if (visibleColumns.folder === undefined) {
@@ -737,32 +794,34 @@ function renderTable(arr) {
     const headRow = document.querySelector('#words-table tr');
     if (headRow) {
         const ths = headRow.querySelectorAll('th');
-        // New Order in HTML:
+        // Order in HTML:
         // 0: ID
         // 1: Active
-        // 2: Word
-        // 3: Translation
-        // 4: Info1
-        // 5: Info2
-        // 6: Ex1
-        // 7: Ex2
-        // 8: Folder
-        // 9: Interval
-        // 10: NextDate
+        // 2: is_ideal
+        // 3: Word
+        // 4: Translation
+        // 5: Info1
+        // 6: Info2
+        // 7: Ex1
+        // 8: Ex2
+        // 9: Folder
+        // 10: Interval
+        // 11: NextDate
         if (ths[0]) ths[0].style.display = visibleColumns.id ? '' : 'none';
         if (ths[1]) ths[1].style.display = visibleColumns.active ? '' : 'none';
-        if (ths[2]) ths[2].style.display = visibleColumns.word ? '' : 'none';
-        if (ths[3]) ths[3].style.display = visibleColumns.translation ? '' : 'none';
+        if (ths[2]) ths[2].style.display = visibleColumns.is_ideal ? '' : 'none';
+        if (ths[3]) ths[3].style.display = visibleColumns.word ? '' : 'none';
+        if (ths[4]) ths[4].style.display = visibleColumns.translation ? '' : 'none';
 
-        if (ths[4]) ths[4].style.display = visibleColumns.info1 ? '' : 'none';
-        if (ths[5]) ths[5].style.display = visibleColumns.info2 ? '' : 'none';
-        if (ths[6]) ths[6].style.display = visibleColumns.ex1 ? '' : 'none';
-        if (ths[7]) ths[7].style.display = visibleColumns.ex2 ? '' : 'none';
+        if (ths[5]) ths[5].style.display = visibleColumns.info1 ? '' : 'none';
+        if (ths[6]) ths[6].style.display = visibleColumns.info2 ? '' : 'none';
+        if (ths[7]) ths[7].style.display = visibleColumns.ex1 ? '' : 'none';
+        if (ths[8]) ths[8].style.display = visibleColumns.ex2 ? '' : 'none';
 
-        if (ths[8]) ths[8].style.display = visibleColumns.folder ? '' : 'none';
+        if (ths[9]) ths[9].style.display = visibleColumns.folder ? '' : 'none';
 
-        if (ths[9]) ths[9].style.display = visibleColumns.interval ? '' : 'none';
-        if (ths[10]) ths[10].style.display = visibleColumns.nextDate ? '' : 'none';
+        if (ths[10]) ths[10].style.display = visibleColumns.interval ? '' : 'none';
+        if (ths[11]) ths[11].style.display = visibleColumns.nextDate ? '' : 'none';
     }
 
     // --- DUPLICATE DETECTION --
@@ -818,11 +877,12 @@ function renderTable(arr) {
         // We MUST render all TD elements so nth-child CSS matches. We hide them via style.
         const isActive = w.progress_global && w.progress_global.isActive;
         const score = w.progress_global ? (w.progress_global.excellentStreak || 0) : 0;
+        const isIdeal = w.progress_global && w.progress_global.is_ideal;
 
         let activeDisplay = '';
         if (isActive) {
-            // Active word: Show Lightning
-            activeDisplay = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="var(--secondary)" stroke="var(--secondary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>`;
+            // Active word: Show Lightning (Clean fill, no stroke for sharper look)
+            activeDisplay = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="var(--secondary)"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>`;
         } else if (score > 0) {
             // Show Score only if > 0
             const color = score >= 9 ? 'var(--accent-bright)' : 'var(--text-main)';
@@ -830,9 +890,16 @@ function renderTable(arr) {
             activeDisplay = `<span style="font-size: 0.85rem; font-weight: 600; color: ${color};">${scoreFormatted}</span>`;
         }
 
+        // is_ideal display: star icon for true, empty for false
+        // (CSS will add '-' on desktop via :empty::after, and hidden on mobile via :empty)
+        const idealDisplay = isIdeal
+            ? `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="var(--secondary)"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>`
+            : '';
+
         tr.innerHTML = `
             <td class="id-cell" style="${displayStyle('id')}">${w.id}</td>
             <td style="${displayStyle('active')}; text-align: center;">${activeDisplay}</td>
+            <td style="${displayStyle('is_ideal')}; text-align: center;">${idealDisplay}</td>
             <td style="${displayStyle('word')}"><strong>${w.word}</strong></td>
             <td style="${displayStyle('translation')}" title="${w.translation}"><strong>${w.translation}</strong></td>
             
@@ -998,7 +1065,7 @@ editForm.onsubmit = async (e) => {
         const newWord = {
             id: id,
             ...wordData,
-            progress_global: { ...defaultProgress, isActive: false },
+            progress_global: { ...defaultProgress, isActive: false, is_ideal: false },
             progress_groups: defaultProgress
         };
         await db.updateWord(id, newWord);
@@ -1497,7 +1564,7 @@ function exportWordsToExcel() {
     }
 
     // Format data for Excel
-    // Columns: [ID, Active, Word, Translation, Info1, Info2, Ex1, Ex2]
+    // Columns: [ID, Active, Word, Translation, Info1, Info2, Ex1, Ex2, Папка, Идеально]
     const data = allWords.map(w => {
         const pg = w.progress_global;
         let s = pg ? (pg.excellentStreak || 0) : 0;
@@ -1513,7 +1580,8 @@ function exportWordsToExcel() {
             "Дополнительно": w.info2,
             "Пример 1": w.ex1,
             "Пример 2": w.ex2,
-            "Папка": w.folder || ""
+            "Папка": w.folder || "",
+            "Идеально": (pg && pg.is_ideal) ? "true" : "false"
         };
     });
 

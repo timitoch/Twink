@@ -174,9 +174,8 @@ class ProfileModule {
         this.wordsCache.forEach(w => {
             const p = w.progress_global;
             if (p) {
-                // Mastered: isActive (passed exam) OR (interval >= 12 AND not overdue)
-                // Must match the formula used in study.js updateStatsUI / renderFolders
-                if (p.isActive || (p.interval >= 12 && p.nextDate > now)) mastered++;
+                // Mastered: is_ideal is the single source of truth
+                if (p.is_ideal) mastered++;
                 if (p.interval > 0) learned++;
                 if (p.isActive) activeCount++;
             }

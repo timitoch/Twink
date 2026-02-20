@@ -853,6 +853,7 @@ th {
     font-weight: 500;
     white-space: nowrap;
     font-size: 0.8rem;
+    vertical-align: middle;
 }
 
 /* Tooltip for Active Words Header */
@@ -944,7 +945,7 @@ th {
 }
 
 td {
-    vertical-align: top;
+    vertical-align: middle;
 }
 
 .id-cell {
@@ -2075,7 +2076,8 @@ td {
         /* More compact padding */
         gap: 0.35rem;
         /* Tighter layout */
-        align-items: baseline;
+        align-items: center;
+        /* Unified alignment */
     }
 
     /* Reset Cells */
@@ -2108,38 +2110,65 @@ td {
     #words-table td:nth-child(2) {
         width: auto;
         order: 21;
-        margin-top: 0.45rem;
+        margin-top: 0.6rem;
         margin-right: 0.4rem;
         margin-left: 0;
-        background: rgba(255, 255, 255, 0.05);
-        padding: 0.05rem 0.5rem;
-        border-radius: 6px;
         display: flex;
         align-items: center;
         justify-content: center;
-        height: 20px;
-        /* Uniform height for row */
+        height: 22px;
+        /* Fixed height for all row items */
+        /* Default for score (numbers) */
+        background: rgba(255, 255, 255, 0.06);
+        padding: 0 0.55rem;
+        border-radius: 6px;
     }
 
-    #words-table td:nth-child(2):empty {
+    /* Remove box style if it has an SVG (lightning icon) */
+    #words-table td:nth-child(2):has(svg) {
+        background: transparent !important;
+        padding: 0 !important;
+        margin-right: 0.5rem;
+    }
+
+    #words-table td:nth-child(2):empty,
+    #words-table td:nth-child(3):empty {
         display: none !important;
     }
 
-    #words-table td:nth-child(2) span {
-        font-size: 0.75rem !important;
+    #words-table td:nth-child(2) span,
+    #words-table td:nth-child(3) span {
+        font-size: 0.8rem !important;
         color: var(--text-muted) !important;
-        font-weight: 500 !important;
-        opacity: 0.8;
+        font-weight: 600 !important;
+        opacity: 1;
+        line-height: 1;
     }
 
-    #words-table td:nth-child(2) svg {
-        width: 12px;
-        height: 12px;
-        opacity: 0.6;
+    #words-table td:nth-child(2) svg,
+    #words-table td:nth-child(3) svg {
+        width: 16px;
+        height: 16px;
+        opacity: 1;
+    }
+
+    /* 2b. is_ideal (Next to Active) */
+    #words-table td:nth-child(3) {
+        width: auto;
+        order: 22;
+        margin-top: 0.6rem;
+        margin-right: 0.5rem;
+        background: transparent;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 22px;
+        vertical-align: middle;
     }
 
     /* 3. Word (Full Width) */
-    #words-table td:nth-child(3) {
+    #words-table td:nth-child(4) {
         width: 100%;
         font-size: 1rem;
         /* Smaller font */
@@ -2151,7 +2180,7 @@ td {
     }
 
     /* 4. Translation (Full Width) */
-    #words-table td:nth-child(4) {
+    #words-table td:nth-child(5) {
         width: 100%;
         font-size: 0.85rem;
         /* Smaller font */
@@ -2163,8 +2192,8 @@ td {
     }
 
     /* 5-6. Info Tags (Auto Width) */
-    #words-table td:nth-child(5),
-    #words-table td:nth-child(6) {
+    #words-table td:nth-child(6),
+    #words-table td:nth-child(7) {
         font-size: 0.68rem;
         /* Smaller tags */
         color: var(--text-muted);
@@ -2175,14 +2204,14 @@ td {
         margin-right: 0.3rem;
     }
 
-    #words-table td:nth-child(5):empty,
-    #words-table td:nth-child(6):empty {
+    #words-table td:nth-child(6):empty,
+    #words-table td:nth-child(7):empty {
         display: none;
     }
 
     /* 7-8. Examples (Full Width) */
-    #words-table td:nth-child(7),
-    #words-table td:nth-child(8) {
+    #words-table td:nth-child(8),
+    #words-table td:nth-child(9) {
         width: 100%;
         font-size: 0.75rem;
         /* Smaller font */
@@ -2194,72 +2223,77 @@ td {
         order: 4;
     }
 
-    #words-table td:nth-child(7):empty,
-    #words-table td:nth-child(8):empty {
-        display: none;
-    }
-
-    /* 9. Folder (Last in status row) */
-    #words-table td:nth-child(9) {
-        order: 23;
-        font-size: 0.7rem;
-        color: var(--text-muted);
-        opacity: 0.5;
-        margin-top: 0.45rem;
-        white-space: nowrap !important;
-        max-width: 90px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        display: flex;
-        align-items: center;
-        height: 20px;
-    }
-
+    #words-table td:nth-child(8):empty,
     #words-table td:nth-child(9):empty {
         display: none;
     }
 
-    /* 10. Interval (First in status row) */
+    /* 9. Folder (Last in status row) */
     #words-table td:nth-child(10) {
-        font-size: 0.7rem;
+        order: 25;
+        font-size: 0.8rem;
+        font-weight: 600;
         color: var(--text-muted);
-        order: 20;
-        margin-top: 0.45rem;
-        margin-right: 0.4rem;
+        opacity: 0.5;
+        margin-top: 0.6rem;
+        white-space: nowrap !important;
+        max-width: 100px;
+        overflow: hidden;
+        text-overflow: ellipsis;
         display: flex;
         align-items: center;
-        height: 20px;
+        height: 22px;
     }
 
-    #words-table td:nth-child(10) .level-badge {
+    #words-table td:nth-child(10):empty {
+        display: none;
+    }
+
+    /* 10. Interval (First in status row) */
+    #words-table td:nth-child(11) {
+        order: 20;
+        margin-top: 0.6rem;
+        margin-right: 0.5rem;
+        display: flex;
+        align-items: center;
+        height: 22px;
+    }
+
+    #words-table td:nth-child(11) .level-badge {
         background: rgba(99, 102, 241, 0.12) !important;
-        border: 1px solid rgba(99, 102, 241, 0.1) !important;
-        padding: 0.1rem 0.6rem !important;
-        font-size: 0.75rem !important;
+        border: none !important;
+        padding: 0 0.55rem !important;
+        font-size: 0.8rem !important;
+        font-weight: 600 !important;
         color: var(--text-muted) !important;
         opacity: 1;
         border-radius: 6px;
+        height: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     /* 11. Next Date (After Score) */
-    #words-table td:nth-child(11) {
+    #words-table td:nth-child(12) {
         display: flex !important;
-        order: 22;
-        font-size: 0.7rem;
+        order: 24;
+        font-size: 0.8rem;
+        font-weight: 600;
         color: var(--text-muted);
-        opacity: 0.5;
-        margin-top: 0.45rem;
-        margin-right: 0.4rem;
+        opacity: 0.4;
+        margin-top: 0.6rem;
+        margin-right: 0.5rem;
         align-items: center;
-        height: 20px;
+        height: 22px;
     }
 
-    #words-table td:nth-child(11):empty {
+    #words-table td:nth-child(12):empty {
         display: none !important;
     }
 
     /* 12. ACTION BUTTONS (Top-Right Corner) - Combined Cell */
-    #words-table td:nth-child(12) {
+    #words-table td:nth-child(13) {
         position: absolute !important;
         top: 0.2rem !important;
         /* Closer to top */
@@ -2282,7 +2316,7 @@ td {
     }
 
     /* Icons only look with large hit area */
-    #words-table td:nth-child(12) button {
+    #words-table td:nth-child(13) button {
         padding: 0.6rem !important;
         /* Keep large touch area */
         opacity: 0.65 !important;
@@ -2291,19 +2325,19 @@ td {
         transition: opacity 0.2s, transform 0.1s !important;
     }
 
-    #words-table td:nth-child(12) button:active {
+    #words-table td:nth-child(13) button:active {
         opacity: 1 !important;
         transform: scale(0.9);
     }
 
-    #words-table td:nth-child(12) svg {
+    #words-table td:nth-child(13) svg {
         width: 16px !important;
         /* Size restored to original */
         height: 16px !important;
         color: var(--text-muted);
     }
 
-    #words-table td:nth-child(12) .btn-delete svg {
+    #words-table td:nth-child(13) .btn-delete svg {
         color: rgba(239, 68, 68, 0.7);
         /* Subtle red for delete */
     }
@@ -2333,11 +2367,11 @@ td {
         vertical-align: middle !important;
     }
 
-    /* TRANSLATION (4th) & WORD (3rd): Allow text wrap, limit max-width */
-    #words-table td:nth-child(3),
-    #words-table th:nth-child(3),
+    /* TRANSLATION (5th) & WORD (4th): Allow text wrap, limit max-width */
     #words-table td:nth-child(4),
-    #words-table th:nth-child(4) {
+    #words-table th:nth-child(4),
+    #words-table td:nth-child(5),
+    #words-table th:nth-child(5) {
         width: auto !important;
         max-width: 150px !important;
         /* Restrict width further */
@@ -2349,15 +2383,15 @@ td {
         overflow: visible !important;
         text-overflow: clip !important;
         height: auto !important;
-        vertical-align: top !important;
+        vertical-align: middle !important;
         /* Align to top for multi-line */
         padding-top: 0.8rem;
         padding-bottom: 0.8rem;
     }
 
     /* Update hover effect - remove it as text is now fully visible */
-    #words-table td:nth-child(3):hover,
-    #words-table td:nth-child(4):hover {
+    #words-table td:nth-child(4):hover,
+    #words-table td:nth-child(5):hover {
         position: static;
         background: transparent;
         z-index: auto;
@@ -2400,7 +2434,7 @@ td {
         font-size: 0.8rem;
         padding: 0.5rem 0.3rem;
         /* Compact padding */
-        vertical-align: top;
+        vertical-align: middle;
     }
 
     /* 1. ID */
@@ -2410,64 +2444,74 @@ td {
         width: 40px;
     }
 
-    /* 2. German Word */
+    /* 2. Active Indicator */
     #words-table th:nth-child(2),
     #words-table td:nth-child(2) {
+        min-width: 40px;
+        width: 50px;
+        text-align: center;
+    }
+
+    /* 3. Ideal (New) */
+    #words-table th:nth-child(3),
+    #words-table td:nth-child(3) {
+        min-width: 40px;
+        width: 50px;
+        text-align: center;
+    }
+
+    /* 4. German Word */
+    #words-table th:nth-child(4),
+    #words-table td:nth-child(4) {
         min-width: 70px;
+        max-width: 130px;
+    }
+
+    /* 5. Translation */
+    #words-table th:nth-child(5),
+    #words-table td:nth-child(5) {
+        min-width: 60px;
         max-width: 110px;
     }
 
-    /* 3. Translation */
-    #words-table th:nth-child(3),
-    #words-table td:nth-child(3) {
-        min-width: 60px;
-        max-width: 90px;
-    }
-
-    /* 4-5. Info cells */
-    #words-table th:nth-child(4),
-    #words-table td:nth-child(4),
-    #words-table th:nth-child(5),
-    #words-table td:nth-child(5) {
-        min-width: 40px;
-        max-width: 70px;
-        font-size: 0.75rem;
-    }
-
-    /* 6-8. Examples & FOLDER (New 9) */
+    /* 6-7. Info cells */
     #words-table th:nth-child(6),
     #words-table td:nth-child(6),
     #words-table th:nth-child(7),
-    #words-table td:nth-child(7),
+    #words-table td:nth-child(7) {
+        min-width: 40px;
+        max-width: 80px;
+        font-size: 0.75rem;
+    }
+
+    /* 8-10. Examples & FOLDER (New 10) */
     #words-table th:nth-child(8),
     #words-table td:nth-child(8),
     #words-table th:nth-child(9),
-    #words-table td:nth-child(9) {
+    #words-table td:nth-child(9),
+    #words-table th:nth-child(10),
+    #words-table td:nth-child(10) {
         min-width: 80px;
         max-width: 200px;
         font-size: 0.75rem;
     }
 
-    /* 10-11. Stats (Interval/Next) - Was 9-10 */
-    #words-table th:nth-child(10),
-    #words-table td:nth-child(10),
+    /* 11-12. Stats (Interval/Next) */
     #words-table th:nth-child(11),
-    #words-table td:nth-child(11) {
+    #words-table td:nth-child(11),
+    #words-table th:nth-child(12),
+    #words-table td:nth-child(12) {
         min-width: 60px;
         width: 75px;
         white-space: nowrap;
-        /* Dates usually better on one line, or break softly */
     }
 
-    /* 12-13. Actions - Was 11-12 */
-    #words-table th:nth-child(12),
-    #words-table td:nth-child(12),
+    /* 13. Actions */
     #words-table th:nth-child(13),
     #words-table td:nth-child(13) {
         min-width: 30px;
-        width: 36px;
+        width: 40px;
         text-align: center;
-        padding: 0.5rem 0;
     }
 }
 
