@@ -275,9 +275,9 @@
 }
 
 .btn-rate {
-    border-radius: 12px;
+    border-radius: 16px;
     padding: 0.5rem;
-    font-weight: 700;
+    font-weight: 600;
     cursor: pointer;
     display: flex;
     flex-direction: column;
@@ -360,51 +360,42 @@
    Maybe reduce opacity for dark mode slightly to avoid eye strain.
 */
 .rate-btn-1 {
-    background: color-mix(in srgb, var(--rate-1), transparent 80%);
+    background: color-mix(in srgb, var(--rate-1), transparent 92%);
     color: var(--rate-1);
     border-color: var(--rate-1);
 }
 
 .rate-btn-2 {
-    background: color-mix(in srgb, var(--rate-2), transparent 80%);
+    background: color-mix(in srgb, var(--rate-2), transparent 92%);
     color: var(--rate-2);
     border-color: var(--rate-2);
 }
 
 .rate-btn-3 {
-    background: color-mix(in srgb, var(--rate-3), transparent 80%);
+    background: color-mix(in srgb, var(--rate-3), transparent 92%);
     color: var(--rate-3);
     border-color: var(--rate-3);
 }
 
 .rate-btn-4 {
-    background: color-mix(in srgb, var(--rate-4), transparent 80%);
+    background: color-mix(in srgb, var(--rate-4), transparent 92%);
     color: var(--rate-4);
     border-color: var(--rate-4);
 }
 
 .rate-btn-5 {
-    background: color-mix(in srgb, var(--rate-5), transparent 80%);
+    background: color-mix(in srgb, var(--rate-5), transparent 92%);
     color: var(--rate-5);
     border-color: var(--rate-5);
 }
 
 .rate-btn-6 {
-    background: color-mix(in srgb, var(--rate-6), transparent 80%);
+    background: color-mix(in srgb, var(--rate-6), transparent 92%);
     color: var(--rate-6);
     border-color: var(--rate-6);
 }
 
-.rate-btn-1:hover,
-.rate-btn-2:hover,
-.rate-btn-3:hover,
-.rate-btn-4:hover,
-.rate-btn-5:hover,
-.rate-btn-6:hover {
-    background: color-mix(in srgb, currentColor, transparent 60%);
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px -5px currentColor;
-}
+/* No hover effects on rating buttons */
 
 .session-progress-container {
     width: 100%;

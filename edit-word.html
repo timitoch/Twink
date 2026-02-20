@@ -1,0 +1,94 @@
+<div id="view-word-edit" class="view-section hidden session-redesign"
+    style="padding-bottom: 40px; margin-top: -90px; min-height: 100vh;">
+    <div
+        style="width: 100%; max-width: 500px; margin: 0 auto; display: flex; flex-direction: column; flex: 1; padding: 0 1.5rem;">
+
+        <!-- Header -->
+        <div
+            style="position: sticky; top: 0; background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); z-index: 100; padding: 0.75rem 0; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <button id="btn-exit-word-edit" class="btn-square icon-btn" title="Выйти"
+                style="background: transparent; border: none; color: var(--text-muted); padding: 0.5rem; margin-left: -0.5rem;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+            </button>
+            <div style="text-align: center;">
+                <h3 id="edit-word-title-text"
+                    style="margin: 0; font-size: 0.9rem; font-weight: 600; color: var(--text-main); text-transform: uppercase; letter-spacing: 0.5px;">
+                    Редактировать</h3>
+                <p id="edit-word-id-text"
+                    style="margin: 0.2rem 0 0 0; font-size: 0.75rem; color: var(--text-muted); opacity: 0.6; font-family: monospace;">
+                </p>
+            </div>
+            <div style="width: 36px;"></div> <!-- Spacer -->
+        </div>
+
+        <!-- Form -->
+        <form id="edit-word-form" style="display: flex; flex-direction: column; flex: 1;">
+            <input type="hidden" id="nw-edit-id">
+
+            <!-- Word -->
+            <div class="edit-word-group">
+                <label class="edit-word-label">Слово / Инфинитив</label>
+                <input type="text" id="nw-edit-word" class="edit-word-input" required
+                    placeholder="Введите слово на немецком...">
+            </div>
+
+            <!-- Translation -->
+            <div class="edit-word-group">
+                <label class="edit-word-label">Перевод</label>
+                <input type="text" id="nw-edit-translation" class="edit-word-input" required
+                    placeholder="Введите перевод...">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <!-- Forms -->
+                <div class="edit-word-group">
+                    <label class="edit-word-label">Формы глагола</label>
+                    <input type="text" id="nw-edit-info1" class="edit-word-input"
+                        placeholder="Präsens, Präteritum, Partizip II">
+                </div>
+
+                <!-- Extra -->
+                <div class="edit-word-group">
+                    <label class="edit-word-label">Дополнительно</label>
+                    <input type="text" id="nw-edit-info2" class="edit-word-input" placeholder="(plural) и т.д.">
+                </div>
+            </div>
+
+            <!-- Examples -->
+            <div class="edit-word-group">
+                <label class="edit-word-label">Пример употребления 1</label>
+                <input type="text" id="nw-edit-ex1" class="edit-word-input" placeholder="...">
+            </div>
+
+            <div class="edit-word-group">
+                <label class="edit-word-label">Пример употребления 2</label>
+                <input type="text" id="nw-edit-ex2" class="edit-word-input" placeholder="...">
+            </div>
+
+            <!-- Folder -->
+            <div class="edit-word-group" style="margin-top: 1rem; opacity: 0.8;">
+                <label class="edit-word-label">Папка</label>
+                <input type="text" id="nw-edit-folder" class="edit-word-input" placeholder="Укажите папку...">
+            </div>
+
+            <!-- Actions -->
+            <div class="edit-word-actions">
+                <button type="submit" id="btn-save-word-edit" class="edit-word-save-btn">Сохранить</button>
+                <button type="button" id="btn-delete-word-edit" class="edit-word-delete-btn hidden">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        style="margin-right: 0.5rem;">
+                        <path d="M3 6h18"></path>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                    Удалить слово
+                </button>
+            </div>
+        </form>
+
+    </div>
+</div>

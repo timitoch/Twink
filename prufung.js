@@ -101,6 +101,7 @@ class PrufungModule {
 
         // Display question
         if (this.examQuestionText) this.examQuestionText.textContent = word.translation;
+
         // Hints Logic
         let hints = [];
         const germanWord = word.word;
@@ -109,68 +110,47 @@ class PrufungModule {
 
         // Helper to check for 'in' ending on the noun (ignoring article)
         const endsInIn = (str) => {
-            // Remove article if present
             const clean = str.replace(/\b(der|die|das)\b/gi, '').trim();
-            // Check if ends with 'in'
             return clean.toLowerCase().endsWith('in');
         };
 
         if (parts.length === 2 && parts[1].startsWith('-')) {
-            // Special Pattern: "die Restaurierung, -en"
+            // Pattern: "die Restaurierung, -en"
+            hints.push("________");
             if (endsInIn(parts[0])) hints.push("(жен. р.)");
-            hints.push("ввод множественого числа не обязателен");
-        } else if (parts.length === 2 && hasArticle) {
-            // Case with 2 words (e.g., der Partner, die Partner or die Frau, die Frauen)
-            const p1In = endsInIn(parts[0]);
-            const p2In = endsInIn(parts[1]);
-
-            // Hint for the first part
-            hints.push(p1In ? "(жен. р.)" : "________");
-
-            // Hint for the second part
-            if (p2In) {
-                hints.push("(жен. р.)");
-            } else {
-                hints.push("(plural)");
-            }
+            hints.push("(plural)");
         } else {
-            // General logic for 1 word or 3+ words
-            const p1In = endsInIn(parts[0]);
-            if (p1In) hints.push("(жен. р.)");
+            // Process parts for gender/plural markers
+            parts.forEach((p, idx) => {
+                const isFirst = idx === 0;
+                const pIn = endsInIn(p);
+                const pLower = p.toLowerCase();
+                const isPlural = pLower.includes('die') && !pLower.includes('der') && !pLower.includes('das') && !isFirst && hasArticle;
 
-            if (parts.length > 1) {
-                const p2In = endsInIn(parts[1]);
-                if (p2In) {
+                if (pIn) {
                     hints.push("(жен. р.)");
-                } else if (hasArticle) {
+                } else if (isPlural || (hasArticle && idx > 0)) {
                     hints.push("(plural)");
+                } else {
+                    hints.push("________");
                 }
+            });
+
+            // Add verb form placeholders from info1
+            if (word.info1) {
+                hints.push("Präsens", "Präteritum", "Partizip II");
             }
         }
 
-        // Add verb form hints if info1 is present
-        if (word.info1) {
-            if (hints.length === 0) {
-                hints.push("________");
-            }
-            hints.push("präsens", "präteritum", "partizip II");
-        }
-
-        // Multi-word hint Logic (for phrases like "an sein", "ein paar")
-        // Only if no other specific hints (like noun gender/plural or verb forms) were added
-        if (hints.length === 0) {
-            // Remove content in parentheses (optional parts)
+        // Phrase logic: If it's a phrase without specific noun markers, show word count
+        // We only do this if the hints consist solely of "________" or similar generic markers
+        const onlyGeneric = hints.every(h => h === "________");
+        if (onlyGeneric) {
             let cleanForCount = germanWord.replace(/\s*\(.*?\)/g, '').trim();
-
-            // Optimization: Remove articles ONLY if it's a noun phrase start to avoid counting "der Hunger" as 2 words
-            // We remove common articles from the START of the string or separated words
-            cleanForCount = cleanForCount.replace(/\b(der|die|das|den|dem|des|ein|eine)\b/gi, '').trim();
-
-            // Count words by splitting by spaces
+            // Count words (treat articles as words here to be precise about what user needs to type)
             const wordCount = cleanForCount.split(/\s+/).filter(s => s.length > 0).length;
-
             if (wordCount > 1) {
-                hints.push(`Введите ${wordCount} слов(а)`);
+                hints = [`Введите ${wordCount} слова/слов`];
             }
         }
 

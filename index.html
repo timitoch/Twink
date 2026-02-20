@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="style-session.css">
     <link rel="stylesheet" href="style-editor.css">
     <link rel="stylesheet" href="profile.css">
+    <link rel="stylesheet" href="edit-word.css">
 
     <style>
         .guide-section {
@@ -77,18 +78,61 @@
 <body>
 
     <!-- Loading Screen - Pure Minimalist -->
+    <style>
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            position: relative;
+        }
+
+        .spinner-dot {
+            width: 12px;
+            height: 12px;
+            background: #fff;
+            border-radius: 50%;
+            filter: blur(1px);
+        }
+
+        @media (max-width: 768px) {
+            .loading-spinner {
+                width: 24px;
+                height: 24px;
+            }
+
+            .spinner-dot {
+                width: 6px;
+                height: 6px;
+            }
+
+            /* Tighten positions for very small radius */
+            .spinner-dot.dot-1 {
+                left: 9px !important;
+            }
+        }
+    </style>
     <div id="loading-screen"
         style="position: fixed; inset: 0; background: #000000; z-index: 9999; display: flex; align-items: center; justify-content: center; overflow: hidden;">
         <!-- Simple Blurry Spinner -->
-        <div style="width: 60px; height: 60px; animation: spin 1s linear infinite; position: relative;">
-            <div
-                style="position: absolute; top: 0; left: 24px; width: 12px; height: 12px; background: #fff; border-radius: 50%; filter: blur(1px); box-shadow: 0 0 10px rgba(255,255,255,0.5);">
+        <div class="loading-spinner">
+            <div class="spinner-dot dot-1"
+                style="position: absolute; top: 0; left: 9px; box-shadow: 0 0 5px rgba(255,255,255,0.5);">
             </div>
-            <div
-                style="position: absolute; bottom: 0; right: 0; width: 12px; height: 12px; background: #fff; border-radius: 50%; filter: blur(1px); opacity: 0.7; box-shadow: 0 0 10px rgba(255,255,255,0.3);">
+            <div class="spinner-dot"
+                style="position: absolute; bottom: 3px; right: 3px; opacity: 0.7; box-shadow: 0 0 5px rgba(255,255,255,0.3);">
             </div>
-            <div
-                style="position: absolute; bottom: 0; left: 0; width: 12px; height: 12px; background: #fff; border-radius: 50%; filter: blur(1px); opacity: 0.4; box-shadow: 0 0 10px rgba(255,255,255,0.1);">
+            <div class="spinner-dot"
+                style="position: absolute; bottom: 3px; left: 3px; opacity: 0.4; box-shadow: 0 0 5px rgba(255,255,255,0.1);">
             </div>
         </div>
     </div>
@@ -1449,6 +1493,102 @@
                     </div>
                 </div>
 
+                <!-- NEW VIEW: EDIT WORD -->
+                <div id="view-word-edit" class="view-section hidden session-redesign"
+                    style="padding-bottom: 40px; min-height: 100vh;">
+                    <div
+                        style="width: 100%; max-width: 500px; margin: 0 auto; display: flex; flex-direction: column; flex: 1; padding: 0 0.5rem;">
+
+                        <!-- Header -->
+                        <div
+                            style="position: sticky; top: 0; background: var(--bg-main); z-index: 100; padding: 0.4rem 0; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <!-- Left: Back Button -->
+                            <div style="flex: 1; display: flex; align-items: center;">
+                                <button id="btn-exit-word-edit" class="btn-square icon-btn" title="Выйти"
+                                    style="background: transparent; border: none; color: var(--text-muted); padding: 0.5rem; margin-left: -0.5rem;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                                        <polyline points="12 19 5 12 12 5"></polyline>
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <!-- Center: Title / ID -->
+                            <div style="text-align: center; flex: 2;">
+                                <h3 id="edit-word-title-text"
+                                    style="margin: 0; font-size: 0.9rem; font-weight: 600; color: var(--text-main); text-transform: uppercase; letter-spacing: 0.5px;">
+                                    Слово</h3>
+                                <p id="edit-word-id-text"
+                                    style="margin: 0.2rem 0 0 0; font-size: 0.75rem; color: var(--text-muted); opacity: 0.6; font-family: monospace;">
+                                    #17</p>
+                            </div>
+
+                            <!-- Right: Actions -->
+                            <div
+                                style="flex: 1; display: flex; justify-content: flex-end; align-items: center; gap: 0.2rem;">
+                                <button type="submit" form="edit-word-form" id="btn-save-word-edit-header"
+                                    class="btn-icon" title="Сохранить"
+                                    style="color: var(--text-main); padding: 0.5rem; background: transparent; border: none;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Form -->
+                        <form id="edit-word-form" style="display: flex; flex-direction: column; flex: 1;">
+                            <input type="hidden" id="nw-edit-id">
+
+                            <!-- Word -->
+                            <div class="edit-word-group">
+                                <textarea id="nw-edit-word" class="edit-word-input" required rows="1"
+                                    placeholder="Слово"></textarea>
+                            </div>
+
+                            <!-- Translation -->
+                            <div class="edit-word-group">
+                                <textarea id="nw-edit-translation" class="edit-word-input" required rows="1"
+                                    placeholder="Перевод"></textarea>
+                            </div>
+
+                            <!-- Forms -->
+                            <div class="edit-word-group">
+                                <textarea id="nw-edit-info1" class="edit-word-input" rows="1"
+                                    placeholder="Формы глагола"></textarea>
+                            </div>
+
+                            <!-- Extra -->
+                            <div class="edit-word-group">
+                                <textarea id="nw-edit-info2" class="edit-word-input" rows="1"
+                                    placeholder="Дополнительно"></textarea>
+                            </div>
+
+                            <!-- Examples -->
+                            <div class="edit-word-group">
+                                <textarea id="nw-edit-ex1" class="edit-word-input" rows="1"
+                                    placeholder="Пример 1"></textarea>
+                            </div>
+
+                            <div class="edit-word-group">
+                                <textarea id="nw-edit-ex2" class="edit-word-input" rows="1"
+                                    placeholder="Пример 2"></textarea>
+                            </div>
+
+                            <!-- Folder -->
+                            <div class="edit-word-group" style="margin-top: 1rem; opacity: 0.8;">
+                                <textarea id="nw-edit-folder" class="edit-word-input" rows="1"
+                                    placeholder="Папка"></textarea>
+                            </div>
+
+                        </form>
+                    </div>
+                </div>
+
                 <!-- 5. VIEW: SETTINGS -->
                 <div id="view-settings" class="view-section hidden">
                     <div class="section-title">
@@ -1729,7 +1869,7 @@
             </main>
         </div>
 
-        <!-- Edit Modal (Exact Group Editor Style) -->
+        <!-- Edit Modal (Exact Group Editor Style - For Desktop) -->
         <div id="edit-modal" class="modal-overlay hidden">
             <div style="max-width: 1000px; width: 90vw; margin: 2rem auto; position: relative;">
                 <form id="edit-form">
@@ -1810,14 +1950,10 @@
                 </form>
             </div>
         </div>
+
     </div>
     </div>
-    <script src="firebase-config.js"></script>
-    <script src="settings.js"></script>
-    <script src="profile.js"></script>
-    <script src="study.js"></script>
-    <script src="particles.js?v=antigravity"></script>
-    <script src="app.js"></script>
+    <!-- Scripts moved to end of body -->
     <!-- Session Settings Modal -->
     <div id="session-settings-menu" class="modal-overlay hidden session-settings-modal">
         <div class="session-settings-container">
@@ -2033,7 +2169,9 @@
     <script src="prufung.js"></script>
     <script src="study.js"></script>
     <script src="settings.js"></script>
+    <script src="particles.js?v=antigravity"></script>
     <script src="app.js"></script>
+    <script src="edit-word.js"></script>
 </body>
 
 </html>
