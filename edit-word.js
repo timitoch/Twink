@@ -43,6 +43,8 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     let sourceViewId = 'view-words'; // Default fallback
+    let lastEditedWordId = null;
+    let lastScrollPos = 0;
 
     function isMobile() {
         return window.innerWidth <= 768;
@@ -77,6 +79,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentActiveView && currentActiveView.id !== 'view-word-edit') {
             sourceViewId = currentActiveView.id;
         }
+
+        lastEditedWordId = w ? w.id : null;
+        lastScrollPos = window.scrollY;
 
         if (isMobile()) {
             // MOBILE MODE: Fullscreen view
@@ -171,9 +176,25 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Refresh UI
-            if (typeof renderTable === 'function') renderTable();
+            if (typeof applyDictionaryFilters === 'function') applyDictionaryFilters();
             if (window.StudyModule && typeof window.StudyModule.renderStudyDashboard === 'function') {
                 window.StudyModule.renderStudyDashboard();
+            }
+
+            // Restore Scroll / Scroll to Word
+            if (sourceViewId === 'view-words') {
+                setTimeout(() => {
+                    if (lastEditedWordId) {
+                        const row = document.getElementById(`word-row-${lastEditedWordId}`);
+                        if (row) {
+                            row.scrollIntoView({ block: 'center', behavior: 'instant' });
+                        } else {
+                            window.scrollTo(0, lastScrollPos);
+                        }
+                    } else {
+                        window.scrollTo(0, lastScrollPos);
+                    }
+                }, 50);
             }
         });
     }
@@ -245,6 +266,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
                 const newWord = {
                     ...wordData,
+                    interval: defaultProgress.interval,
+                    nextDate: defaultProgress.nextDate,
                     progress_global: { ...defaultProgress },
                     progress_groups: { ...defaultProgress }
                 };
@@ -256,11 +279,25 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 const idx = allWordsCache.findIndex(w => String(w.id) === String(id));
                 if (idx !== -1) {
-                    allWordsCache[idx] = { ...allWordsCache[idx], ...wordData };
+                    const existingWord = allWordsCache[idx];
+                    allWordsCache[idx] = {
+                        ...existingWord,
+                        ...wordData,
+                        interval: existingWord.interval || 0,
+                        nextDate: existingWord.nextDate || Date.now()
+                    };
                 }
                 // Update firebase
+                const wordToUpdate = {
+                    ...wordData,
+                    // Preserve existing fields if they exist
+                    ...(typeof allWordsCache !== 'undefined' && idx !== -1 ? {
+                        interval: allWordsCache[idx].interval,
+                        nextDate: allWordsCache[idx].nextDate
+                    } : {})
+                };
                 if (typeof db !== 'undefined' && db.updateWord) {
-                    await db.updateWord(id, wordData);
+                    await db.updateWord(id, wordToUpdate);
                 }
             }
         }
@@ -280,7 +317,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (isDesktop) {
             closeEditModal();
-            if (typeof renderTable === 'function') renderTable();
+            if (typeof applyDictionaryFilters === 'function') applyDictionaryFilters();
         } else {
             btnExitWordEdit.click();
         }
@@ -339,7 +376,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (isDesktop) {
                     closeEditModal();
-                    if (typeof renderTable === 'function') renderTable();
+                    if (typeof applyDictionaryFilters === 'function') applyDictionaryFilters();
                 } else {
                     btnExitWordEdit.click();
                 }

@@ -79,7 +79,16 @@ class WordLabDB {
     }
 
     async updateProgress(wordId, typeKey, newProgress) {
-        await this.db.ref(`users/${this.userId}/words/${wordId}/${typeKey}`).set(newProgress);
+        const updateData = {};
+        updateData[typeKey] = newProgress;
+
+        // If updating global progress, sync to top-level fields
+        if (typeKey === 'progress_global' && newProgress) {
+            updateData['interval'] = newProgress.interval || 0;
+            updateData['nextDate'] = newProgress.nextDate || Date.now();
+        }
+
+        await this.db.ref(`users/${this.userId}/words/${wordId}`).update(updateData);
     }
 
     async saveSettings(settings) {
@@ -270,8 +279,18 @@ class WordLabDB {
             // is_ideal from column J (index 9)
             const rawIdeal = String(row[9] || "").trim().toLowerCase();
             let importedIdeal = null; // null means "don't override from import"
-            if (rawIdeal === 'true') importedIdeal = true;
-            else if (rawIdeal === 'false') importedIdeal = false;
+            if (rawIdeal === 'true' || rawIdeal === '1' || rawIdeal === 'yes') importedIdeal = true;
+            else if (rawIdeal === 'false' || rawIdeal === '0' || rawIdeal === 'no') importedIdeal = false;
+
+            // row[10] = Interval, row[11] = NextDate
+            let importedInterval = row[10] !== undefined ? parseInt(row[10]) : null;
+            if (isNaN(importedInterval)) importedInterval = null;
+
+            let importedNextDate = null;
+            if (row[11]) {
+                const parsed = Date.parse(row[11]);
+                if (!isNaN(parsed)) importedNextDate = parsed;
+            }
 
             // Only auto-assign folder if it's empty AND it's a new word OR existing word without folder
             const existingWord = existingWords[id];
@@ -325,25 +344,52 @@ class WordLabDB {
                 // Update score if changed. Since import implies new state, we trust the file's score.
                 if (existingScore !== excellentStreak) {
                     updates[`${dbPath}/progress_global/excellentStreak`] = excellentStreak;
-                    updates[`${dbPath}/progress_global/isActive`] = excellentStreak >= 10;
-                    updates[`${dbPath}/progress_global/is_ideal`] = importedIdeal !== null ? importedIdeal : (excellentStreak >= 10);
+                    updates[`${dbPath}/progress_global/isActive`] = (excellentStreak >= 10);
+                    // Don't auto-update is_ideal here if it's already in the logic below
                     hasChanges = true;
                 }
+
                 // Update is_ideal if explicitly provided in import and differs
-                if (importedIdeal !== null) {
-                    const existingIdeal = existing.progress_global ? (existing.progress_global.is_ideal || false) : false;
-                    if (existingIdeal !== importedIdeal) {
-                        updates[`${dbPath}/progress_global/is_ideal`] = importedIdeal;
-                        hasChanges = true;
-                    }
+                const existingIdeal = pg.is_ideal || false;
+                if (importedIdeal !== null && existingIdeal !== importedIdeal) {
+                    updates[`${dbPath}/progress_global/is_ideal`] = importedIdeal;
+                    hasChanges = true;
+                } else if (importedIdeal === null && excellentStreak >= 10 && !existingIdeal) {
+                    updates[`${dbPath}/progress_global/is_ideal`] = true;
+                    hasChanges = true;
+                }
+
+                // Sync Interval/NextDate
+                if (importedInterval !== null && pg.interval !== importedInterval) {
+                    updates[`${dbPath}/progress_global/interval`] = importedInterval;
+                    updates[`${dbPath}/interval`] = importedInterval;
+                    hasChanges = true;
+                } else if (existing.interval !== pg.interval) {
+                    updates[`${dbPath}/interval`] = pg.interval || 0;
+                    hasChanges = true;
+                }
+
+                if (importedNextDate !== null && pg.nextDate !== importedNextDate) {
+                    updates[`${dbPath}/progress_global/nextDate`] = importedNextDate;
+                    updates[`${dbPath}/nextDate`] = importedNextDate;
+                    hasChanges = true;
+                } else if (existing.nextDate !== pg.nextDate) {
+                    updates[`${dbPath}/nextDate`] = pg.nextDate || Date.now();
+                    hasChanges = true;
                 }
 
                 if (hasChanges) stats.updated++;
             } else {
-                const defaultProgress = { interval: 0, nextDate: Date.now(), state: "new" };
+                const defaultProgress = {
+                    interval: importedInterval !== null ? importedInterval : 0,
+                    nextDate: importedNextDate !== null ? importedNextDate : Date.now(),
+                    state: "new"
+                };
                 updates[dbPath] = {
                     id: id,
                     ...wordData,
+                    interval: defaultProgress.interval,
+                    nextDate: defaultProgress.nextDate,
                     progress_global: { ...defaultProgress, isActive: isActive, is_ideal: importedIdeal !== null ? importedIdeal : is_ideal, excellentStreak: excellentStreak },
                     progress_groups: defaultProgress
                 };
@@ -567,6 +613,8 @@ firebase.auth().onAuthStateChanged((user) => {
                 allWordsCache.forEach(word => {
                     const p = word.progress_global;
                     if (!p) return;
+
+                    let wordChanges = false;
                     if (p.is_ideal === undefined) {
                         // First-time migration:
                         // 1. Active words (10 pts, passed exam) → is_ideal = true (permanent)
@@ -580,10 +628,19 @@ firebase.auth().onAuthStateChanged((user) => {
                         }
                         migrationUpdates[`users/${db.userId}/words/${word.id}/progress_global/is_ideal`] = wasIdeal;
                         p.is_ideal = wasIdeal;
-                    } else if (p.is_ideal === true && !p.isActive && p.nextDate && p.nextDate <= now) {
-                        // Time-based decay: word is no longer ideal if it's overdue and not Active
-                        migrationUpdates[`users/${db.userId}/words/${word.id}/progress_global/is_ideal`] = false;
-                        p.is_ideal = false;
+                        wordChanges = true;
+                    }
+
+                    // Sync top-level interval and nextDate
+                    if (word.interval === undefined || word.interval !== (p.interval || 0)) {
+                        migrationUpdates[`users/${db.userId}/words/${word.id}/interval`] = p.interval || 0;
+                        word.interval = p.interval || 0;
+                        wordChanges = true;
+                    }
+                    if (word.nextDate === undefined || word.nextDate !== (p.nextDate || 0)) {
+                        migrationUpdates[`users/${db.userId}/words/${word.id}/nextDate`] = p.nextDate || 0;
+                        word.nextDate = p.nextDate || 0;
+                        wordChanges = true;
                     }
                 });
                 if (Object.keys(migrationUpdates).length > 0) {
@@ -831,6 +888,8 @@ function renderTable(arr) {
 
     arr.forEach(w => {
         const tr = document.createElement('tr');
+        tr.id = `word-row-${w.id}`;
+        tr.setAttribute('data-id', w.id);
 
         // Check for duplicate
         if (duplicateIds.has(String(w.id))) {
@@ -1407,7 +1466,9 @@ function exportWordsToExcel() {
             "Пример 1": w.ex1,
             "Пример 2": w.ex2,
             "Папка": w.folder || "",
-            "Идеально": (pg && pg.is_ideal) ? "true" : "false"
+            "Идеально": (pg && pg.is_ideal) ? "true" : "false",
+            "Интервал": pg ? (pg.interval || 0) : 0,
+            "След. повтор": pg ? new Date(pg.nextDate).toISOString().split('T')[0] : ""
         };
     });
 
