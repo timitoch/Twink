@@ -588,24 +588,32 @@ firebase.auth().onAuthStateChanged((user) => {
                 // --- MIGRATION + TIME DECAY: populate/update is_ideal ---
                 const now = Date.now();
                 const migrationUpdates = {};
+
                 allWordsCache.forEach(word => {
                     const p = word.progress_global;
                     if (!p) return;
 
                     let wordChanges = false;
+                    const isOverdue = p.nextDate && p.nextDate <= now;
+                    let wasIdealNow = p.is_ideal;
+
                     if (p.is_ideal === undefined) {
                         // First-time migration:
-                        // 1. Active words (10 pts, passed exam) → is_ideal = true (permanent)
-                        // 2. Last action was «Отлично» (6) or «Помню» (5) AND nextDate not expired → true
-                        // 3. Everything else → false
-                        let wasIdeal = false;
                         if (p.isActive) {
-                            wasIdeal = true;
-                        } else if ((p.lastRating === 5 || p.lastRating === 6) && p.nextDate && p.nextDate > now) {
-                            wasIdeal = true;
+                            wasIdealNow = true;
+                        } else if ((p.lastRating === 5 || p.lastRating === 6) && !isOverdue) {
+                            wasIdealNow = true;
+                        } else {
+                            wasIdealNow = false;
                         }
-                        migrationUpdates[`users/${db.userId}/words/${word.id}/progress_global/is_ideal`] = wasIdeal;
-                        p.is_ideal = wasIdeal;
+                    } else if (p.is_ideal && !p.isActive && isOverdue) {
+                        // TIME DECAY: If it was ideal but now it's overdue, it's NO LONGER ideal
+                        wasIdealNow = false;
+                    }
+
+                    if (p.is_ideal !== wasIdealNow) {
+                        migrationUpdates[`users/${db.userId}/words/${word.id}/progress_global/is_ideal`] = wasIdealNow;
+                        p.is_ideal = wasIdealNow;
                         wordChanges = true;
                     }
 
