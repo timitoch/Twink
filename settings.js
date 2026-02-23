@@ -30,7 +30,7 @@ class SettingsModule {
         document.documentElement.setAttribute('data-theme', savedTheme);
         this.updateThemeButtons(savedTheme);
 
-        document.querySelectorAll('.theme-btn').forEach(btn => {
+        document.querySelectorAll('.theme-btn[data-set-theme]').forEach(btn => {
             btn.onclick = () => {
                 const theme = btn.getAttribute('data-set-theme');
                 document.documentElement.setAttribute('data-theme', theme);
@@ -41,7 +41,7 @@ class SettingsModule {
     }
 
     updateThemeButtons(theme) {
-        document.querySelectorAll('.theme-btn').forEach(btn => {
+        document.querySelectorAll('.theme-btn[data-set-theme]').forEach(btn => {
             if (btn.getAttribute('data-set-theme') === theme) {
                 btn.classList.add('active');
             } else {

@@ -1855,6 +1855,43 @@
                                     <p class="settings-desc">Управление вашей базой слов и достигнутыми результатами.
                                     </p>
                                     <div class="action-list">
+                                        <div class="settings-group"
+                                            style="border-top: 1px solid var(--border); padding-top: 1.5rem; margin-top: 1.5rem;">
+                                            <h3>Режим обучения</h3>
+                                            <p class="settings-desc">Выберите интенсивность повторений. При смене режима
+                                                все интервалы будут пересчитаны.</p>
+
+                                            <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
+                                                <button type="button" id="main-mode-btn-long" class="mode-btn active"
+                                                    onclick="window.StudyModule.selectMode('long')">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                                                        viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                        stroke-width="2.5" stroke-linecap="round"
+                                                        stroke-linejoin="round">
+                                                        <circle cx="12" cy="12" r="10"></circle>
+                                                        <polyline points="12 6 12 12 16 14"></polyline>
+                                                    </svg>
+                                                    <span>Долгое
+                                                        изучение</span>
+                                                </button>
+                                                <button type="button" id="main-mode-btn-intensive" class="mode-btn"
+                                                    onclick="window.StudyModule.selectMode('intensive')">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                                                        viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                        stroke-width="2.5" stroke-linecap="round"
+                                                        stroke-linejoin="round">
+                                                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                                                    </svg>
+                                                    <span>Интенсивное</span>
+                                                </button>
+                                            </div>
+
+                                            <div id="mode-details"
+                                                style="background: rgba(255,255,255,0.03); border-radius: 20px; padding: 1.25rem; border: 1px solid var(--border);">
+                                                <!-- Table will be injected here by syncTogglesUI -->
+                                            </div>
+                                        </div>
+
                                         <button class="btn-danger-outline" id="btn-reset-session-progress">Сбросить весь
                                             прогресс</button>
                                         <button class="btn-danger-outline" id="btn-clear-dictionary">Очистить словарь

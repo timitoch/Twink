@@ -456,16 +456,22 @@ class PrufungModule {
         const currentProgress = word.progress_global || {};
         let score = currentProgress.excellentStreak || 0;
 
+        const mode = this.study.settings.studyMode || 'long';
+        const intervals = this.study.intervalModes[mode];
+
         if (isCorrect) {
             // +1 point, becomes active (10)
             score = 10;
+            const nextIntervalMs = intervals[6] || (21 * 86400000);
+            const nextIntervalDays = nextIntervalMs / 86400000;
+
             word.progress_global = {
                 ...currentProgress,
                 excellentStreak: 10,
                 isActive: true,
                 is_ideal: true,
-                interval: 21,
-                nextDate: Date.now() + (21 * 86400000),
+                interval: nextIntervalDays,
+                nextDate: Date.now() + nextIntervalMs,
                 lastRating: 6,
                 lastReviewed: Date.now()
             };
@@ -478,14 +484,19 @@ class PrufungModule {
             }
             // Ensure float precision
             score = parseFloat(score.toFixed(1));
+
+            const failRating = score >= 9 ? 4 : 2;
+            const nextIntervalMs = intervals[failRating] || 86400000;
+            const nextIntervalDays = nextIntervalMs / 86400000;
+
             word.progress_global = {
                 ...currentProgress,
                 excellentStreak: score,
                 isActive: false,
                 is_ideal: false,
-                interval: score >= 9 ? 7 : 1,
-                nextDate: Date.now() + ((score >= 9 ? 7 : 1) * 86400000),
-                lastRating: 2,
+                interval: nextIntervalDays,
+                nextDate: Date.now() + nextIntervalMs,
+                lastRating: failRating,
                 lastReviewed: Date.now()
             };
         }
@@ -510,13 +521,18 @@ class PrufungModule {
                     const incorrectState = JSON.parse(JSON.stringify(word.progress_global));
 
                     // 2. Set to Correct (Active)
+                    const mode = this.study.settings.studyMode || 'long';
+                    const intervals = this.study.intervalModes[mode];
+                    const nextIntervalMs = intervals[6] || (21 * 86400000);
+                    const nextIntervalDays = nextIntervalMs / 86400000;
+
                     word.progress_global = {
                         ...(word.progress_global || {}),
                         excellentStreak: 10,
                         isActive: true,
                         is_ideal: true,
-                        interval: 21,
-                        nextDate: Date.now() + (21 * 86400000),
+                        interval: nextIntervalDays,
+                        nextDate: Date.now() + nextIntervalMs,
                         lastRating: 6,
                         lastReviewed: Date.now()
                     };

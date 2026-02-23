@@ -29,7 +29,44 @@ class StudyModule {
             masterAudio: true,
             includeActive: false,
             genderColors: false,
-            genderCardBackground: false
+            genderCardBackground: false,
+            studyMode: 'long'
+        };
+        this.intervalModes = {
+            long: {
+                1: 1 * 3600 * 1000,          // 1 hour
+                2: 1 * 24 * 3600 * 1000,     // 1 day
+                3: 4 * 24 * 3600 * 1000,     // 4 days
+                4: 7 * 24 * 3600 * 1000,     // 7 days
+                5: 12 * 24 * 3600 * 1000,    // 12 days
+                6: 21 * 24 * 3600 * 1000     // 21 days
+            },
+            intensive: {
+                1: 1 * 3600 * 1000,          // 1 hour
+                2: 1 * 24 * 3600 * 1000,     // 1 day
+                3: 2 * 24 * 3600 * 1000,     // 2 days
+                4: 4 * 24 * 3600 * 1000,     // 4 days
+                5: 9 * 24 * 3600 * 1000,     // 9 days
+                6: 17 * 24 * 3600 * 1000     // 17 days
+            }
+        };
+        this.intervalLabels = {
+            long: {
+                1: "1 час",
+                2: "1 день",
+                3: "4 дня",
+                4: "7 дней",
+                5: "12 дней",
+                6: "21 день"
+            },
+            intensive: {
+                1: "1 час",
+                2: "1 день",
+                3: "2 дня",
+                4: "4 дня",
+                5: "9 дней",
+                6: "17 дней"
+            }
         };
         this.tempSettings = null; // Temporary state for settings modal
         this.folderSortOrder = localStorage.getItem('folderSortOrder') || 'newest';
@@ -184,6 +221,8 @@ class StudyModule {
                 }
             }
         });
+
+        this.syncTogglesUI();
     }
 
     startTracking() {
@@ -376,6 +415,14 @@ class StudyModule {
             btnClose.onclick = () => this.closeSettings();
         }
 
+        // Handle Main Mode Buttons (index and settings)
+        document.querySelectorAll('#main-mode-btn-long').forEach(btn => {
+            btn.onclick = () => this.selectMode('long');
+        });
+        document.querySelectorAll('#main-mode-btn-intensive').forEach(btn => {
+            btn.onclick = () => this.selectMode('intensive');
+        });
+
         this.updateElementsVisibility();
     }
 
@@ -400,8 +447,14 @@ class StudyModule {
                 this.settings.audioEx2 !== this.tempSettings.audioEx2 ||
                 this.settings.audioTranslation !== this.tempSettings.audioTranslation;
 
+            const modeChanged = this.settings.studyMode !== this.tempSettings.studyMode;
+
             this.settings = JSON.parse(JSON.stringify(this.tempSettings));
             this.db.saveSettings(this.settings);
+
+            if (modeChanged) {
+                this.migrateStudyMode(this.settings.studyMode);
+            }
 
             if (!this.settings.audio) this.stopAudio();
 
@@ -420,6 +473,99 @@ class StudyModule {
         }
         const menuSettings = document.getElementById('session-settings-menu');
         if (menuSettings) menuSettings.classList.add('hidden');
+    }
+
+    async migrateStudyMode(newMode) {
+        console.log(`Migrating to study mode: ${newMode}`);
+        const intervals = this.intervalModes[newMode];
+        const updates = {};
+        const now = Date.now();
+
+        const oldMode = newMode === 'intensive' ? 'long' : 'intensive';
+        const oldIntervals = this.intervalModes[oldMode];
+
+        this.allWordsCache.forEach(word => {
+            const pg = word.progress_global;
+            if (!pg) return;
+
+            // Strictly skip only words that have NEVER been trained AND have NO interval/ideal flags
+            const isFresh = !pg.lastRating && (pg.interval === undefined || pg.interval === 0) && !pg.is_ideal && !pg.isActive;
+            if (isFresh) return;
+
+            let rating = pg.lastRating;
+
+            // If historical rating is missing (e.g. imported words), guess it from current interval
+            if (!rating || rating < 1 || rating > 6) {
+                let minDiff = Infinity;
+                rating = 1; // default fallback
+                for (let r = 1; r <= 6; r++) {
+                    const days = (oldIntervals[r] || 0) / (24 * 3600 * 1000);
+                    const diff = Math.abs(days - (pg.interval || 0));
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        rating = r;
+                    }
+                }
+                const dbPath = `users/${this.userId}/words/${word.id}`;
+                updates[`${dbPath}/progress_global/lastRating`] = rating;
+                pg.lastRating = rating; // Save it to cache to avoid guessing next time
+            }
+
+            // Safely compute last Reviewed date
+            let lastReviewedRaw = pg.lastReviewed;
+            if (!lastReviewedRaw || isNaN(lastReviewedRaw)) {
+                lastReviewedRaw = (pg.nextDate || now) - ((pg.interval || 0) * 86400000);
+            }
+            const lastReviewed = Math.min(now, Math.floor(lastReviewedRaw));
+
+            const newIntervalMs = intervals[rating] || 0;
+            const newIntervalDays = parseFloat((newIntervalMs / (24 * 3600 * 1000)).toFixed(4));
+            const newNextDate = lastReviewed + newIntervalMs;
+
+            // Dynamically recalculate is_ideal based on new interval
+            let newIsIdeal = pg.is_ideal;
+            if (pg.isActive) {
+                // Passed exam words stay ideal forever
+                newIsIdeal = true;
+            } else if (newNextDate <= now) {
+                // If the new date has passed, it ALWAYS loses ideal status (unless isActive)
+                newIsIdeal = false;
+            } else if (rating === 5 || rating === 6 || pg.is_ideal) {
+                // If it's in the future AND it was a good rating OR already ideal, it becomes/stays ideal
+                newIsIdeal = true;
+            } else {
+                newIsIdeal = false;
+            }
+
+            // Update word object in cache
+            pg.interval = newIntervalDays;
+            pg.nextDate = newNextDate;
+            pg.is_ideal = newIsIdeal;
+            word.interval = newIntervalDays;
+            word.nextDate = newNextDate;
+
+            // Prepare DB updates
+            const dbPath = `users/${this.userId}/words/${word.id}`;
+            updates[`${dbPath}/progress_global/interval`] = newIntervalDays;
+            updates[`${dbPath}/progress_global/nextDate`] = newNextDate;
+            updates[`${dbPath}/progress_global/is_ideal`] = newIsIdeal;
+            updates[`${dbPath}/interval`] = newIntervalDays;
+            updates[`${dbPath}/nextDate`] = newNextDate;
+        });
+
+        const numUpdates = Object.keys(updates).length;
+        if (numUpdates > 0) {
+            try {
+                // Break into chunks if too large (although 4000 is fine, 10000+ might stutter)
+                await this.db.db.ref().update(updates);
+                console.log(`Successfully migrated words to ${newMode} mode.`);
+                // Refresh dictionary and views
+                if (window.applyDictionaryFilters) window.applyDictionaryFilters();
+                this.renderStudyDashboard();
+            } catch (e) {
+                console.error("Migration failed", e);
+            }
+        }
     }
 
     closeSettings() {
@@ -441,12 +587,99 @@ class StudyModule {
         this.syncTogglesUI();
     }
 
+    async selectMode(mode) {
+        const s = this.tempSettings || this.settings;
+        if (s.studyMode === mode) return; // Already active
+
+        const msg = mode === 'intensive'
+            ? "Вы уверены, что хотите переключиться на ИНТЕНСИВНЫЙ режим? Все интервалы будут сокращены для более частого повторения."
+            : "Переключиться на стандартный режим? Все интервалы будут пересчитаны в сторону увеличения.";
+
+        if (!confirm(msg)) return;
+
+        if (this.tempSettings) {
+            this.tempSettings.studyMode = mode;
+        } else {
+            this.settings.studyMode = mode;
+            this.db.saveSettings(this.settings);
+            await this.migrateStudyMode(mode);
+        }
+        this.syncTogglesUI();
+    }
+
     syncTogglesUI() {
         const s = this.tempSettings || this.settings;
 
         const updateBtn = (btn, key) => {
             if (btn) btn.classList.toggle('active', s[key]);
         };
+
+        const syncButtons = (selector, mode) => {
+            document.querySelectorAll(selector).forEach(btn => {
+                btn.classList.toggle('active', s.studyMode === mode);
+            });
+        };
+
+        syncButtons('#mode-btn-long', 'long');
+        syncButtons('#mode-btn-intensive', 'intensive');
+        syncButtons('#main-mode-btn-long', 'long');
+        syncButtons('#main-mode-btn-intensive', 'intensive');
+
+        // Update mode details in ALL mode-details containers
+        document.querySelectorAll('#mode-details').forEach(modeDetails => {
+            const isIntensive = s.studyMode === 'intensive';
+
+            const ratings = [
+                { id: 1, label: 'Не помню' },
+                { id: 2, label: 'С трудом' },
+                { id: 3, label: 'Частично' },
+                { id: 4, label: 'Почти' },
+                { id: 5, label: 'Помню' },
+                { id: 6, label: 'Отлично' }
+            ];
+
+            let tableRows = ratings.map(r => {
+                const longVal = this.intervalLabels.long[r.id];
+                const intVal = this.intervalLabels.intensive[r.id];
+                return `
+                    <tr>
+                        <td class="rating-label">${r.label}</td>
+                        <td class="val-long ${!isIntensive ? 'active-mode-val' : ''}" style="text-align: center; ${!isIntensive ? 'color: var(--text-main); font-weight: 600;' : 'opacity: 0.5;'}">${longVal}</td>
+                        <td class="val-intensive ${isIntensive ? 'active-mode-val' : ''}" style="text-align: center; ${isIntensive ? 'color: var(--primary); font-weight: 600;' : 'opacity: 0.5;'}">${intVal}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            modeDetails.innerHTML = `
+                <table class="mode-comparison">
+                    <thead>
+                        <tr>
+                            <th style="text-align: left;">Оценка</th>
+                            <th style="text-align: center;">Долгое</th>
+                            <th style="text-align: center;">Интенсив</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${tableRows}
+                    </tbody>
+                </table>
+                <p style="font-size: 0.75rem; color: var(--text-muted); font-style: italic; line-height: 1.4; margin-top: 1rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 0.75rem;">
+                    ${isIntensive
+                    ? '🔥 <b>Интенсив:</b> Идеально для быстрого погружения. Интервалы короче, повторения чаще.'
+                    : '🌱 <b>Стандарт:</b> Сбалансированный путь для долгосрочной памяти. Оптимально для спокойного темпа.'
+                }
+                </p>
+            `;
+        });
+
+        // Update rating buttons labels
+        const labels = this.intervalLabels[s.studyMode || 'long'];
+        for (let i = 1; i <= 6; i++) {
+            const btn = document.querySelector(`.rate-btn-${i} span`);
+            if (btn) btn.textContent = labels[i];
+        }
+
+        updateBtn(this.btnToggleAudio, 'audio');
 
         updateBtn(this.btnMasterAudio, 'audio');
         updateBtn(this.btnToggleAudioWord, 'audioWord');
@@ -1848,34 +2081,19 @@ class StudyModule {
         const word = this.currentSession.currentWord;
         const key = this.currentSession.key;
 
-        let nextIntervalDays = 1;
-        let scoreChange = 0;
+        const mode = this.settings.studyMode || 'long';
+        const intervals = this.intervalModes[mode];
+        const nextIntervalMs = intervals[rating] || 0;
+        const nextIntervalDays = nextIntervalMs / (24 * 3600 * 1000);
 
+        let scoreChange = 0;
         switch (rating) {
-            case 1: // Не помню
-                nextIntervalDays = 0;
-                scoreChange = -999; // Signal for reset to 0
-                break;
-            case 2: // С трудом
-                nextIntervalDays = 1;
-                scoreChange = -3;
-                break;
-            case 3: // Частично
-                nextIntervalDays = 4;
-                scoreChange = -1.5;
-                break;
-            case 4: // Почти
-                nextIntervalDays = 7;
-                scoreChange = 0;
-                break;
-            case 5: // Помню
-                nextIntervalDays = 12;
-                scoreChange = 1.5;
-                break;
-            case 6: // Отлично
-                nextIntervalDays = 21;
-                scoreChange = 3;
-                break;
+            case 1: scoreChange = -999; break;
+            case 2: scoreChange = -3; break;
+            case 3: scoreChange = -1.5; break;
+            case 4: scoreChange = 0; break;
+            case 5: scoreChange = 1.5; break;
+            case 6: scoreChange = 3; break;
         }
 
         const currentProgress = word[key] || {};
@@ -1888,15 +2106,13 @@ class StudyModule {
             activityScore = Math.max(0, activityScore + scoreChange);
         }
 
-        // Round to 1 decimal to avoid float precision issues (e.g. 4.50000001)
+        // Round to 1 decimal to avoid float precision issues
         activityScore = parseFloat(activityScore.toFixed(1));
 
         // CAP at 9 in regular sessions - can only reach 10 via exam
         if (activityScore > 9) activityScore = 9;
 
-        // isActive remains unchanged in regular sessions (only exam can set it to true)
-
-        const nextTimestamp = rating === 1 ? Date.now() + 3600000 : Date.now() + (nextIntervalDays * 86400000);
+        const nextTimestamp = Date.now() + nextIntervalMs;
         // is_ideal logic:
         // - If word passed exam (isActive) → true forever
         // - Ratings 5 (Помню) and 6 (Отлично) → true

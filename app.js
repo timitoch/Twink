@@ -340,7 +340,8 @@ class WordLabDB {
                 if (norm(existing.ex2) !== wordData.ex2) { updates[`${dbPath}/ex2`] = wordData.ex2; hasChanges = true; }
                 if (norm(existing.folder) !== wordData.folder) { updates[`${dbPath}/folder`] = wordData.folder; hasChanges = true; }
 
-                const existingScore = existing.progress_global ? (existing.progress_global.excellentStreak || 0) : 0;
+                const pg = existing.progress_global || {};
+                const existingScore = pg.excellentStreak || 0;
                 // Update score if changed. Since import implies new state, we trust the file's score.
                 if (existingScore !== excellentStreak) {
                     updates[`${dbPath}/progress_global/excellentStreak`] = excellentStreak;
@@ -349,48 +350,25 @@ class WordLabDB {
                     hasChanges = true;
                 }
 
-                // Update is_ideal if explicitly provided in import and differs
-                const existingIdeal = pg.is_ideal || false;
-                if (importedIdeal !== null && existingIdeal !== importedIdeal) {
-                    updates[`${dbPath}/progress_global/is_ideal`] = importedIdeal;
-                    hasChanges = true;
-                } else if (importedIdeal === null && excellentStreak >= 10 && !existingIdeal) {
-                    updates[`${dbPath}/progress_global/is_ideal`] = true;
-                    hasChanges = true;
-                }
-
-                // Sync Interval/NextDate
-                if (importedInterval !== null && pg.interval !== importedInterval) {
-                    updates[`${dbPath}/progress_global/interval`] = importedInterval;
-                    updates[`${dbPath}/interval`] = importedInterval;
-                    hasChanges = true;
-                } else if (existing.interval !== pg.interval) {
-                    updates[`${dbPath}/interval`] = pg.interval || 0;
-                    hasChanges = true;
-                }
-
-                if (importedNextDate !== null && pg.nextDate !== importedNextDate) {
-                    updates[`${dbPath}/progress_global/nextDate`] = importedNextDate;
-                    updates[`${dbPath}/nextDate`] = importedNextDate;
-                    hasChanges = true;
-                } else if (existing.nextDate !== pg.nextDate) {
-                    updates[`${dbPath}/nextDate`] = pg.nextDate || Date.now();
-                    hasChanges = true;
-                }
+                // Interval, NextDate, is_ideal are IGNORED for existing words during import
+                // We keep the existing progress data as requested.
 
                 if (hasChanges) stats.updated++;
             } else {
                 const defaultProgress = {
-                    interval: importedInterval !== null ? importedInterval : 0,
-                    nextDate: importedNextDate !== null ? importedNextDate : Date.now(),
-                    state: "new"
+                    interval: 0,
+                    nextDate: Date.now(),
+                    state: "new",
+                    isActive: false,
+                    is_ideal: false,
+                    excellentStreak: 0
                 };
                 updates[dbPath] = {
                     id: id,
                     ...wordData,
                     interval: defaultProgress.interval,
                     nextDate: defaultProgress.nextDate,
-                    progress_global: { ...defaultProgress, isActive: isActive, is_ideal: importedIdeal !== null ? importedIdeal : is_ideal, excellentStreak: excellentStreak },
+                    progress_global: defaultProgress,
                     progress_groups: defaultProgress
                 };
                 stats.created++;
@@ -907,13 +885,21 @@ function renderTable(arr) {
 
         // Interval Display
         // If overdue, show '0 дн.'
-        // Else use existing logic
         let intervalDisplay;
         if (isOverdue) {
             intervalDisplay = '0 дн.';
         } else {
-            const intervalValue = w.progress_global?.interval || 0;
-            intervalDisplay = intervalValue === 0 ? '1 час' : `${intervalValue} дн.`;
+            const val = w.progress_global?.interval || 0;
+            if (val === 0) {
+                intervalDisplay = '-';
+            } else if (val < 1) {
+                const hours = Math.round(val * 24);
+                intervalDisplay = `${hours} час.`;
+            } else {
+                // Round to 1 decimal if not integer
+                const displayVal = Number.isInteger(val) ? val : parseFloat(val.toFixed(1));
+                intervalDisplay = `${displayVal} дн.`;
+            }
         }
 
         // Helper for style
@@ -1465,10 +1451,7 @@ function exportWordsToExcel() {
             "Дополнительно": w.info2,
             "Пример 1": w.ex1,
             "Пример 2": w.ex2,
-            "Папка": w.folder || "",
-            "Идеально": (pg && pg.is_ideal) ? "true" : "false",
-            "Интервал": pg ? (pg.interval || 0) : 0,
-            "След. повтор": pg ? new Date(pg.nextDate).toISOString().split('T')[0] : ""
+            "Папка": w.folder || ""
         };
     });
 
