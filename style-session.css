@@ -859,3 +859,29 @@
         backdrop-filter: blur(24px);
     }
 }
+
+/* Visibility Utilities */
+.mobile-only { display: none !important; }
+.desktop-only { display: block !important; }
+
+@media (max-width: 768px) {
+    .mobile-only { display: block !important; }
+    .mobile-only-flex { display: flex !important; }
+    .desktop-only { display: none !important; }
+    
+    .session-settings-header {
+        padding: 0.6rem 1rem !important;
+        border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+    }
+
+    /* Fixed header checkmark button style */
+    #btn-save-settings-mobile {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        background: transparent;
+        border-radius: 8px;
+        width: 32px;
+        height: 32px;
+    }
+}

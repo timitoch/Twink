@@ -30,7 +30,9 @@ class StudyModule {
             includeActive: false,
             genderColors: false,
             genderCardBackground: false,
-            studyMode: 'long'
+            studyMode: 'long',
+            selectAudioDe: 'elevenlabs_Qy4b2JlSGxY7I9M9Bqxb',
+            selectAudioRu: 'elevenlabs_3EuKHIEZbSzrHGNmdYsx'
         };
         this.intervalModes = {
             long: {
@@ -89,6 +91,10 @@ class StudyModule {
         this.btnBackToStudy = document.getElementById('btn-back-to-study');
         this.btnSaveGroup = document.getElementById('btn-save-group');
         this.btnDeleteFolder = document.getElementById('btn-delete-folder');
+        this.btnInlineDeleteFolder = document.getElementById('btn-inline-delete-folder');
+        this.inlineDeleteFolderContainer = document.getElementById('inline-delete-folder-container');
+        this.btnFolderOptionsMobile = document.getElementById('btn-folder-options-mobile');
+        this.folderOptionsPopup = document.getElementById('folder-options-popup');
 
         // Session UI
         this.btnExitSession = document.getElementById('btn-exit-session');
@@ -340,23 +346,63 @@ class StudyModule {
         this.sectionCardElements = document.getElementById('section-card-elements');
         this.sectionInterfaceElements = document.getElementById('section-interface-elements');
 
+        this.btnToggleAudioMaster = document.getElementById('btn-toggle-audio-master');
         this.btnMasterAudio = document.getElementById('btn-master-toggle-audio');
         this.sectionAudioElements = document.getElementById('section-audio-elements');
-        this.btnToggleAudioWord = document.getElementById('btn-toggle-audio-word');
-        this.btnToggleAudioInfo1 = document.getElementById('btn-toggle-audio-info1');
-        this.btnToggleAudioInfo2 = document.getElementById('btn-toggle-audio-info2');
-        this.btnToggleAudioEx1 = document.getElementById('btn-toggle-audio-ex1');
-        this.btnToggleAudioEx2 = document.getElementById('btn-toggle-audio-ex2');
-        this.btnToggleAudioTranslation = document.getElementById('btn-toggle-audio-translation');
+        this.VOICES_DB = {
+            de: {
+                elevenlabs: [{ id: 'Qy4b2JlSGxY7I9M9Bqxb', label: 'Deutsch Female' }, { id: 'MJ0RnG71ty4LH3dvNfSd', label: 'Deutsch Male' }],
+                responsivevoice: [{ id: 'Deutsch Female', label: 'Deutsch Female' }, { id: 'Deutsch Male', label: 'Deutsch Male' }],
+                browser: [{ id: 'de_female', label: 'Deutsch Female' }, { id: 'de_male', label: 'Deutsch Male' }]
+            },
+            ru: {
+                elevenlabs: [{ id: '3EuKHIEZbSzrHGNmdYsx', label: 'Russ Male' }, { id: '7G0NvIkWRnU0Dqjgz13p', label: 'Russ Female' }],
+                responsivevoice: [{ id: 'Russian Female', label: 'Russian Female' }, { id: 'Ukrainian Female', label: 'Ukrainian Female' }],
+                browser: [{ id: 'ru_female', label: 'Russ Female' }, { id: 'ru_male', label: 'Russ Male' }]
+            }
+        };
 
+        this.providerDe = document.getElementById('audio-provider-de');
+        this.voiceDe = document.getElementById('audio-voice-de');
+        this.providerRu = document.getElementById('audio-provider-ru');
+        this.voiceRu = document.getElementById('audio-voice-ru');
+
+        const setupVoiceSelects = (lang, providerElem, voiceElem) => {
+            if (!providerElem || !voiceElem) return;
+            providerElem.onchange = (e) => {
+                const provider = e.target.value;
+                voiceElem.innerHTML = '';
+                this.VOICES_DB[lang][provider].forEach(v => {
+                    const opt = document.createElement('option');
+                    opt.value = `${provider}_${v.id}`;
+                    opt.textContent = v.label;
+                    voiceElem.appendChild(opt);
+                });
+                const newVal = voiceElem.options[0].value;
+                const prop = lang === 'de' ? 'selectAudioDe' : 'selectAudioRu';
+                if (this.tempSettings) this.tempSettings[prop] = newVal;
+                else this.settings[prop] = newVal;
+            };
+
+            voiceElem.onchange = (e) => {
+                const prop = lang === 'de' ? 'selectAudioDe' : 'selectAudioRu';
+                if (this.tempSettings) this.tempSettings[prop] = e.target.value;
+                else this.settings[prop] = e.target.value;
+            };
+        };
+
+        setupVoiceSelects('de', this.providerDe, this.voiceDe);
+        setupVoiceSelects('ru', this.providerRu, this.voiceRu);
+        if (this.btnToggleAudioMaster) {
+            this.btnToggleAudioMaster.onclick = () => this.toggleSetting('audio');
+        }
         if (this.btnMasterAudio) {
-            this.btnMasterAudio.onclick = () => this.toggleSetting('audio');
+            this.btnMasterAudio.onclick = () => this.toggleSetting('masterAudio');
         }
 
         if (this.btnQuickToggleAudio) {
             this.btnQuickToggleAudio.onclick = () => {
                 this.settings.audio = !this.settings.audio;
-                this.settings.masterAudio = this.settings.audio;
                 if (!this.settings.audio) this.stopAudio();
                 this.updateElementsVisibility();
                 this.db.saveSettings(this.settings);
@@ -414,8 +460,8 @@ class StudyModule {
         if (btnClose) {
             btnClose.onclick = () => this.closeSettings();
         }
-
-        // Handle Main Mode Buttons (index and settings)
+        
+        // Removed manual btnSync logic        // Handle Main Mode Buttons (index and settings)
         document.querySelectorAll('#main-mode-btn-long').forEach(btn => {
             btn.onclick = () => this.selectMode('long');
         });
@@ -426,12 +472,43 @@ class StudyModule {
         this.updateElementsVisibility();
     }
 
+    async fetchElevenLabsQuota() {
+        const errSpan = document.getElementById('elevenlabs-sync-error');
+        if (errSpan) errSpan.style.display = 'none';
+        
+        try {
+            const apiKey = 'sk_094da1ef2da76e2aba9d23f846ac7e49f1bca1ec03f4819f';
+            const res = await fetch('https://api.elevenlabs.io/v1/user/subscription', {
+                headers: { 'xi-api-key': apiKey }
+            });
+            
+            if (res.ok) {
+                const data = await res.json();
+                if (data && data.character_count !== undefined) {
+                    localStorage.setItem('elevenlabs_chars', data.character_count.toString());
+                    if (data.character_count < 10000) {
+                        localStorage.removeItem('elevenlabs_blocked');
+                    } else {
+                        localStorage.setItem('elevenlabs_blocked', 'true');
+                    }
+                    this.syncTogglesUI();
+                }
+            } else {
+                if (errSpan) errSpan.style.display = 'inline';
+            }
+        } catch (err) {
+            console.error("Sync Error:", err);
+            if (errSpan) errSpan.style.display = 'inline';
+        }
+    }
+
     openSettings() {
         const menuSettings = document.getElementById('session-settings-menu');
         if (menuSettings) {
             // Copy actual settings to temp
             this.tempSettings = JSON.parse(JSON.stringify(this.settings));
             this.syncTogglesUI();
+            this.fetchElevenLabsQuota();
             menuSettings.classList.remove('hidden');
         }
     }
@@ -445,7 +522,9 @@ class StudyModule {
                 this.settings.audioInfo2 !== this.tempSettings.audioInfo2 ||
                 this.settings.audioEx1 !== this.tempSettings.audioEx1 ||
                 this.settings.audioEx2 !== this.tempSettings.audioEx2 ||
-                this.settings.audioTranslation !== this.tempSettings.audioTranslation;
+                this.settings.audioTranslation !== this.tempSettings.audioTranslation ||
+                this.settings.selectAudioDe !== this.tempSettings.selectAudioDe ||
+                this.settings.selectAudioRu !== this.tempSettings.selectAudioRu;
 
             const modeChanged = this.settings.studyMode !== this.tempSettings.studyMode;
 
@@ -576,14 +655,7 @@ class StudyModule {
 
     toggleSetting(key) {
         if (!this.tempSettings) return;
-
         this.tempSettings[key] = !this.tempSettings[key];
-
-        // Special logic for master audio
-        if (key === 'audio') {
-            this.tempSettings.masterAudio = this.tempSettings.audio;
-        }
-
         this.syncTogglesUI();
     }
 
@@ -680,14 +752,60 @@ class StudyModule {
         }
 
         updateBtn(this.btnToggleAudio, 'audio');
+        updateBtn(this.btnToggleAudioMaster, 'audio');
 
-        updateBtn(this.btnMasterAudio, 'audio');
+        if (this.btnMasterAudio) {
+            this.btnMasterAudio.classList.toggle('active', s.masterAudio);
+        }
         updateBtn(this.btnToggleAudioWord, 'audioWord');
         updateBtn(this.btnToggleAudioInfo1, 'audioInfo1');
         updateBtn(this.btnToggleAudioInfo2, 'audioInfo2');
         updateBtn(this.btnToggleAudioEx1, 'audioEx1');
         updateBtn(this.btnToggleAudioEx2, 'audioEx2');
         updateBtn(this.btnToggleAudioTranslation, 'audioTranslation');
+
+        const syncVoiceSelects = (lang, providerElem, voiceElem) => {
+            if (!providerElem || !voiceElem) return;
+            const prop = lang === 'de' ? 'selectAudioDe' : 'selectAudioRu';
+            const val = s[prop] || (lang === 'de' ? 'elevenlabs_Qy4b2JlSGxY7I9M9Bqxb' : 'elevenlabs_3EuKHIEZbSzrHGNmdYsx');
+            const splitIndex = val.indexOf('_');
+            const providerStr = splitIndex > 0 ? val.substring(0, splitIndex) : 'elevenlabs';
+
+            providerElem.value = providerStr;
+            
+            voiceElem.innerHTML = '';
+            if (this.VOICES_DB && this.VOICES_DB[lang] && this.VOICES_DB[lang][providerStr]) {
+                this.VOICES_DB[lang][providerStr].forEach(v => {
+                    const opt = document.createElement('option');
+                    opt.value = `${providerStr}_${v.id}`;
+                    opt.textContent = v.label;
+                    voiceElem.appendChild(opt);
+                });
+            }
+            voiceElem.value = val;
+
+            const isElevenBlocked = localStorage.getItem('elevenlabs_blocked') === 'true';
+            const elOption = providerElem.querySelector('option[value="elevenlabs"]');
+            if (elOption) {
+                elOption.disabled = isElevenBlocked;
+                if (isElevenBlocked) elOption.textContent = 'ElevenLabs (Лимит)';
+                else elOption.textContent = 'ElevenLabs';
+            }
+
+            if (isElevenBlocked && providerElem.value === 'elevenlabs') {
+                providerElem.value = 'responsivevoice';
+                providerElem.dispatchEvent(new Event('change'));
+            }
+        };
+
+        syncVoiceSelects('de', this.providerDe, this.voiceDe);
+        syncVoiceSelects('ru', this.providerRu, this.voiceRu);
+        
+        const countElem = document.getElementById('elevenlabs-char-count');
+        if (countElem) {
+            const count = parseInt(localStorage.getItem('elevenlabs_chars') || '0', 10);
+            countElem.textContent = count.toLocaleString();
+        }
 
         updateBtn(this.btnToggleWord, 'showWord');
         updateBtn(this.btnToggleInfo1, 'showInfo1');
@@ -896,6 +1014,9 @@ class StudyModule {
         if (this.btnDeleteFolder) {
             this.btnDeleteFolder.classList.add('hidden');
         }
+        if (this.inlineDeleteFolderContainer) {
+            this.inlineDeleteFolderContainer.classList.add('hidden');
+        }
 
         // Update Save Button Listener
         if (this.btnSaveGroup) {
@@ -985,6 +1106,34 @@ class StudyModule {
             this.btnDeleteFolder.classList.remove('hidden');
             this.btnDeleteFolder.onclick = () => this.deleteFolder(folderName);
         }
+        if (this.inlineDeleteFolderContainer && this.btnInlineDeleteFolder) {
+            this.inlineDeleteFolderContainer.classList.remove('hidden');
+            // Close popup explicitly if inline delete is triggered
+            this.btnInlineDeleteFolder.onclick = () => {
+                if (this.folderOptionsPopup) this.folderOptionsPopup.classList.add('hidden');
+                this.deleteFolder(folderName);
+            };
+        }
+
+        // Bind Mobile Options Toggle
+        if (this.btnFolderOptionsMobile && this.folderOptionsPopup) {
+            this.btnFolderOptionsMobile.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.folderOptionsPopup.classList.toggle('hidden');
+            };
+
+            // Setup document click listener to close popup (only setup once)
+            if (!this._mobileOptionsOutsideClickBound) {
+                document.addEventListener('click', (e) => {
+                    if (!this.folderOptionsPopup.classList.contains('hidden') &&
+                        !e.target.closest('#inline-delete-folder-container')) {
+                        this.folderOptionsPopup.classList.add('hidden');
+                    }
+                });
+                this._mobileOptionsOutsideClickBound = true;
+            }
+        }
 
         // Update Save Button Listener
         if (this.btnSaveGroup) {
@@ -1017,49 +1166,40 @@ class StudyModule {
         this.groupWordsList.innerHTML = '';
         this.folderDraftState.forEach((w, index) => {
             const div = document.createElement('div');
-            div.className = 'word-edit-card';
+            // Remove the default 'word-edit-card' since we style it fully inline or with edit-word classes
+            div.style.marginBottom = '0.5rem';
             div.innerHTML = `
-                <div class="card-header-mini">
-                    <span class="card-num">
-                        ${index + 1}
-                    </span>
-                    <div class="card-actions-mini">
-                        <button class="btn-icon btn-delete text-muted" title="Delete">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M3 6h18"></path>
-                                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 16px; padding: 1.5rem; position: relative;">
+                    <!-- Minimalist Header -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 0.75rem;">
+                        <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">
+                            СЛОВО #${index + 1}
+                        </span>
+                        <button class="btn-icon btn-delete text-muted" title="Удалить" style="padding: 0.25rem;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
                             </svg>
                         </button>
                     </div>
-                </div>
-                <div class="card-edit-content">
-                    <div class="term-col">
-                        <div class="field-group">
-                            <label>Слово</label>
-                            <input type="text" class="input-stealth input-main" value="${w.word}" data-field="word" data-idx="${index}" style="padding-left: 1rem; font-weight: 600;">
-                        </div>
-                        <div class="field-group">
-                            <label>Определение</label>
-                            <input type="text" class="input-stealth input-main" value="${w.translation}" data-field="translation" data-idx="${index}" style="padding-left: 1rem; font-weight: 600;">
-                        </div>
+
+                    <div class="edit-word-group" style="margin-bottom: 1rem;">
+                        <input type="text" class="edit-word-input" placeholder="Немецкое слово" value="${(w.word || '').replace(/"/g, '&quot;')}" data-field="word" data-idx="${index}">
                     </div>
-                    
-                    <div class="def-col">
-                         <div class="field-group">
-                             <label>Доп. инфо</label>
-                             <input type="text" class="input-stealth input-sub" value="${w.info1 || ''}" data-field="info1" data-idx="${index}" style="padding-left: 1rem; font-weight: 500; color: #ffffff; opacity: 1; font-size: 0.9rem;">
-                        </div>
-                         <div class="field-group">
-                             <input type="text" class="input-stealth input-sub" value="${w.info2 || ''}" data-field="info2" data-idx="${index}" style="padding-left: 1rem; font-weight: 500; color: #ffffff; opacity: 1; font-size: 0.9rem;">
-                        </div>
-                         <div class="field-group">
-                             <label>Примеры</label>
-                             <input type="text" class="input-stealth input-sub" value="${w.ex1 || ''}" data-field="ex1" data-idx="${index}" style="padding-left: 1rem; font-weight: 500; color: #ffffff; opacity: 1; font-size: 0.9rem;">
-                        </div>
-                         <div class="field-group">
-                             <input type="text" class="input-stealth input-sub" value="${w.ex2 || ''}" data-field="ex2" data-idx="${index}" style="padding-left: 1rem; font-weight: 500; color: #ffffff; opacity: 1; font-size: 0.9rem;">
-                        </div>
+                    <div class="edit-word-group" style="margin-bottom: 1rem;">
+                        <input type="text" class="edit-word-input" placeholder="Перевод" value="${(w.translation || '').replace(/"/g, '&quot;')}" data-field="translation" data-idx="${index}">
+                    </div>
+                    <div class="edit-word-group" style="margin-bottom: 1rem;">
+                        <input type="text" class="edit-word-input" placeholder="Формы глагола" value="${(w.info1 || '').replace(/"/g, '&quot;')}" data-field="info1" data-idx="${index}">
+                    </div>
+                    <div class="edit-word-group" style="margin-bottom: 1rem;">
+                        <input type="text" class="edit-word-input" placeholder="Дополнительно" value="${(w.info2 || '').replace(/"/g, '&quot;')}" data-field="info2" data-idx="${index}">
+                    </div>
+                    <div class="edit-word-group" style="margin-bottom: 1rem;">
+                        <input type="text" class="edit-word-input" placeholder="Пример 1" value="${(w.ex1 || '').replace(/"/g, '&quot;')}" data-field="ex1" data-idx="${index}">
+                    </div>
+                    <div class="edit-word-group" style="margin-bottom: 0;">
+                        <input type="text" class="edit-word-input" placeholder="Пример 2" value="${(w.ex2 || '').replace(/"/g, '&quot;')}" data-field="ex2" data-idx="${index}">
                     </div>
                 </div>
             `;
@@ -1496,664 +1636,823 @@ class StudyModule {
             return;
         }
 
-        if (window.responsiveVoice && window.responsiveVoice.voiceSupport()) {
-            const voice = (lang === 'de') ? "Deutsch Male" : "Russian Female";
-            window.responsiveVoice.speak(text, voice, { onend: onEndCallback });
-        } else {
+        const selectedOpt = lang === 'de' ? (this.settings.selectAudioDe || 'elevenlabs_Qy4b2JlSGxY7I9M9Bqxb') : (this.settings.selectAudioRu || 'elevenlabs_3EuKHIEZbSzrHGNmdYsx');
+        let provider = 'elevenlabs';
+        let voiceVariant = '';
+
+        if (selectedOpt.startsWith('elevenlabs_')) {
+            provider = 'elevenlabs';
+            voiceVariant = selectedOpt.replace('elevenlabs_', '');
+        } else if (selectedOpt.startsWith('responsivevoice_')) {
+            provider = 'responsivevoice';
+            voiceVariant = selectedOpt.replace('responsivevoice_', '');
+        } else if (selectedOpt.startsWith('browser_')) {
+            provider = 'browser';
+            voiceVariant = selectedOpt.replace('browser_', '');
+        }
+
+        const fallbackStandard = (targetVoiceName) => {
             const u = new SpeechSynthesisUtterance(text);
             u.lang = (lang === 'de') ? 'de-DE' : 'ru-RU';
+            if (targetVoiceName) {
+                const voices = window.speechSynthesis.getVoices().filter(v => v.lang.startsWith(lang));
+                let matchedVoice = null;
+                const isFemale = targetVoiceName.includes('female');
+                
+                if (isFemale) {
+                    matchedVoice = voices.find(v => v.name.toLowerCase().includes('female') || v.name.includes('Hedda') || v.name.includes('Irina') || v.name.includes('Katja'));
+                } else {
+                    matchedVoice = voices.find(v => v.name.toLowerCase().includes('male') || v.name.includes('Stefan') || v.name.includes('Pavel') || v.name.includes('David'));
+                }
+                
+                if (!matchedVoice && voices.length > 0) {
+                    matchedVoice = voices[isFemale ? 0 : (voices.length > 1 ? 1 : 0)];
+                }
+                if (matchedVoice) u.voice = matchedVoice;
+            }
             if (onEndCallback) u.onend = onEndCallback;
             window.speechSynthesis.speak(u);
-        }
-    }
+        };
 
-    speakSequence(items) {
-        if (!items.length || !this.settings.audio) return;
-        const item = items.shift();
-        this.speakText(item.text, item.lang, () => {
-            if (items.length && this.settings.audio) {
-                this.speakSequence(items);
+        const fallbackResponsiveVoice = (targetVoiceName) => {
+            if (window.responsiveVoice && window.responsiveVoice.voiceSupport()) {
+                const rVoice = targetVoiceName || ((lang === 'de') ? "Deutsch Male" : "Russian Female");
+                window.responsiveVoice.speak(text, rVoice, { onend: onEndCallback });
+            } else {
+                fallbackStandard();
+            }
+        };
+
+        this.currentSpeakId = (this.currentSpeakId || 0) + 1;
+        const mySpeakId = this.currentSpeakId;
+
+        if (provider === 'browser') {
+            fallbackStandard(voiceVariant);
+            return;
+        }
+
+        if (provider === 'responsivevoice') {
+            fallbackResponsiveVoice(voiceVariant);
+            return;
+        }
+
+        // ElevenLabs provider
+        const apiKey = 'sk_094da1ef2da76e2aba9d23f846ac7e49f1bca1ec03f4819f';
+        const voiceId = voiceVariant;
+
+        fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'xi-api-key': apiKey
+            },
+            body: JSON.stringify({
+                text: text,
+                model_id: 'eleven_multilingual_v2',
+                output_format: 'mp3_44100_128'
+            })
+        })
+        .then(async response => {
+            if (!response.ok) {
+                let errorBody = "";
+                try {
+                    const errData = await response.json();
+                    errorBody = JSON.stringify(errData);
+                } catch (e) {
+                    errorBody = await response.text();
+                }
+
+                if (response.status === 401 || response.status === 429 || errorBody.toLowerCase().includes('quota')) {
+                    console.warn("ElevenLabs quota exceeded or auth error. Switching to fallback.");
+                    const fallbackOpt = lang === 'de' ? 'responsivevoice_Deutsch Female' : 'responsivevoice_Russian Female';
+                    if (lang === 'de') {
+                        this.settings.selectAudioDe = fallbackOpt;
+                        if (this.tempSettings) this.tempSettings.selectAudioDe = fallbackOpt;
+                    } else {
+                        this.settings.selectAudioRu = fallbackOpt;
+                        if (this.tempSettings) this.tempSettings.selectAudioRu = fallbackOpt;
+                    }
+                    
+                    localStorage.setItem('elevenlabs_blocked', 'true');
+                    this.db.saveSettings(this.settings);
+                    this.syncTogglesUI();
+                }
+
+                throw new Error(`ElevenLabs API Error ${response.status}: ${errorBody}`);
+            }
+            
+            let currentChars = parseInt(localStorage.getItem('elevenlabs_chars') || '0', 10);
+            currentChars += text.length;
+            localStorage.setItem('elevenlabs_chars', currentChars.toString());
+            
+            const countElem = document.getElementById('elevenlabs-char-count');
+            if (countElem) countElem.textContent = currentChars.toLocaleString();
+            
+            if (currentChars >= 10000 && localStorage.getItem('elevenlabs_blocked') !== 'true') {
+                console.warn("ElevenLabs quota exceeded locally. Blocking further usage.");
+                localStorage.setItem('elevenlabs_blocked', 'true');
+                this.syncTogglesUI();
+            }
+
+            return response.blob();
+        })
+        .then(blob => {
+            if (this.currentSpeakId !== mySpeakId || !this.settings.audio) return;
+            const url = URL.createObjectURL(blob);
+            const audio = new Audio(url);
+            this.currentAudio = audio;
+
+            audio.onended = () => {
+                if (this.currentAudio === audio) this.currentAudio = null;
+                if (onEndCallback) onEndCallback();
+            };
+            audio.onerror = () => {
+                if (this.currentSpeakId === mySpeakId && this.settings.audio) fallbackResponsiveVoice();
+            };
+            audio.play().catch(e => {
+                if (this.currentSpeakId === mySpeakId && this.settings.audio) fallbackResponsiveVoice();
+            });
+        })
+        .catch(error => {
+            console.warn('ElevenLabs Error, fallback to ResponsiveVoice:', error);
+            if (this.currentSpeakId === mySpeakId && this.settings.audio) {
+                // If we failed, fallback opt might be active already, but let's just make sure we play audio
+                const fallbackOpt = lang === 'de' ? 'Deutsch Female' : 'Russian Female';
+                fallbackResponsiveVoice(fallbackOpt);
             }
         });
     }
 
-    stopAudio() {
-        if (window.responsiveVoice) window.responsiveVoice.cancel();
-        window.speechSynthesis.cancel();
-    }
-
-    playDeSequence(word) {
-        if (!this.settings.audio || !word) return;
-
-        const rawItems = [];
-        if (this.settings.audioWord && word.word) rawItems.push({ text: word.word, lang: 'de' });
-        if (this.settings.audioInfo1 && word.info1) rawItems.push({ text: word.info1, lang: 'de' });
-        if (this.settings.audioInfo2 && word.info2) rawItems.push({ text: word.info2, lang: 'de' });
-        if (this.settings.audioEx1 && word.ex1) rawItems.push({ text: word.ex1, lang: 'de' });
-        if (this.settings.audioEx2 && word.ex2) rawItems.push({ text: word.ex2, lang: 'de' });
-
-        if (rawItems.length) {
-            const groupedItems = [];
-            rawItems.forEach(item => {
-                const last = groupedItems[groupedItems.length - 1];
-                if (last && last.lang === item.lang) {
-                    last.text += '. ' + item.text;
-                } else {
-                    groupedItems.push({ ...item });
-                }
-            });
-
-            this.stopAudio();
-            this.speakSequence(groupedItems);
+speakSequence(items) {
+    if (!items.length || !this.settings.audio) return;
+    const item = items.shift();
+    this.speakText(item.text, item.lang, () => {
+        if (items.length && this.settings.audio) {
+            this.speakSequence(items);
         }
-    }
+    });
+}
 
-    saveSessionState() {
-        if (!this.currentSession) return;
-        const key = `study_session_${this.currentSession.mode}_${this.currentSession.groupIndex ?? 'all'}`;
-        const state = {
-            queueIds: this.currentSession.queue.map(w => w.id),
-            currentIndex: this.currentSession.currentIndex,
+stopAudio() {
+    this.currentSpeakId = (this.currentSpeakId || 0) + 1;
+    if (this.currentAudio) {
+        this.currentAudio.pause();
+        this.currentAudio.currentTime = 0;
+        this.currentAudio = null;
+    }
+    if (window.responsiveVoice) window.responsiveVoice.cancel();
+    window.speechSynthesis.cancel();
+}
+
+playDeSequence(word) {
+    if (!this.settings.audio || !word) return;
+
+    const rawItems = [];
+    if (this.settings.audioWord && word.word) rawItems.push({ text: word.word, lang: 'de' });
+    if (this.settings.audioInfo1 && word.info1) rawItems.push({ text: word.info1, lang: 'de' });
+    if (this.settings.audioInfo2 && word.info2) rawItems.push({ text: word.info2, lang: 'de' });
+    if (this.settings.audioEx1 && word.ex1) rawItems.push({ text: word.ex1, lang: 'de' });
+    if (this.settings.audioEx2 && word.ex2) rawItems.push({ text: word.ex2, lang: 'de' });
+
+    if (rawItems.length) {
+        const groupedItems = [];
+        rawItems.forEach(item => {
+            const last = groupedItems[groupedItems.length - 1];
+            if (last && last.lang === item.lang) {
+                last.text += '. ' + item.text;
+            } else {
+                groupedItems.push({ ...item });
+            }
+        });
+
+        this.stopAudio();
+        this.speakSequence(groupedItems);
+    }
+}
+
+saveSessionState() {
+    if (!this.currentSession) return;
+    const key = `study_session_${this.currentSession.mode}_${this.currentSession.groupIndex ?? 'all'}`;
+    const state = {
+        queueIds: this.currentSession.queue.map(w => w.id),
+        currentIndex: this.currentSession.currentIndex,
+        timestamp: Date.now()
+    };
+    localStorage.setItem(key, JSON.stringify(state));
+}
+
+clearSessionState(mode, groupIndex) {
+    const key = `study_session_${mode}_${groupIndex ?? 'all'}`;
+    localStorage.removeItem(key);
+}
+
+// --- SESSION ENGINE ---
+startSession(mode, groupIndex) {
+    // Save Last Opened Context (if folder)
+    if (mode === 'folder') {
+        const meta = {
+            mode,
+            groupIndex,
             timestamp: Date.now()
         };
-        localStorage.setItem(key, JSON.stringify(state));
+        localStorage.setItem('last_opened_session', JSON.stringify(meta));
     }
 
-    clearSessionState(mode, groupIndex) {
-        const key = `study_session_${mode}_${groupIndex ?? 'all'}`;
-        localStorage.removeItem(key);
-    }
+    const now = Date.now();
+    const progressKey = 'progress_global';
+    const savedKey = `study_session_${mode}_${groupIndex ?? 'all'}`;
 
-    // --- SESSION ENGINE ---
-    startSession(mode, groupIndex) {
-        // Save Last Opened Context (if folder)
-        if (mode === 'folder') {
-            const meta = {
-                mode,
-                groupIndex,
-                timestamp: Date.now()
-            };
-            localStorage.setItem('last_opened_session', JSON.stringify(meta));
-        }
+    let sessionData = null;
+    const savedData = localStorage.getItem(savedKey);
 
-        const now = Date.now();
-        const progressKey = 'progress_global';
-        const savedKey = `study_session_${mode}_${groupIndex ?? 'all'}`;
-
-        let sessionData = null;
-        const savedData = localStorage.getItem(savedKey);
-
-        if (savedData) {
-            try {
-                const state = JSON.parse(savedData);
-                const queue = state.queueIds
-                    .map(id => this.allWordsCache.find(w => w.id === id))
-                    .filter(w => !!w);
-
-                if (queue.length > 0 && state.currentIndex < queue.length) {
-                    sessionData = {
-                        mode,
-                        groupIndex,
-                        key: progressKey,
-                        queue: queue,
-                        currentIndex: state.currentIndex,
-                        currentWord: null,
-                        history: []
-                    };
-                }
-            } catch (e) {
-                console.error("Failed to restore session", e);
-            }
-        }
-
-        if (sessionData) {
-            this.currentSession = sessionData;
-        } else {
-            const scope = this.getWordsForScope(mode, groupIndex);
-            // Regular session excludes Active words AND Exam candidates (score >= 9)
-            let dueWords = scope.filter(w =>
-                !w.progress_global?.isActive &&
-                (w.progress_global?.excellentStreak || 0) < 9 &&
-                (!w[progressKey] || w[progressKey].nextDate <= now)
-            );
-
-            if (dueWords.length === 0) {
-                alert("Нет слов для повторения!");
-                return;
-            }
-
-            dueWords = this.shuffleArray(dueWords);
-            this.currentSession = {
-                mode,
-                groupIndex,
-                key: progressKey,
-                queue: dueWords,
-                currentIndex: 0,
-                currentWord: null,
-                history: []
-            };
-            this.saveSessionState();
-        }
-
-        const scope = this.getWordsForScope(mode, groupIndex);
-        this.updateStatsUI(scope);
-
-        // Update Title
-        if (this.sessionGroupTitle) {
-            if (mode === 'global') {
-                this.sessionGroupTitle.textContent = 'Все слова';
-            } else if (mode === 'folder') {
-                this.sessionGroupTitle.textContent = groupIndex; // groupIndex is folder name
-            }
-        }
-
-        if (window.switchView) window.switchView(this.viewStudySession);
-        this.startTracking();
-        this.showNextCard();
-    }
-
-    initSessionControls() {
-        if (this.btnExitSession) {
-            this.btnExitSession.onclick = () => {
-                // Always stop voice recognition on exit
-                if (window.VoiceControl) {
-                    window.VoiceControl.stop();
-                    if (this.btnToggleVoice) this.btnToggleVoice.classList.remove('active');
-                }
-
-                if (!this.currentSession) {
-                    this.stopTracking();
-                    if (window.switchView) window.switchView(this.viewStudy);
-                    this.renderStudyDashboard();
-                    return;
-                }
-
-                // Check if we have history to undo
-                if (this.currentSession.history && this.currentSession.history.length > 0) {
-                    // --- UNDO LAST ACTION ---
-                    const lastAction = this.currentSession.history.pop();
-                    const key = this.currentSession.key;
-
-                    // Restore progress on BOTH the global cache word AND the queue instance
-                    const globalWord = this.allWordsCache.find(w => w.id === lastAction.wordId);
-                    const queueWord = this.currentSession.queue.find(w => w.id === lastAction.wordId);
-
-                    const targets = [];
-                    if (globalWord) targets.push(globalWord);
-                    if (queueWord && queueWord !== globalWord) targets.push(queueWord);
-
-                    targets.forEach(w => {
-                        if (lastAction.oldProgress) {
-                            w[key] = JSON.parse(JSON.stringify(lastAction.oldProgress));
-                        } else {
-                            delete w[key];
-                        }
-                    });
-
-                    // Revert in DB (best effort) — restore old progress or delete if none existed
-                    if (lastAction.oldProgress) {
-                        this.db.updateProgress(lastAction.wordId, key, lastAction.oldProgress).catch(console.error);
-                    } else {
-                        // Word had no progress before — delete the progress node
-                        this.db.updateProgress(lastAction.wordId, key, null).catch(console.error);
-                    }
-
-                    // Move index back to the undone word
-                    this.currentSession.currentIndex = lastAction.queueIndex;
-
-                    // Set currentWord directly so showNextCard(true) displays it
-                    const restoredWord = queueWord || globalWord;
-                    if (restoredWord) {
-                        this.currentSession.currentWord = restoredWord;
-                    }
-
-                    // Update Stats UI immediately
-                    const scope = this.getWordsForScope(this.currentSession.mode, this.currentSession.groupIndex);
-                    this.updateStatsUI(scope);
-
-                    // Save session state with the reverted index
-                    this.saveSessionState();
-
-                    // Stop any current audio
-                    this.stopAudio();
-
-                    // Show the restored card (stayOnCurrent=true bypasses skip-stale logic)
-                    this.showNextCard(true);
-                } else {
-                    // No history — exit session
-                    this.stopTracking();
-                    this.clearSessionState(this.currentSession.mode, this.currentSession.groupIndex);
-                    this.currentSession = null;
-                    if (window.switchView) window.switchView(this.viewStudy);
-                    this.renderStudyDashboard();
-                }
-            };
-        }
-
-        if (this.flashcard) {
-            this.flashcard.onclick = () => {
-                // Do not flip if the card is in 'deleted' state
-                if (this.deletedWordBackup) return;
-
-                // Stop any ongoing speech immediately on flip
-                this.stopAudio();
-
-                const willShowBack = !this.flashcard.classList.contains('is-flipped');
-                this.flashcard.classList.toggle('is-flipped');
-
-                if (willShowBack) {
-                    // Speak translation when flipping to the back, if enabled
-                    if (this.settings.audio && this.settings.audioTranslation && this.currentSession && this.currentSession.currentWord) {
-                        this.speakText(this.currentSession.currentWord.translation, 'ru');
-                    }
-                } else {
-                    // Repeat German sequence when flipping back to front
-                    if (this.settings.audio && this.currentSession && this.currentSession.currentWord) {
-                        this.playDeSequence(this.currentSession.currentWord);
-                    }
-                }
-            };
-        }
-
-        document.querySelectorAll('.btn-rate').forEach(btn => {
-            btn.onclick = async (e) => {
-                e.stopPropagation();
-                if (this.ratingButtons) this.ratingButtons.style.pointerEvents = 'none'; // Prevent double-click
-                let target = e.target;
-                while (!target.classList.contains('btn-rate')) target = target.parentElement;
-                await this.processCardResult(parseInt(target.dataset.rating));
-            };
-        });
-
-        if (this.btnFlashcardEdit) {
-            this.btnFlashcardEdit.onclick = (e) => {
-                e.stopPropagation();
-                if (this.currentSession && this.currentSession.currentWord && window.openEditModal) {
-                    window.openEditModal(this.currentSession.currentWord);
-                }
-            };
-        }
-
-        if (this.btnRestoreWord) {
-            this.btnRestoreWord.onclick = async (e) => {
-                if (e) e.stopPropagation();
-                if (this.deletedWordBackup) {
-                    const word = this.deletedWordBackup;
-                    const id = word.id;
-                    delete word.id;
-                    await this.db.db.ref(`users/${this.userId}/words/${id}`).set(word);
-                    alert("Слово восстановлено!");
-                    this.deletedWordBackup = null;
-                    this.onWordRestored();
-                }
-            };
-        }
-
-        if (this.btnSkipDeleted) {
-            this.btnSkipDeleted.onclick = (e) => {
-                if (e) e.stopPropagation();
-                this.currentSession.currentIndex++;
-                this.showNextCard();
-            };
-        }
-    }
-
-    onWordRestored() {
-        if (this.cardDeletedOverlay) this.cardDeletedOverlay.classList.add('hidden');
-        // Restore all field visibilities
-        if (this.cardWord) this.cardWord.style.visibility = 'visible';
-        if (this.cardInfo1) this.cardInfo1.style.visibility = 'visible';
-        if (this.cardInfo2) this.cardInfo2.style.visibility = 'visible';
-        if (this.cardExamples) this.cardExamples.style.visibility = 'visible';
-        if (this.btnFlashcardEdit) this.btnFlashcardEdit.style.visibility = 'visible';
-
-        // Re-enable ratings
-        if (this.ratingButtons) {
-            this.ratingButtons.style.opacity = '1';
-            this.ratingButtons.style.pointerEvents = 'auto';
-        }
-    }
-
-    onWordUpdated(id, updates) {
-        if (this.currentSession && this.currentSession.currentWord && this.currentSession.currentWord.id === id) {
-            Object.assign(this.currentSession.currentWord, updates);
-
-            // If it was hidden, show it
-            this.onWordRestored();
-
-            this.showNextCard(true); // stay on same card but refresh UI
-        }
-    }
-
-    onWordDeleted(id, backupData) {
-        if (this.currentSession && this.currentSession.currentWord && this.currentSession.currentWord.id === id) {
-            this.deletedWordBackup = backupData;
-            if (this.cardDeletedOverlay) {
-                this.cardDeletedOverlay.classList.remove('hidden');
-            }
-            // Hide all content and edit icon
-            if (this.cardWord) this.cardWord.style.visibility = 'hidden';
-            if (this.cardInfo1) this.cardInfo1.style.visibility = 'hidden';
-            if (this.cardInfo2) this.cardInfo2.style.visibility = 'hidden';
-            if (this.cardExamples) this.cardExamples.style.visibility = 'hidden';
-            if (this.btnFlashcardEdit) this.btnFlashcardEdit.style.visibility = 'hidden';
-
-            // Disable ratings and flip
-            if (this.ratingButtons) {
-                this.ratingButtons.style.opacity = '0.3';
-                this.ratingButtons.style.pointerEvents = 'none';
-            }
-            if (this.flashcard) {
-                this.flashcard.classList.remove('is-flipped');
-            }
-        }
-    }
-
-    highlightWordInText(text, wordToHighlight, extraInfo = '') {
-        if (!text || (!wordToHighlight && !extraInfo)) return text;
-
-        // Combine main word and extra info (forms)
-        // e.g. "kreisen" + " (kreist, kreiste, ist gekreist)"
-        let combinedSource = (wordToHighlight || '') + ' ' + (extraInfo || '');
-
-        // Clean: remove brackets, specific stopwords (auxiliaries/articles), punctuation
-        let clean = combinedSource
-            .replace(/[()\[\]]/g, ' ') // remove brackets
-            .replace(/\b(der|die|das|den|dem|des|ein|eine|einer|einem|einen)\b/gi, ' ') // Articles
-            .replace(/\b(ist|sind|war|waren|hat|haben|hatte|hatten|bin|bist|wird|werden|wurde)\b/gi, ' ') // Auxiliaries
-            .replace(/[,.;:!?]/g, ' ')
-            .replace(/\s+/g, ' ')
-            .trim();
-
-        // Split and filter short tokens
-        let rawTokens = clean.split(' ').filter(t => t.length > 1);
-        if (rawTokens.length === 0) return text;
-
-        // Generate stems
-        let searchStems = [];
-        rawTokens.forEach(token => {
-            searchStems.push(token); // Add exact token
-            // Add stem if word is long enough
-            if (token.length >= 5) {
-                searchStems.push(token.substring(0, token.length - 2));
-            }
-        });
-
-        // Unique patterns and Sort longest first
-        searchStems = [...new Set(searchStems)];
-        searchStems.sort((a, b) => b.length - a.length);
-
-        // Build Patterns
-        // If stem length >= 4, allow prefix match (compound words/ge- prefix)
-        // Else strict word start
-        const regexParts = searchStems.map(stem => {
-            const esc = stem.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            if (stem.length >= 4) {
-                return `[\\w]*${esc}[\\w]*`;
-            } else {
-                return `\\b${esc}[\\w]*`;
-            }
-        });
-
-        const patternStr = `(${regexParts.join('|')})`;
-
+    if (savedData) {
         try {
-            return text.replace(new RegExp(patternStr, 'gi'), '<span class="highlight">$&</span>');
+            const state = JSON.parse(savedData);
+            const queue = state.queueIds
+                .map(id => this.allWordsCache.find(w => w.id === id))
+                .filter(w => !!w);
+
+            if (queue.length > 0 && state.currentIndex < queue.length) {
+                sessionData = {
+                    mode,
+                    groupIndex,
+                    key: progressKey,
+                    queue: queue,
+                    currentIndex: state.currentIndex,
+                    currentWord: null,
+                    history: []
+                };
+            }
         } catch (e) {
-            return text;
+            console.error("Failed to restore session", e);
         }
     }
 
-    getGenderColor(word) {
-        // Check if the word starts with an article
-        const wordLower = word.toLowerCase().trim();
+    if (sessionData) {
+        this.currentSession = sessionData;
+    } else {
+        const scope = this.getWordsForScope(mode, groupIndex);
+        // Regular session excludes Active words AND Exam candidates (score >= 9)
+        let dueWords = scope.filter(w =>
+            !w.progress_global?.isActive &&
+            (w.progress_global?.excellentStreak || 0) < 9 &&
+            (!w[progressKey] || w[progressKey].nextDate <= now)
+        );
 
-        // Check for feminine: die
-        if (wordLower.startsWith('die ')) {
-            return {
-                base: '#ff69b4',           // Hot pink for feminine
-                background: 'rgba(255, 105, 180, 0.08)'  // Very subtle pink background
-            };
+        if (dueWords.length === 0) {
+            alert("Нет слов для повторения!");
+            return;
         }
 
-        // Check for masculine: der
-        if (wordLower.startsWith('der ')) {
-            return {
-                base: '#4a9eff',           // Blue for masculine
-                background: 'rgba(74, 158, 255, 0.08)'   // Very subtle blue background
-            };
-        }
-
-        // Check for neuter: das
-        if (wordLower.startsWith('das ')) {
-            return {
-                base: '#e6c200',           // Muted yellow for neuter (less bright)
-                background: 'rgba(230, 194, 0, 0.08)'    // Very subtle yellow background
-            };
-        }
-
-        // No article found, return null
-        return null;
+        dueWords = this.shuffleArray(dueWords);
+        this.currentSession = {
+            mode,
+            groupIndex,
+            key: progressKey,
+            queue: dueWords,
+            currentIndex: 0,
+            currentWord: null,
+            history: []
+        };
+        this.saveSessionState();
     }
 
-    showNextCard(stayOnCurrent = false) {
-        if (!stayOnCurrent) {
-            // Skip words that are no longer due (e.g. studied in another mode/folder)
-            // or have become active/mastered
-            const now = Date.now();
-            while (this.currentSession.currentIndex < this.currentSession.queue.length) {
-                const word = this.currentSession.queue[this.currentSession.currentIndex];
-                const prog = word.progress_global; // Always use global progress
+    const scope = this.getWordsForScope(mode, groupIndex);
+    this.updateStatsUI(scope);
 
-                const isDue = !prog || !prog.nextDate || prog.nextDate <= now;
-                const isActive = prog && prog.isActive;
-                const isExamCandidate = prog && (prog.excellentStreak || 0) >= 9;
+    // Update Title
+    if (this.sessionGroupTitle) {
+        if (mode === 'global') {
+            this.sessionGroupTitle.textContent = 'Все слова';
+        } else if (mode === 'folder') {
+            this.sessionGroupTitle.textContent = groupIndex; // groupIndex is folder name
+        }
+    }
 
-                // Valid if: Due AND Not Active AND Not Exam Candidate
-                if (isDue && !isActive && !isExamCandidate) {
-                    break; // Found a valid word
-                }
+    if (window.switchView) window.switchView(this.viewStudySession);
+    this.startTracking();
+    this.showNextCard();
+}
 
-                // Skip stale word
-                this.currentSession.currentIndex++;
+initSessionControls() {
+    if (this.btnExitSession) {
+        this.btnExitSession.onclick = () => {
+            // Always stop voice recognition on exit
+            if (window.VoiceControl) {
+                window.VoiceControl.stop();
+                if (this.btnToggleVoice) this.btnToggleVoice.classList.remove('active');
             }
 
-            if (this.currentSession.currentIndex >= this.currentSession.queue.length) {
+            if (!this.currentSession) {
                 this.stopTracking();
-                this.clearSessionState(this.currentSession.mode, this.currentSession.groupIndex);
-                alert("Сессия завершена!");
-                this.currentSession = null;
                 if (window.switchView) window.switchView(this.viewStudy);
                 this.renderStudyDashboard();
                 return;
             }
-            const word = this.currentSession.queue[this.currentSession.currentIndex];
-            this.currentSession.currentWord = word;
-            this.saveSessionState();
-        }
 
-        const word = this.currentSession.currentWord;
+            // Check if we have history to undo
+            if (this.currentSession.history && this.currentSession.history.length > 0) {
+                // --- UNDO LAST ACTION ---
+                const lastAction = this.currentSession.history.pop();
+                const key = this.currentSession.key;
 
-        if (this.cardDeletedOverlay) this.cardDeletedOverlay.classList.add('hidden');
-        this.deletedWordBackup = null;
+                // Restore progress on BOTH the global cache word AND the queue instance
+                const globalWord = this.allWordsCache.find(w => w.id === lastAction.wordId);
+                const queueWord = this.currentSession.queue.find(w => w.id === lastAction.wordId);
 
-        // Restore all field visibilities, ratings, and flip
+                const targets = [];
+                if (globalWord) targets.push(globalWord);
+                if (queueWord && queueWord !== globalWord) targets.push(queueWord);
+
+                targets.forEach(w => {
+                    if (lastAction.oldProgress) {
+                        w[key] = JSON.parse(JSON.stringify(lastAction.oldProgress));
+                    } else {
+                        delete w[key];
+                    }
+                });
+
+                // Revert in DB (best effort) — restore old progress or delete if none existed
+                if (lastAction.oldProgress) {
+                    this.db.updateProgress(lastAction.wordId, key, lastAction.oldProgress).catch(console.error);
+                } else {
+                    // Word had no progress before — delete the progress node
+                    this.db.updateProgress(lastAction.wordId, key, null).catch(console.error);
+                }
+
+                // Move index back to the undone word
+                this.currentSession.currentIndex = lastAction.queueIndex;
+
+                // Set currentWord directly so showNextCard(true) displays it
+                const restoredWord = queueWord || globalWord;
+                if (restoredWord) {
+                    this.currentSession.currentWord = restoredWord;
+                }
+
+                // Update Stats UI immediately
+                const scope = this.getWordsForScope(this.currentSession.mode, this.currentSession.groupIndex);
+                this.updateStatsUI(scope);
+
+                // Save session state with the reverted index
+                this.saveSessionState();
+
+                // Stop any current audio
+                this.stopAudio();
+
+                // Show the restored card (stayOnCurrent=true bypasses skip-stale logic)
+                this.showNextCard(true);
+            } else {
+                // No history — exit session
+                this.stopTracking();
+                this.clearSessionState(this.currentSession.mode, this.currentSession.groupIndex);
+                this.currentSession = null;
+                if (window.switchView) window.switchView(this.viewStudy);
+                this.renderStudyDashboard();
+            }
+        };
+    }
+
+    if (this.flashcard) {
+        this.flashcard.onclick = () => {
+            // Do not flip if the card is in 'deleted' state
+            if (this.deletedWordBackup) return;
+
+            // Stop any ongoing speech immediately on flip
+            this.stopAudio();
+
+            const willShowBack = !this.flashcard.classList.contains('is-flipped');
+            this.flashcard.classList.toggle('is-flipped');
+
+            if (willShowBack) {
+                // Speak translation when flipping to the back, if enabled
+                if (this.settings.audio && this.settings.audioTranslation && this.currentSession && this.currentSession.currentWord) {
+                    this.speakText(this.currentSession.currentWord.translation, 'ru');
+                }
+            } else {
+                // Repeat German sequence when flipping back to front
+                if (this.settings.audio && this.currentSession && this.currentSession.currentWord) {
+                    this.playDeSequence(this.currentSession.currentWord);
+                }
+            }
+        };
+    }
+
+    document.querySelectorAll('.btn-rate').forEach(btn => {
+        btn.onclick = async (e) => {
+            e.stopPropagation();
+            if (this.ratingButtons) this.ratingButtons.style.pointerEvents = 'none'; // Prevent double-click
+            let target = e.target;
+            while (!target.classList.contains('btn-rate')) target = target.parentElement;
+            await this.processCardResult(parseInt(target.dataset.rating));
+        };
+    });
+
+    if (this.btnFlashcardEdit) {
+        this.btnFlashcardEdit.onclick = (e) => {
+            e.stopPropagation();
+            if (this.currentSession && this.currentSession.currentWord && window.openEditModal) {
+                window.openEditModal(this.currentSession.currentWord);
+            }
+        };
+    }
+
+    if (this.btnRestoreWord) {
+        this.btnRestoreWord.onclick = async (e) => {
+            if (e) e.stopPropagation();
+            if (this.deletedWordBackup) {
+                const word = this.deletedWordBackup;
+                const id = word.id;
+                delete word.id;
+                await this.db.db.ref(`users/${this.userId}/words/${id}`).set(word);
+                alert("Слово восстановлено!");
+                this.deletedWordBackup = null;
+                this.onWordRestored();
+            }
+        };
+    }
+
+    if (this.btnSkipDeleted) {
+        this.btnSkipDeleted.onclick = (e) => {
+            if (e) e.stopPropagation();
+            this.currentSession.currentIndex++;
+            this.showNextCard();
+        };
+    }
+}
+
+onWordRestored() {
+    if (this.cardDeletedOverlay) this.cardDeletedOverlay.classList.add('hidden');
+    // Restore all field visibilities
+    if (this.cardWord) this.cardWord.style.visibility = 'visible';
+    if (this.cardInfo1) this.cardInfo1.style.visibility = 'visible';
+    if (this.cardInfo2) this.cardInfo2.style.visibility = 'visible';
+    if (this.cardExamples) this.cardExamples.style.visibility = 'visible';
+    if (this.btnFlashcardEdit) this.btnFlashcardEdit.style.visibility = 'visible';
+
+    // Re-enable ratings
+    if (this.ratingButtons) {
+        this.ratingButtons.style.opacity = '1';
+        this.ratingButtons.style.pointerEvents = 'auto';
+    }
+}
+
+onWordUpdated(id, updates) {
+    if (this.currentSession && this.currentSession.currentWord && this.currentSession.currentWord.id === id) {
+        Object.assign(this.currentSession.currentWord, updates);
+
+        // If it was hidden, show it
         this.onWordRestored();
 
-        this.cardTranslation.textContent = '';
-        this.cardWord.textContent = '';
-        this.cardInfo1.textContent = '';
-        if (this.cardInfo2) this.cardInfo2.textContent = '';
-        this.cardExamples.innerHTML = '';
+        this.showNextCard(true); // stay on same card but refresh UI
+    }
+}
 
-        this.flashcard.classList.remove('is-flipped');
+onWordDeleted(id, backupData) {
+    if (this.currentSession && this.currentSession.currentWord && this.currentSession.currentWord.id === id) {
+        this.deletedWordBackup = backupData;
+        if (this.cardDeletedOverlay) {
+            this.cardDeletedOverlay.classList.remove('hidden');
+        }
+        // Hide all content and edit icon
+        if (this.cardWord) this.cardWord.style.visibility = 'hidden';
+        if (this.cardInfo1) this.cardInfo1.style.visibility = 'hidden';
+        if (this.cardInfo2) this.cardInfo2.style.visibility = 'hidden';
+        if (this.cardExamples) this.cardExamples.style.visibility = 'hidden';
+        if (this.btnFlashcardEdit) this.btnFlashcardEdit.style.visibility = 'hidden';
 
-        // Initial base size with slight reduction for very long words (width-based heuristic)
-        const len = word.word.length;
-        if (len > 30) {
-            this.cardWord.style.fontSize = '1.5rem';
-        } else if (len > 22) {
-            this.cardWord.style.fontSize = '1.6rem';
+        // Disable ratings and flip
+        if (this.ratingButtons) {
+            this.ratingButtons.style.opacity = '0.3';
+            this.ratingButtons.style.pointerEvents = 'none';
+        }
+        if (this.flashcard) {
+            this.flashcard.classList.remove('is-flipped');
+        }
+    }
+}
+
+highlightWordInText(text, wordToHighlight, extraInfo = '') {
+    if (!text || (!wordToHighlight && !extraInfo)) return text;
+
+    // Combine main word and extra info (forms)
+    // e.g. "kreisen" + " (kreist, kreiste, ist gekreist)"
+    let combinedSource = (wordToHighlight || '') + ' ' + (extraInfo || '');
+
+    // Clean: remove brackets, specific stopwords (auxiliaries/articles), punctuation
+    let clean = combinedSource
+        .replace(/[()\[\]]/g, ' ') // remove brackets
+        .replace(/\b(der|die|das|den|dem|des|ein|eine|einer|einem|einen)\b/gi, ' ') // Articles
+        .replace(/\b(ist|sind|war|waren|hat|haben|hatte|hatten|bin|bist|wird|werden|wurde)\b/gi, ' ') // Auxiliaries
+        .replace(/[,.;:!?]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    // Split and filter short tokens
+    let rawTokens = clean.split(' ').filter(t => t.length > 1);
+    if (rawTokens.length === 0) return text;
+
+    // Generate stems
+    let searchStems = [];
+    rawTokens.forEach(token => {
+        searchStems.push(token); // Add exact token
+        // Add stem if word is long enough
+        if (token.length >= 5) {
+            searchStems.push(token.substring(0, token.length - 2));
+        }
+    });
+
+    // Unique patterns and Sort longest first
+    searchStems = [...new Set(searchStems)];
+    searchStems.sort((a, b) => b.length - a.length);
+
+    // Build Patterns
+    // If stem length >= 4, allow prefix match (compound words/ge- prefix)
+    // Else strict word start
+    const regexParts = searchStems.map(stem => {
+        const esc = stem.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        if (stem.length >= 4) {
+            return `[\\w]*${esc}[\\w]*`;
         } else {
-            this.cardWord.style.fontSize = '1.8rem';
+            return `\\b${esc}[\\w]*`;
+        }
+    });
+
+    const patternStr = `(${regexParts.join('|')})`;
+
+    try {
+        return text.replace(new RegExp(patternStr, 'gi'), '<span class="highlight">$&</span>');
+    } catch (e) {
+        return text;
+    }
+}
+
+getGenderColor(word) {
+    // Check if the word starts with an article
+    const wordLower = word.toLowerCase().trim();
+
+    // Check for feminine: die
+    if (wordLower.startsWith('die ')) {
+        return {
+            base: '#ff69b4',           // Hot pink for feminine
+            background: 'rgba(255, 105, 180, 0.08)'  // Very subtle pink background
+        };
+    }
+
+    // Check for masculine: der
+    if (wordLower.startsWith('der ')) {
+        return {
+            base: '#4a9eff',           // Blue for masculine
+            background: 'rgba(74, 158, 255, 0.08)'   // Very subtle blue background
+        };
+    }
+
+    // Check for neuter: das
+    if (wordLower.startsWith('das ')) {
+        return {
+            base: '#e6c200',           // Muted yellow for neuter (less bright)
+            background: 'rgba(230, 194, 0, 0.08)'    // Very subtle yellow background
+        };
+    }
+
+    // No article found, return null
+    return null;
+}
+
+showNextCard(stayOnCurrent = false) {
+    if (!stayOnCurrent) {
+        // Skip words that are no longer due (e.g. studied in another mode/folder)
+        // or have become active/mastered
+        const now = Date.now();
+        while (this.currentSession.currentIndex < this.currentSession.queue.length) {
+            const word = this.currentSession.queue[this.currentSession.currentIndex];
+            const prog = word.progress_global; // Always use global progress
+
+            const isDue = !prog || !prog.nextDate || prog.nextDate <= now;
+            const isActive = prog && prog.isActive;
+            const isExamCandidate = prog && (prog.excellentStreak || 0) >= 9;
+
+            // Valid if: Due AND Not Active AND Not Exam Candidate
+            if (isDue && !isActive && !isExamCandidate) {
+                break; // Found a valid word
+            }
+
+            // Skip stale word
+            this.currentSession.currentIndex++;
         }
 
-        // Apply gender-based highlighting
-        const genderColors = this.getGenderColor(word.word);
+        if (this.currentSession.currentIndex >= this.currentSession.queue.length) {
+            // Check if there are any words left to review before actually ending
+            const currentScope = this.getWordsForScope(this.currentSession.mode, this.currentSession.groupIndex);
+            let remainingDue = currentScope.filter(w =>
+                !w.progress_global?.isActive &&
+                (w.progress_global?.excellentStreak || 0) < 9 &&
+                (!w.progress_global?.nextDate || w.progress_global.nextDate <= now)
+            );
 
-        // 1. Handle Word Text Coloring
-        if (this.settings.genderColors && genderColors) {
-            if (word.word.includes(',')) {
-                const commaIndex = word.word.indexOf(',');
-                const beforeComma = word.word.substring(0, commaIndex);
-                const afterComma = word.word.substring(commaIndex);
-                this.cardWord.innerHTML = '';
-
-                // Color the part before comma with gender color
-                const coloredSpan = document.createElement('span');
-                coloredSpan.style.color = genderColors.base;
-                coloredSpan.textContent = beforeComma;
-                this.cardWord.appendChild(coloredSpan);
-
-                // Part after comma should be default theme color (not inherit)
-                const afterCommaSpan = document.createElement('span');
-                // Get the current theme text color from CSS variable
-                const themeTextColor = getComputedStyle(document.documentElement).getPropertyValue('--text-main').trim() || '#ffffff';
-                afterCommaSpan.style.color = themeTextColor;
-                afterCommaSpan.textContent = afterComma;
-                this.cardWord.appendChild(afterCommaSpan);
-            } else {
-                this.cardWord.innerHTML = '';
-                this.cardWord.textContent = word.word;
-                this.cardWord.style.color = genderColors.base;
+            if (remainingDue.length > 0) {
+                // There are still words to review! Refresh the queue and continue.
+                remainingDue = this.shuffleArray(remainingDue);
+                this.currentSession.queue = remainingDue;
+                this.currentSession.currentIndex = 0;
+                this.saveSessionState();
+                return this.showNextCard(false);
             }
+
+            this.stopTracking();
+            this.clearSessionState(this.currentSession.mode, this.currentSession.groupIndex);
+            alert("Сессия завершена!");
+            this.currentSession = null;
+            if (window.switchView) window.switchView(this.viewStudy);
+            this.renderStudyDashboard();
+            return;
+        }
+        const word = this.currentSession.queue[this.currentSession.currentIndex];
+        this.currentSession.currentWord = word;
+        this.saveSessionState();
+    }
+
+    const word = this.currentSession.currentWord;
+
+    if (this.cardDeletedOverlay) this.cardDeletedOverlay.classList.add('hidden');
+    this.deletedWordBackup = null;
+
+    // Restore all field visibilities, ratings, and flip
+    this.onWordRestored();
+
+    this.cardTranslation.textContent = '';
+    this.cardWord.textContent = '';
+    this.cardInfo1.textContent = '';
+    if (this.cardInfo2) this.cardInfo2.textContent = '';
+    this.cardExamples.innerHTML = '';
+
+    this.flashcard.classList.remove('is-flipped');
+
+    // Initial base size with slight reduction for very long words (width-based heuristic)
+    const len = word.word.length;
+    if (len > 30) {
+        this.cardWord.style.fontSize = '1.5rem';
+    } else if (len > 22) {
+        this.cardWord.style.fontSize = '1.6rem';
+    } else {
+        this.cardWord.style.fontSize = '1.8rem';
+    }
+
+    // Apply gender-based highlighting
+    const genderColors = this.getGenderColor(word.word);
+
+    // 1. Handle Word Text Coloring
+    if (this.settings.genderColors && genderColors) {
+        if (word.word.includes(',')) {
+            const commaIndex = word.word.indexOf(',');
+            const beforeComma = word.word.substring(0, commaIndex);
+            const afterComma = word.word.substring(commaIndex);
+            this.cardWord.innerHTML = '';
+
+            // Color the part before comma with gender color
+            const coloredSpan = document.createElement('span');
+            coloredSpan.style.color = genderColors.base;
+            coloredSpan.textContent = beforeComma;
+            this.cardWord.appendChild(coloredSpan);
+
+            // Part after comma should be default theme color (not inherit)
+            const afterCommaSpan = document.createElement('span');
+            // Get the current theme text color from CSS variable
+            const themeTextColor = getComputedStyle(document.documentElement).getPropertyValue('--text-main').trim() || '#ffffff';
+            afterCommaSpan.style.color = themeTextColor;
+            afterCommaSpan.textContent = afterComma;
+            this.cardWord.appendChild(afterCommaSpan);
         } else {
             this.cardWord.innerHTML = '';
             this.cardWord.textContent = word.word;
-            this.cardWord.style.color = '';
+            this.cardWord.style.color = genderColors.base;
         }
-
-        // 2. Handle Card Background Coloring (Independent)
-        if (this.flashcard) {
-            if (this.settings.genderCardBackground && genderColors) {
-                this.flashcard.style.background = `linear-gradient(135deg, ${genderColors.background}, rgba(255,255,255,0.02))`;
-            } else {
-                this.flashcard.style.background = '';
-            }
-        }
-
-        this.cardInfo1.textContent = word.info1 || '';
-        if (this.cardInfo2) this.cardInfo2.textContent = word.info2 || '';
-
-        const examplesProps = ['ex1', 'ex2'];
-        const examplesToggles = ['showEx1', 'showEx2'];
-
-        this.cardExamples.innerHTML = examplesProps.map((prop, idx) => {
-            if (!word[prop]) return '';
-            const isVisible = this.settings[examplesToggles[idx]];
-            const style = isVisible ? '' : 'style="display:none"';
-            return `<p ${style}>• ${this.highlightWordInText(word[prop], word.word, word.info1)}</p>`;
-        }).join('');
-
-        this.updateElementsVisibility();
-
-        // Sequential Audio Queue
-        this.playDeSequence(word);
-
-        setTimeout(() => {
-            const transLen = word.translation.length;
-            if (transLen > 40) {
-                this.cardTranslation.style.fontSize = '1.3rem';
-            } else if (transLen > 25) {
-                this.cardTranslation.style.fontSize = '1.45rem';
-            } else {
-                this.cardTranslation.style.fontSize = '1.6rem';
-            }
-            this.cardTranslation.textContent = word.translation;
-        }, 400);
-
-        this.ratingButtons.classList.remove('hidden');
-        this.ratingButtons.style.pointerEvents = 'auto';
+    } else {
+        this.cardWord.innerHTML = '';
+        this.cardWord.textContent = word.word;
+        this.cardWord.style.color = '';
     }
+
+    // 2. Handle Card Background Coloring (Independent)
+    if (this.flashcard) {
+        if (this.settings.genderCardBackground && genderColors) {
+            this.flashcard.style.background = `linear-gradient(135deg, ${genderColors.background}, rgba(255,255,255,0.02))`;
+        } else {
+            this.flashcard.style.background = '';
+        }
+    }
+
+    this.cardInfo1.textContent = word.info1 || '';
+    if (this.cardInfo2) this.cardInfo2.textContent = word.info2 || '';
+
+    const examplesProps = ['ex1', 'ex2'];
+    const examplesToggles = ['showEx1', 'showEx2'];
+
+    this.cardExamples.innerHTML = examplesProps.map((prop, idx) => {
+        if (!word[prop]) return '';
+        const isVisible = this.settings[examplesToggles[idx]];
+        const style = isVisible ? '' : 'style="display:none"';
+        return `<p ${style}>• ${this.highlightWordInText(word[prop], word.word, word.info1)}</p>`;
+    }).join('');
+
+    this.updateElementsVisibility();
+
+    // Sequential Audio Queue
+    this.playDeSequence(word);
+
+    setTimeout(() => {
+        const transLen = word.translation.length;
+        if (transLen > 40) {
+            this.cardTranslation.style.fontSize = '1.3rem';
+        } else if (transLen > 25) {
+            this.cardTranslation.style.fontSize = '1.45rem';
+        } else {
+            this.cardTranslation.style.fontSize = '1.6rem';
+        }
+        this.cardTranslation.textContent = word.translation;
+    }, 400);
+
+    this.ratingButtons.classList.remove('hidden');
+    this.ratingButtons.style.pointerEvents = 'auto';
+}
 
     async processCardResult(rating) {
-        if (!this.currentSession) return;
-        const word = this.currentSession.currentWord;
-        const key = this.currentSession.key;
+    if (!this.currentSession) return;
+    const word = this.currentSession.currentWord;
+    const key = this.currentSession.key;
 
-        const mode = this.settings.studyMode || 'long';
-        const intervals = this.intervalModes[mode];
-        const nextIntervalMs = intervals[rating] || 0;
-        const nextIntervalDays = nextIntervalMs / (24 * 3600 * 1000);
+    const mode = this.settings.studyMode || 'long';
+    const intervals = this.intervalModes[mode];
+    const nextIntervalMs = intervals[rating] || 0;
+    const nextIntervalDays = nextIntervalMs / (24 * 3600 * 1000);
 
-        let scoreChange = 0;
-        switch (rating) {
-            case 1: scoreChange = -999; break;
-            case 2: scoreChange = -3; break;
-            case 3: scoreChange = -1.5; break;
-            case 4: scoreChange = 0; break;
-            case 5: scoreChange = 1.5; break;
-            case 6: scoreChange = 3; break;
-        }
-
-        const currentProgress = word[key] || {};
-        let activityScore = currentProgress.excellentStreak || 0;
-        let isActive = currentProgress.isActive || false;
-
-        if (scoreChange === -999) {
-            activityScore = 0;
-        } else {
-            activityScore = Math.max(0, activityScore + scoreChange);
-        }
-
-        // Round to 1 decimal to avoid float precision issues
-        activityScore = parseFloat(activityScore.toFixed(1));
-
-        // CAP at 9 in regular sessions - can only reach 10 via exam
-        if (activityScore > 9) activityScore = 9;
-
-        const nextTimestamp = Date.now() + nextIntervalMs;
-        // is_ideal logic:
-        // - If word passed exam (isActive) → true forever
-        // - Ratings 5 (Помню) and 6 (Отлично) → true
-        // - All other ratings → false
-        const is_ideal = isActive ? true : (rating === 5 || rating === 6);
-        const newProgress = {
-            interval: nextIntervalDays,
-            nextDate: nextTimestamp,
-            lastRating: rating,
-            lastReviewed: Date.now(),
-            excellentStreak: activityScore,
-            isActive: isActive,
-            is_ideal: is_ideal
-        };
-
-        // Save history for Undo (cap at 10 entries)
-        const oldProgress = word[key] ? JSON.parse(JSON.stringify(word[key])) : null;
-        this.currentSession.history.push({
-            wordId: word.id,
-            oldProgress: oldProgress,
-            queueIndex: this.currentSession.currentIndex
-        });
-        if (this.currentSession.history.length > 10) {
-            this.currentSession.history.shift(); // Remove oldest entry
-        }
-
-        word[key] = newProgress;
-
-        // Immediate Stats Update
-        const scope = this.getWordsForScope(this.currentSession.mode, this.currentSession.groupIndex);
-        this.updateStatsUI(scope);
-
-        try {
-            await this.db.updateProgress(word.id, key, newProgress);
-        } catch (e) {
-            console.error(e);
-        }
-
-        this.currentSession.currentIndex++;
-        this.showNextCard();
+    let scoreChange = 0;
+    switch (rating) {
+        case 1: scoreChange = -999; break;
+        case 2: scoreChange = -3; break;
+        case 3: scoreChange = -1.5; break;
+        case 4: scoreChange = 0; break;
+        case 5: scoreChange = 1.5; break;
+        case 6: scoreChange = 3; break;
     }
+
+    const currentProgress = word[key] || {};
+    let activityScore = currentProgress.excellentStreak || 0;
+    let isActive = currentProgress.isActive || false;
+
+    if (scoreChange === -999) {
+        activityScore = 0;
+    } else {
+        activityScore = Math.max(0, activityScore + scoreChange);
+    }
+
+    // Round to 1 decimal to avoid float precision issues
+    activityScore = parseFloat(activityScore.toFixed(1));
+
+    // CAP at 9 in regular sessions - can only reach 10 via exam
+    if (activityScore > 9) activityScore = 9;
+
+    const nextTimestamp = Date.now() + nextIntervalMs;
+    // is_ideal logic:
+    // - If word passed exam (isActive) → true forever
+    // - Ratings 5 (Помню) and 6 (Отлично) → true
+    // - All other ratings → false
+    const is_ideal = isActive ? true : (rating === 5 || rating === 6);
+    const newProgress = {
+        interval: nextIntervalDays,
+        nextDate: nextTimestamp,
+        lastRating: rating,
+        lastReviewed: Date.now(),
+        excellentStreak: activityScore,
+        isActive: isActive,
+        is_ideal: is_ideal
+    };
+
+    // Save history for Undo (cap at 10 entries)
+    const oldProgress = word[key] ? JSON.parse(JSON.stringify(word[key])) : null;
+    this.currentSession.history.push({
+        wordId: word.id,
+        oldProgress: oldProgress,
+        queueIndex: this.currentSession.currentIndex
+    });
+    if (this.currentSession.history.length > 10) {
+        this.currentSession.history.shift(); // Remove oldest entry
+    }
+
+    word[key] = newProgress;
+
+    // Immediate Stats Update
+    const scope = this.getWordsForScope(this.currentSession.mode, this.currentSession.groupIndex);
+    this.updateStatsUI(scope);
+
+    try {
+        await this.db.updateProgress(word.id, key, newProgress);
+    } catch (e) {
+        console.error(e);
+    }
+
+    this.currentSession.currentIndex++;
+    this.showNextCard();
+}
 
 }
 

@@ -2292,8 +2292,13 @@ td {
         display: none !important;
     }
 
-    /* 12. ACTION BUTTONS (Top-Right Corner) - Combined Cell */
+    /* 13. Frequency */
     #words-table td:nth-child(13) {
+        display: none !important;
+    }
+
+    /* 14. ACTION BUTTONS (Top-Right Corner) - Combined Cell */
+    #words-table td:nth-child(14) {
         position: absolute !important;
         top: 0.2rem !important;
         /* Closer to top */
@@ -2316,7 +2321,7 @@ td {
     }
 
     /* Icons only look with large hit area */
-    #words-table td:nth-child(13) button {
+    #words-table td:nth-child(14) button {
         padding: 0.6rem !important;
         /* Keep large touch area */
         opacity: 0.65 !important;
@@ -2325,19 +2330,19 @@ td {
         transition: opacity 0.2s, transform 0.1s !important;
     }
 
-    #words-table td:nth-child(13) button:active {
+    #words-table td:nth-child(14) button:active {
         opacity: 1 !important;
         transform: scale(0.9);
     }
 
-    #words-table td:nth-child(13) svg {
+    #words-table td:nth-child(14) svg {
         width: 16px !important;
         /* Size restored to original */
         height: 16px !important;
         color: var(--text-muted);
     }
 
-    #words-table td:nth-child(13) .btn-delete svg {
+    #words-table td:nth-child(14) .btn-delete svg {
         color: rgba(239, 68, 68, 0.7);
         /* Subtle red for delete */
     }
@@ -2506,9 +2511,17 @@ td {
         white-space: nowrap;
     }
 
-    /* 13. Actions */
+    /* 13. Frequency */
     #words-table th:nth-child(13),
     #words-table td:nth-child(13) {
+        min-width: 30px;
+        max-width: 50px;
+        text-align: center;
+    }
+
+    /* 14. Actions */
+    #words-table th:nth-child(14),
+    #words-table td:nth-child(14) {
         min-width: 30px;
         width: 40px;
         text-align: center;
@@ -2597,11 +2610,15 @@ td {
     display: none;
 }
 
+.mobile-filter-header {
+    display: none !important;
+}
+
 .filter-active {
-    color: var(--secondary) !important;
-    border-color: var(--secondary) !important;
-    background: rgba(var(--secondary-rgb), 0.12) !important;
-    box-shadow: 0 0 15px rgba(var(--secondary-rgb), 0.15);
+    color: var(--background) !important;
+    background: var(--text-main) !important;
+    border-color: var(--text-main) !important;
+    box-shadow: none !important;
 }
 
 .mobile-filter-title,
@@ -2615,6 +2632,9 @@ td {
 
 
 @media (max-width: 768px) {
+    .mobile-filter-header {
+        display: flex !important;
+    }
 
     /* Toolbar Grid Layout for Mobile */
     .dict-toolbar {
@@ -2800,4 +2820,111 @@ td {
     font-size: 1rem;
     line-height: 1.5;
     margin-bottom: 2rem;
+}
+
+/* Study Mode Cards - "Site Style" */
+.mode-selector {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 1rem;
+}
+
+.mode-btn {
+    background: rgba(255, 255, 255, 0.03);
+    border: 2px solid var(--border);
+    border-radius: 20px;
+    padding: 0.8rem 1.5rem;
+    color: var(--text-main);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    min-width: 180px;
+    flex: 0 0 auto;
+}
+
+.mode-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--secondary);
+    transform: translateY(-2px);
+}
+
+.mode-btn.active {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--secondary);
+    box-shadow: 0 0 20px rgba(var(--secondary-rgb, 16, 185, 129), 0.2);
+}
+
+.mode-btn-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-main);
+}
+
+.mode-btn.active .mode-btn-icon {
+    color: var(--secondary);
+}
+
+.mode-btn-label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-align: center;
+    white-space: nowrap;
+}
+
+/* Interval Comparison Table */
+.mode-comparison {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+.mode-comparison th {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    padding: 0.5rem 0.25rem;
+    font-weight: 500;
+    border-bottom: 1px solid var(--border);
+}
+
+.mode-comparison td {
+    padding: 0.4rem 0.25rem;
+    font-size: 0.85rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.mode-comparison .rating-label {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+}
+
+.mode-comparison .val-long {
+    color: var(--text-main);
+    opacity: 0.8;
+}
+
+.mode-comparison .val-intensive {
+    color: var(--primary);
+    font-weight: 500;
+}
+
+.mode-comparison tr.active-mode-row {
+    background: rgba(99, 102, 241, 0.05);
+}
+
+.mode-interval-badge {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border);
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    color: var(--text-main);
+    font-weight: 500;
 }

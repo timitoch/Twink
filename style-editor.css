@@ -1,21 +1,33 @@
 /* Page Spacing for Fixed Header handled by .dashboard-content */
 
+.hide-on-desktop { display: none !important; }
+
 .group-edit-nav {
     width: 100%;
     max-width: 1000px;
     margin: 0 auto;
     display: flex;
-    justify-content: center;
     align-items: center;
     padding: 0 1rem;
+    gap: 1rem;
 }
 
-#btn-save-group {
+#btn-back-to-study {
+    margin-right: auto;
+}
+
+#btn-save-group, #btn-delete-folder {
     height: 44px;
     padding: 0 2.5rem !important;
     border-radius: 99px !important;
     font-weight: 700;
     font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#btn-save-group {
     box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
     background: #ffffff !important;
     color: #000000 !important;
@@ -31,30 +43,49 @@
 }
 
 @media (max-width: 768px) {
+    .hide-on-desktop { display: block !important; }
+    .hide-on-mobile { display: none !important; }
+
     .group-edit-nav {
-        width: fit-content;
-        max-width: 90%;
-        margin: 0 auto;
-        padding: 0.3rem;
-        /* Match .main-nav mobile padding */
-        background: linear-gradient(135deg,
-                rgba(255, 255, 255, 0.1) 0%,
-                rgba(0, 0, 0, 0.3) 100%);
-        backdrop-filter: blur(25px) saturate(180%);
-        -webkit-backdrop-filter: blur(25px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 99px;
-        box-shadow:
-            0 12px 40px rgba(0, 0, 0, 0.5),
-            inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
+        padding: 0 1rem;
+        display: flex;
+        justify-content: space-between;
+        pointer-events: none;
+    }
+
+    #btn-back-to-study {
+        margin-right: 0;
+        pointer-events: auto;
+        background: rgba(0, 0, 0, 0.4) !important;
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 50% !important;
+        width: 48px;
+        height: 48px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    #btn-delete-folder {
+        display: none !important;
     }
 
     #btn-save-group {
-        height: 44px;
-        /* Match .nav-tab mobile height */
-        width: 140px;
+        pointer-events: auto;
+        height: 48px;
+        width: 48px;
         padding: 0 !important;
-        border-radius: 22px !important;
+        border-radius: 50% !important;
     }
 }
 

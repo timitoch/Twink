@@ -571,7 +571,7 @@ firebase.auth().onAuthStateChanged((user) => {
         if (dashboardScreen) dashboardScreen.classList.remove('hidden');
 
         const lastViewId = localStorage.getItem('lastActiveView');
-        let targetView = viewStudy;
+        let targetView = viewProfile;
         if (lastViewId) {
             const savedView = document.getElementById(lastViewId);
             if (savedView) targetView = savedView;
@@ -580,87 +580,119 @@ firebase.auth().onAuthStateChanged((user) => {
 
         // LOAD DATA
         db.subscribeToWords(async (w) => {
-            if (!w) {
-                allWordsCache = [];
-            } else {
-                allWordsCache = Object.values(w).sort((a, b) => parseInt(a.id) - parseInt(b.id));
+            try {
+                if (!w) {
+                    allWordsCache = [];
+                } else {
+                    allWordsCache = Object.values(w).sort((a, b) => parseInt(a.id) - parseInt(b.id));
 
-                // --- MIGRATION + TIME DECAY: populate/update is_ideal ---
-                const now = Date.now();
-                const migrationUpdates = {};
+                    // Only run migration and background tasks on INITIAL load to prevent infinite loops
+                    if (isFirstDataLoad) {
+                        // --- PREPARE MIGRATION + TIME DECAY ---
+                        const now = Date.now();
+                        const migrationUpdates = {};
 
-                allWordsCache.forEach(word => {
-                    const p = word.progress_global;
-                    if (!p) return;
+                        allWordsCache.forEach(word => {
+                            const p = word.progress_global;
+                            if (!p) return;
 
-                    let wordChanges = false;
-                    const isOverdue = p.nextDate && p.nextDate <= now;
-                    let wasIdealNow = p.is_ideal;
+                            const isOverdue = p.nextDate && p.nextDate <= now;
+                            let wasIdealNow = p.is_ideal;
 
-                    if (p.is_ideal === undefined) {
-                        // First-time migration:
-                        if (p.isActive) {
-                            wasIdealNow = true;
-                        } else if ((p.lastRating === 5 || p.lastRating === 6) && !isOverdue) {
-                            wasIdealNow = true;
-                        } else {
-                            wasIdealNow = false;
-                        }
-                    } else if (p.is_ideal && !p.isActive && isOverdue) {
-                        // TIME DECAY: If it was ideal but now it's overdue, it's NO LONGER ideal
-                        wasIdealNow = false;
-                    }
+                            if (p.is_ideal === undefined) {
+                                if (p.isActive) wasIdealNow = true;
+                                else if ((p.lastRating === 5 || p.lastRating === 6) && !isOverdue) wasIdealNow = true;
+                                else wasIdealNow = false;
+                            } else if (p.is_ideal && !p.isActive && isOverdue) {
+                                wasIdealNow = false;
+                            }
 
-                    if (p.is_ideal !== wasIdealNow) {
-                        migrationUpdates[`users/${db.userId}/words/${word.id}/progress_global/is_ideal`] = wasIdealNow;
-                        p.is_ideal = wasIdealNow;
-                        wordChanges = true;
-                    }
+                            if (p.is_ideal !== wasIdealNow) {
+                                migrationUpdates[`users/${db.userId}/words/${word.id}/progress_global/is_ideal`] = wasIdealNow;
+                                p.is_ideal = wasIdealNow;
+                            }
+                            if (word.interval === undefined || word.interval !== (p.interval || 0)) {
+                                migrationUpdates[`users/${db.userId}/words/${word.id}/interval`] = p.interval || 0;
+                                word.interval = p.interval || 0;
+                            }
+                            if (word.nextDate === undefined || word.nextDate !== (p.nextDate || 0)) {
+                                migrationUpdates[`users/${db.userId}/words/${word.id}/nextDate`] = p.nextDate || 0;
+                                word.nextDate = p.nextDate || 0;
+                            }
+                        });
 
-                    // Sync top-level interval and nextDate
-                    if (word.interval === undefined || word.interval !== (p.interval || 0)) {
-                        migrationUpdates[`users/${db.userId}/words/${word.id}/interval`] = p.interval || 0;
-                        word.interval = p.interval || 0;
-                        wordChanges = true;
-                    }
-                    if (word.nextDate === undefined || word.nextDate !== (p.nextDate || 0)) {
-                        migrationUpdates[`users/${db.userId}/words/${word.id}/nextDate`] = p.nextDate || 0;
-                        word.nextDate = p.nextDate || 0;
-                        wordChanges = true;
-                    }
-                });
-                if (Object.keys(migrationUpdates).length > 0) {
-                    try {
-                        await db.db.ref().update(migrationUpdates);
-                        console.log(`[is_ideal] Updated ${Object.keys(migrationUpdates).length} words`);
-                    } catch (e) {
-                        console.error('[is_ideal] update error:', e);
+                        const runBackgroundTasks = async () => {
+                            // 1. MIGRATION
+                            if (Object.keys(migrationUpdates).length > 0) {
+                                try {
+                                    await db.db.ref().update(migrationUpdates);
+                                } catch (e) {
+                                    console.error('[is_ideal] update error:', e);
+                                }
+                            }
+
+                            // 2. FREQUENCY
+                            const frequencyUpdates = {};
+                            let fetchedCount = 0;
+                            for (let i = 0; i < allWordsCache.length && fetchedCount < 30; i++) {
+                                const wordObj = allWordsCache[i];
+                                if (wordObj.Worthäufigkeit === undefined) {
+                                    try {
+                                        const cleanWord = normalizeGerman(wordObj.word);
+                                        if (!cleanWord) continue;
+                                        const resp = await fetch(`https://www.dwds.de/api/frequency/?q=${encodeURIComponent(cleanWord)}`);
+                                        if (resp.ok) {
+                                            const data = await resp.json();
+                                            let freq = data?.frequency || 0;
+                                            frequencyUpdates[`users/${db.userId}/words/${wordObj.id}/Worthäufigkeit`] = freq;
+                                            wordObj.Worthäufigkeit = freq;
+                                            fetchedCount++;
+                                            await new Promise(r => setTimeout(r, 200));
+                                        } else {
+                                            frequencyUpdates[`users/${db.userId}/words/${wordObj.id}/Worthäufigkeit`] = 0;
+                                            wordObj.Worthäufigkeit = 0;
+                                            fetchedCount++;
+                                        }
+                                    } catch (e) { }
+                                }
+                            }
+                            if (Object.keys(frequencyUpdates).length > 0) {
+                                try { await db.db.ref().update(frequencyUpdates); } catch (e) { }
+                            }
+                        };
+                        runBackgroundTasks();
                     }
                 }
-            }
 
-            // Update Module caches
-            if (window.StudyModule) window.StudyModule.updateWordsCache(allWordsCache);
-            if (window.ProfileModule) window.ProfileModule.updateStats(allWordsCache);
+                // Update Module caches
+                if (window.StudyModule) window.StudyModule.updateWordsCache(allWordsCache);
+                if (window.ProfileModule) window.ProfileModule.updateStats(allWordsCache);
 
-            // Render current view
-            if (!viewStudy.classList.contains('hidden') && window.StudyModule) {
-                window.StudyModule.renderStudyDashboard();
-            } else if (!viewWords.classList.contains('hidden')) {
-                applyDictionaryFilters();
-            } else if (!viewProfile.classList.contains('hidden') && window.ProfileModule) {
-                window.ProfileModule.loadStats();
-            }
-
-            // HIDE LOADER on first data load
-            if (isFirstDataLoad) {
-                isFirstDataLoad = false;
-                if (loadingScreen) {
-                    loadingScreen.style.opacity = '0';
-                    loadingScreen.style.transition = 'opacity 0.4s ease';
-                    setTimeout(() => {
-                        loadingScreen.style.display = 'none';
-                    }, 400);
+                // Render current view
+                try {
+                    if (!viewStudy.classList.contains('hidden') && window.StudyModule) {
+                        window.StudyModule.renderStudyDashboard();
+                    } else if (!viewWords.classList.contains('hidden')) {
+                        if (window.applyDictionaryFilters) applyDictionaryFilters();
+                    } else if (!viewProfile.classList.contains('hidden') && window.ProfileModule) {
+                        window.ProfileModule.loadStats();
+                    }
+                } catch (renderError) {
+                    console.error("Render failed on data load:", renderError);
+                }
+            } catch (err) {
+                console.error("Critical error in subscribeToWords:", err);
+            } finally {
+                // HIDE LOADER on first data load (ALWAYS hide it in finally to prevent infinite loading)
+                if (isFirstDataLoad) {
+                    isFirstDataLoad = false;
+                    if (loadingScreen) {
+                        loadingScreen.style.opacity = '0';
+                        loadingScreen.style.transition = 'opacity 0.4s ease';
+                        setTimeout(() => {
+                            loadingScreen.style.display = 'none';
+                        }, 400);
+                    }
                 }
             }
         });
@@ -672,7 +704,7 @@ firebase.auth().onAuthStateChanged((user) => {
                 if (loadingScreen) loadingScreen.style.display = 'none';
                 window.location.href = 'auth.html';
             }
-        }, 300);
+        }, 500);
     }
 });
 
@@ -836,6 +868,7 @@ function renderTable(arr) {
         // 9: Folder
         // 10: Interval
         // 11: NextDate
+        // 12: Worthäufigkeit
         if (ths[0]) ths[0].style.display = visibleColumns.id ? '' : 'none';
         if (ths[1]) ths[1].style.display = visibleColumns.active ? '' : 'none';
         if (ths[2]) ths[2].style.display = visibleColumns.is_ideal ? '' : 'none';
@@ -851,6 +884,7 @@ function renderTable(arr) {
 
         if (ths[10]) ths[10].style.display = visibleColumns.interval ? '' : 'none';
         if (ths[11]) ths[11].style.display = visibleColumns.nextDate ? '' : 'none';
+        if (ths[12]) ths[12].style.display = visibleColumns.frequency ? '' : 'none';
     }
 
     // --- DUPLICATE DETECTION --
@@ -952,6 +986,8 @@ function renderTable(arr) {
             <td style="${displayStyle('interval')}"><span class="level-badge">${intervalDisplay}</span></td>
             <td class="date-info" style="${displayStyle('nextDate')}">${d}</td>
             
+            <td style="${displayStyle('frequency')}; text-align: center;">${w.Worthäufigkeit !== undefined ? (w.Worthäufigkeit === 0 ? '-' : Math.min(7, w.Worthäufigkeit + 1)) : ''}</td>
+
             <td style="text-align:center; padding: 0.5rem 0.2rem; min-width: 60px;">
                 <div style="display: inline-flex; align-items: center; justify-content: center;" class="card-mobile-actions">
                     <button class="btn-icon btn-edit" data-id="${w.id}" title="Редактировать">
@@ -1035,9 +1071,57 @@ const dictFilterScoreLabel = document.getElementById('score-btn-label');
 
 
 // --- Toggle Menus ---
+let lastRenderedIntervalMode = null;
+function updateDictIntervalMenu() {
+    if (!dictFilterIntervalMenu) return;
+    const mode = window.StudyModule?.settings?.studyMode || 'long';
+    if (lastRenderedIntervalMode === mode && dictFilterIntervalMenu.querySelector('.dynamic-interval')) return; 
+    
+    lastRenderedIntervalMode = mode;
+    
+    const longIntervals = [
+        { val: 0, label: '1 час' },
+        { val: 1, label: '1 дн' },
+        { val: 4, label: '4 дн' },
+        { val: 7, label: '7 дн' },
+        { val: 12, label: '12 дн' },
+        { val: 21, label: '21 дн' }
+    ];
+    const intIntervals = [
+        { val: 0, label: '1 час' },
+        { val: 1, label: '1 дн' },
+        { val: 2, label: '2 дн' },
+        { val: 4, label: '4 дн' },
+        { val: 9, label: '9 дн' },
+        { val: 17, label: '17 дн' }
+    ];
+    
+    const intervals = mode === 'intensive' ? intIntervals : longIntervals;
+    const allCb = dictFilterIntervalMenu.querySelector('input[value="all"]');
+    const isAllChecked = allCb ? allCb.checked : true;
+    
+    const oldCheckboxes = dictFilterIntervalMenu.querySelectorAll('label');
+    oldCheckboxes.forEach(l => {
+        const input = l.querySelector('input');
+        if (input && input.value !== 'all' && input.value !== 'new') {
+            l.remove();
+        }
+    });
+    
+    intervals.forEach(intObj => {
+        const label = document.createElement('label');
+        label.className = 'custom-checkbox secondary dynamic-interval';
+        label.innerHTML = `<input type="checkbox" value="${intObj.val}" ${isAllChecked ? 'checked' : ''}><span class="checkmark"></span><span>${intObj.label}</span>`;
+        dictFilterIntervalMenu.appendChild(label);
+    });
+    
+    if (typeof updateIntervalLabel === 'function') updateIntervalLabel();
+}
+
 if (dictFilterIntervalBtn) {
     dictFilterIntervalBtn.onclick = (e) => {
         e.stopPropagation();
+        updateDictIntervalMenu();
         dictFilterIntervalMenu.classList.toggle('hidden');
         if (dictFilterScoreMenu) dictFilterScoreMenu.classList.add('hidden');
         if (dictFilterColumnsMenu) dictFilterColumnsMenu.classList.add('hidden');
@@ -1112,6 +1196,7 @@ window.setSortOrder = (order) => {
 function updateSortLabel(order) {
     if (!dictFilterSortLabel) return;
     const arrowIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 2px; display: inline-block; vertical-align: middle;"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>`;
+    const arrowUpIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 2px; display: inline-block; vertical-align: middle;"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>`;
 
     switch (order) {
         case 'newest':
@@ -1125,6 +1210,12 @@ function updateSortLabel(order) {
             break;
         case 'interval':
             dictFilterSortLabel.innerHTML = `Интервал ${arrowIcon}`;
+            break;
+        case 'date_asc':
+            dictFilterSortLabel.innerHTML = `По дате ${arrowUpIcon}`;
+            break;
+        case 'date_desc':
+            dictFilterSortLabel.innerHTML = `По дате ${arrowIcon}`;
             break;
         default:
             dictFilterSortLabel.textContent = 'Сортировка';
@@ -1242,6 +1333,7 @@ function updateScoreLabel() {
 
 
 function applyDictionaryFilters(returnOnly) {
+    if (typeof updateDictIntervalMenu === 'function') updateDictIntervalMenu();
     // If called from event listener, returnOnly is an Event object (truthy). 
     // We must ensure returnOnly is strictly true boolean if we want to return.
     const shouldReturn = returnOnly === true;
@@ -1371,6 +1463,11 @@ function applyDictionaryFilters(returnOnly) {
         result = result.filter(w => duplicateIds.has(String(w.id)));
     }
 
+    // Filter out words without a nextDate when sorting by date
+    if (currentSortOrder === 'date_asc' || currentSortOrder === 'date_desc') {
+        result = result.filter(w => w.progress_global && w.progress_global.nextDate);
+    }
+
     // 3. Sorting
     if (showOnlyDuplicates) {
         // Grouping Sort: Sort by normalized German word to bring duplicates together
@@ -1414,9 +1511,24 @@ function applyDictionaryFilters(returnOnly) {
             if (effA !== effB) return effA - effB;
             return parseInt(a.id) - parseInt(b.id);
         }
+        if (currentSortOrder === 'date_asc') {
+            const dA = a.progress_global?.nextDate || 0;
+            const dB = b.progress_global?.nextDate || 0;
+            if (dA !== dB) return dA - dB;
+            return parseInt(a.id) - parseInt(b.id);
+        }
+        if (currentSortOrder === 'date_desc') {
+            const dA = a.progress_global?.nextDate || 0;
+            const dB = b.progress_global?.nextDate || 0;
+            if (dA !== dB) return dB - dA;
+            return parseInt(b.id) - parseInt(a.id);
+        }
         return 0;
     }
 
+
+    const countEl = document.getElementById('mobile-filter-results-count');
+    if (countEl) countEl.textContent = `Найдено: ${result.length}`;
 
     if (shouldReturn) return result;
     renderTable(result);
