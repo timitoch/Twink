@@ -2297,22 +2297,21 @@ td {
         display: none !important;
     }
 
-    /* 14. ACTION BUTTONS (Top-Right Corner) - Combined Cell */
+    /* 14. ACTION BUTTONS (Top-Right Corner) */
     #words-table td:nth-child(14) {
-        position: absolute !important;
-        top: 0.2rem !important;
-        /* Closer to top */
-        right: 0.1rem !important;
-        /* Closer to right */
+        position: absolute;
+        top: 0.4rem;
+        right: 0.3rem;
+        width: auto !important;
         display: flex !important;
         align-items: center;
         justify-content: flex-end;
-        order: 99;
+        gap: 0.15rem;
         padding: 0 !important;
-        width: auto !important;
-        min-width: 0 !important;
-        border: none !important;
         background: transparent !important;
+        z-index: 100 !important;
+        pointer-events: auto !important;
+        margin: 0 !important;
     }
 
     .card-mobile-actions {
@@ -2320,14 +2319,19 @@ td {
         /* Icons closer to each other */
     }
 
-    /* Icons only look with large hit area */
+    /* Icons only — no box, no border, subtle opacity */
     #words-table td:nth-child(14) button {
-        padding: 0.6rem !important;
-        /* Keep large touch area */
-        opacity: 0.65 !important;
+        padding: 0.35rem !important;
+        min-width: 32px !important;
+        min-height: 32px !important;
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        opacity: 0.5 !important;
         border: none !important;
         background: transparent !important;
-        transition: opacity 0.2s, transform 0.1s !important;
+        border-radius: 0 !important;
+        margin: 0 !important;
     }
 
     #words-table td:nth-child(14) button:active {

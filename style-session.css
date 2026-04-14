@@ -114,6 +114,20 @@
 .flashcard.is-flipped {
     transform: rotateY(180deg);
 }
+ 
+ .card-folder-label {
+    position: absolute;
+    top: 0.6rem;
+    left: 1rem;
+    font-size: 0.55rem;
+    color: var(--text-muted);
+    opacity: 0.25;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 500;
+    pointer-events: none;
+    z-index: 5;
+ }
 
 .btn-card-edit {
     position: absolute;
@@ -215,6 +229,14 @@
 .card-face h2 {
     font-size: 1.6rem;
     /* Reduced from 2rem to be less overwhelming */
+}
+
+.card-meaning-text {
+    font-size: 1.1rem;
+    color: var(--text-muted);
+    margin-top: 0.5rem;
+    max-width: 90%;
+    line-height: 1.4;
 }
 
 .sub-text {

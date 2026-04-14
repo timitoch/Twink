@@ -33,7 +33,7 @@ button,
 body {
     font-family: 'Outfit', sans-serif;
     background-color: var(--background);
-    background-image:
+    background-image: 
         radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
         radial-gradient(at 100% 0%, rgba(236, 72, 153, 0.15) 0px, transparent 50%),
         radial-gradient(at 100% 100%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
@@ -43,13 +43,23 @@ body {
     min-height: 100vh;
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start; /* Changed from center to support top-aligned views */
 }
 
 .app-container {
     width: 100%;
     max-width: 480px;
-    margin: 20px;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Ensure centering for login specifically */
+#auth-screen.view-section {
+    justify-content: center;
+    min-height: 100vh;
 }
 
 .glass-card {

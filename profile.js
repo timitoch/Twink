@@ -304,7 +304,6 @@ class ProfileModule {
                     </div>
                     <button onclick="window.ProfileModule.nextMonth()" class="chart-nav-btn">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                    </button>
                 </div>
                 <div class="monthly-bar-chart" style="position: relative;">
                     ${this.generateMonthlyChart()}
@@ -312,10 +311,20 @@ class ProfileModule {
             </div>
             
             <div class="stats-grid-container" style="margin-top: 2rem;">
-                <div class="stat-box">
-                    <div class="stat-value">${totalWords}</div>
-                    <div class="stat-label">Слов в словаре</div>
+                <!-- Dual Box: Total Words / Total Idioms -->
+                <div class="stat-box dual">
+                    <div class="stat-dual-side">
+                        <div class="stat-value">${totalWords}</div>
+                        <div class="stat-label">Слов</div>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat-dual-side">
+                        <div class="stat-value" style="color: var(--primary);">${window.IdiomsUI ? window.IdiomsUI.idiomsCache.length : 0}</div>
+                        <div class="stat-label">Идиом</div>
+                    </div>
                 </div>
+
+                <!-- Box: Active Words (Remains separate) -->
                 <div class="stat-box">
                     <div class="stat-value" style="color: var(--secondary);">${activeCount}</div>
                     <div class="stat-label" style="display:flex; align-items:center; justify-content:flex-start; gap:4px;">
@@ -323,11 +332,23 @@ class ProfileModule {
                         Активные слова
                     </div>
                 </div>
-                <div class="stat-box">
-                    <div class="stat-value">${mastered}</div>
-                    <div class="stat-label" style="display:flex; align-items:center; justify-content:flex-start; gap:4px;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--secondary); opacity: 0.8;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-                        Идеально
+
+                <!-- Dual Box: Ideal Words / Ideal Idioms -->
+                <div class="stat-box dual">
+                    <div class="stat-dual-side">
+                        <div class="stat-value">${mastered}</div>
+                        <div class="stat-label" style="display:flex; align-items:center; gap:4px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--secondary); opacity: 0.8;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                            Слова
+                        </div>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat-dual-side">
+                        <div class="stat-value">${window.IdiomsUI ? window.IdiomsUI.idiomsCache.filter(i => i.progress_global?.is_ideal).length : 0}</div>
+                        <div class="stat-label" style="display:flex; align-items:center; gap:4px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--secondary); opacity: 0.8;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                            Идиомы
+                        </div>
                     </div>
                 </div>
             </div>

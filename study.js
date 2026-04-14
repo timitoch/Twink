@@ -99,10 +99,12 @@ class StudyModule {
         // Session UI
         this.btnExitSession = document.getElementById('btn-exit-session');
         this.flashcard = document.getElementById('flashcard');
+        this.cardFolderName = document.getElementById('card-folder-name');
         this.cardWord = document.getElementById('card-word');
         this.cardInfo1 = document.getElementById('card-info1');
         this.cardInfo2 = document.getElementById('card-info2');
         this.cardTranslation = document.getElementById('card-translation');
+        this.cardMeaning = document.getElementById('card-meaning');
         this.cardExamples = document.getElementById('card-examples');
         this.ratingButtons = document.getElementById('rating-buttons');
         this.btnFlashcardEdit = document.getElementById('btn-flashcard-edit');
@@ -117,6 +119,8 @@ class StudyModule {
         this.totalWordsCount = document.getElementById('total-words-count');
         this.dueWordsCount = document.getElementById('due-words-count');
         this.learnedTodayCount = document.getElementById('learned-today-count');
+        this.totalWordsLabel = document.getElementById('total-words-label');
+        this.dueWordsLabel = document.getElementById('due-words-label');
         this.sessionMasteredCount = document.getElementById('session-mastered-count');
         this.progressContainer = document.querySelector('.session-progress-container');
         this.progressFill = document.getElementById('progress-fill');
@@ -140,6 +144,12 @@ class StudyModule {
         this.btnMasterInterface = null;
         this.sectionCardElements = null;
         this.sectionInterfaceElements = null;
+
+        // Idiom Folder Toggle
+        this.folderIdiomModeToggle = document.getElementById('folder-idiom-mode-toggle');
+        this.idiomToggleBtn = document.getElementById('idiom-toggle-btn');
+        this.folderModeToggleContainer = document.getElementById('folder-mode-toggle-container');
+        this.isIdiomFolder = false;
 
         // Exam module (PrufungModule) initialized in init()
 
@@ -214,6 +224,21 @@ class StudyModule {
 
         // Initialize Folder Modal
         this.initFolderCreation();
+
+        // --- Idiom Folder Mode Toggle Handler ---
+        if (this.idiomToggleBtn && this.folderIdiomModeToggle) {
+            this.idiomToggleBtn.onclick = () => {
+                this.folderIdiomModeToggle.checked = !this.folderIdiomModeToggle.checked;
+                this.isIdiomFolder = this.folderIdiomModeToggle.checked;
+                this.syncIdiomToggleUI();
+                this.renderFolderDraft();
+            };
+        }
+
+        // Ensure idiom cards are rendered
+        if (window.IdiomsUI && typeof window.IdiomsUI.renderStudyIdiomCards === 'function') {
+            window.IdiomsUI.renderStudyIdiomCards();
+        }
 
         // Visibility Change listener to stop counting when backgrounded
         document.addEventListener('visibilitychange', () => {
@@ -871,42 +896,82 @@ class StudyModule {
 
     // --- STATS LOGIC ---
     getWordsForScope(mode, groupIndex) {
-        const sorted = [...this.allWordsCache].sort((a, b) => parseInt(a.id) - parseInt(b.id));
+        let source = [];
+        const isIdiomMode = mode === 'idiom_global' || mode === 'idiom_folder';
 
-        if (mode === 'global') {
-            if (this.settings.includeActive) {
+        if (isIdiomMode) {
+            // Map idioms to the same format as startIdiomSession does
+            const idioms = (window.IdiomsUI && window.IdiomsUI.idiomsCache) ? window.IdiomsUI.idiomsCache : [];
+            source = idioms.map(i => ({
+                id: i.id,
+                word: i.idiom,
+                translation: i.translation,
+                info1: i.meaning || '',
+                info2: i.info || '',
+                ex1: i.example || '',
+                ex2: '',
+                folder: i.folder,
+                progress_global: i.progress_global || { interval: 0, nextDate: Date.now(), state: 'new', is_ideal: false, excellentStreak: 0 },
+                _isIdiom: true
+            }));
+        } else {
+            source = this.allWordsCache;
+        }
+
+        const sorted = [...source].sort((a, b) => {
+            const idA = String(a.id).replace('i_', '');
+            const idB = String(b.id).replace('i_', '');
+            return parseInt(idA) - parseInt(idB);
+        });
+
+        if (mode === 'global' || mode === 'idiom_global') {
+            if (this.settings.includeActive || isIdiomMode) {
                 return sorted;
             }
             return sorted.filter(w => !w.progress_global || !w.progress_global.isActive);
         }
-        if (mode === 'folder' && groupIndex != null) {
+        if ((mode === 'folder' || mode === 'idiom_folder') && groupIndex != null) {
             // groupIndex here is the folder name
             return sorted.filter(w => w.folder === groupIndex);
         }
         return [];
     }
 
-    updateStatsUI(words) {
+    updateStatsUI(passedWords) {
         const now = Date.now();
-        const startOfToday = DateUtils.getLogicalDayStart();
-        let total = 0, due = 0, learnedToday = 0, mastered = 0;
+        const startOfToday = (window.DateUtils && window.DateUtils.getLogicalDayStart) ? window.DateUtils.getLogicalDayStart() : now - 24*3600*1000;
+        
+        // Determine whether to use passed words (session queue) or full scope (folder total)
+        // For the "Total" counter, the user wants to see the whole folder size.
+        let scopeWords = passedWords;
+        if (this.currentSession && this.currentSession.mode !== 'custom') {
+            const fullScope = this.getWordsForScope(this.currentSession.mode, this.currentSession.groupIndex);
+            if (fullScope && fullScope.length > 0) scopeWords = fullScope;
+        }
 
-        words.forEach(w => {
+        let total = 0, due = 0, learnedToday = 0, mastered = 0;
+        const isIdiomSession = scopeWords.some(w => w._isIdiom);
+
+        scopeWords.forEach(w => {
             total++;
             const key = 'progress_global';
             const prog = w[key] || {};
 
-            if (!prog.isActive && (prog.excellentStreak || 0) < 9 && (!prog.nextDate || prog.nextDate <= now)) due++;
+            const isDue = (!prog.isActive && (!prog.nextDate || prog.nextDate <= now || prog.interval === 0));
+            const isWordReadyForExam = !w._isIdiom && (prog.excellentStreak || 0) >= 9;
+
+            if (isDue && !isWordReadyForExam) due++;
             if (prog.lastReviewed && prog.lastReviewed >= startOfToday) learnedToday++;
-            // Mastered: is_ideal is the single source of truth
             if (prog.is_ideal) mastered++;
         });
 
         if (this.totalWordsCount) this.totalWordsCount.textContent = total;
         if (this.dueWordsCount) this.dueWordsCount.textContent = due;
         if (this.learnedTodayCount) this.learnedTodayCount.textContent = learnedToday;
-        if (this.sessionMasteredCount) {
-            this.sessionMasteredCount.textContent = mastered;
+        if (this.sessionMasteredCount) this.sessionMasteredCount.textContent = mastered;
+
+        if (this.totalWordsLabel) {
+            this.totalWordsLabel.textContent = isIdiomSession ? 'Всего идиом' : 'Всего слов';
         }
 
         if (this.progressFill) {
@@ -955,15 +1020,19 @@ class StudyModule {
         // Folder View Toggle (Grid/List)
         const viewToggleBtn = document.getElementById('folder-view-toggle');
         const foldersContainer = document.getElementById('folders-list');
+        const idiomFoldersContainer = document.getElementById('idiom-folders-list');
+        
         if (viewToggleBtn && foldersContainer) {
             viewToggleBtn.onclick = () => {
-                foldersContainer.classList.toggle('grid-mode');
-                localStorage.setItem('folderViewMode', foldersContainer.classList.contains('grid-mode') ? 'grid' : 'list');
+                const isGrid = foldersContainer.classList.toggle('grid-mode');
+                if (idiomFoldersContainer) idiomFoldersContainer.classList.toggle('grid-mode', isGrid);
+                localStorage.setItem('folderViewMode', isGrid ? 'grid' : 'list');
             };
 
             // Restore preference
             if (localStorage.getItem('folderViewMode') === 'grid') {
                 foldersContainer.classList.add('grid-mode');
+                if (idiomFoldersContainer) idiomFoldersContainer.classList.add('grid-mode');
             }
         }
 
@@ -996,6 +1065,11 @@ class StudyModule {
 
     openFolderCreator() {
         if (window.switchView) window.switchView(this.viewGroupEdit);
+
+        this.isIdiomFolder = false;
+        if (this.folderIdiomModeToggle) this.folderIdiomModeToggle.checked = false;
+        this.syncIdiomToggleUI();
+        if (this.folderModeToggleContainer) this.folderModeToggleContainer.classList.remove('hidden');
 
         // Reset Inputs
         const nameInput = document.getElementById('group-name-input');
@@ -1078,21 +1152,53 @@ class StudyModule {
         this.currentFolderId = folderName; // Store original folder name
         this.folderDraftState = [];
 
-        // Load words from allWordsCache that belong to this folder
+        // Check if it's a word folder or an idiom folder
         const folderWords = this.allWordsCache.filter(w => w.folder === folderName);
-        folderWords.forEach(w => {
-            this.folderDraftState.push({
-                id: w.id, // Keep ID for updates
-                word: w.word,
-                translation: w.translation,
-                info1: w.info1,
-                info2: w.info2,
-                ex1: w.ex1,
-                ex2: w.ex2,
-                progress_global: w.progress_global,
-                progress_groups: w.progress_groups
+        const folderIdioms = (window.IdiomsUI && window.IdiomsUI.idiomsCache) 
+            ? window.IdiomsUI.idiomsCache.filter(i => i.folder === folderName) 
+            : [];
+
+        if (folderIdioms.length > 0 && folderWords.length === 0) {
+            // It's an idiom folder
+            this.isIdiomFolder = true;
+            if (this.folderIdiomModeToggle) this.folderIdiomModeToggle.checked = true;
+            this.syncIdiomToggleUI();
+            if (this.folderModeToggleContainer) this.folderModeToggleContainer.classList.remove('hidden');
+            
+            folderIdioms.forEach(i => {
+                this.folderDraftState.push({
+                    id: i.id,
+                    word: i.idiom,
+                    translation: i.translation,
+                    info1: i.meaning,
+                    info2: i.info,
+                    ex1: i.example,
+                    ex2: '',
+                    progress_global: i.progress_global
+                });
             });
-        });
+        } else {
+            // It's a word folder (or empty)
+            this.isIdiomFolder = false;
+            if (this.folderIdiomModeToggle) this.folderIdiomModeToggle.checked = false;
+            this.syncIdiomToggleUI();
+            // Hide toggle when editing word folders to prevent cross-db switching
+            if (this.folderModeToggleContainer) this.folderModeToggleContainer.classList.add('hidden');
+
+            folderWords.forEach(w => {
+                this.folderDraftState.push({
+                    id: w.id,
+                    word: w.word,
+                    translation: w.translation,
+                    info1: w.info1,
+                    info2: w.info2,
+                    ex1: w.ex1,
+                    ex2: w.ex2,
+                    progress_global: w.progress_global,
+                    progress_groups: w.progress_groups
+                });
+            });
+        }
 
         // Ensure at least one empty card if empty
         if (this.folderDraftState.length === 0) {
@@ -1162,6 +1268,15 @@ class StudyModule {
         this.renderFolderDraft();
     }
 
+    syncIdiomToggleUI() {
+        if (!this.idiomToggleBtn || !this.folderIdiomModeToggle) return;
+        if (this.folderIdiomModeToggle.checked) {
+            this.idiomToggleBtn.classList.add('active');
+        } else {
+            this.idiomToggleBtn.classList.remove('active');
+        }
+    }
+
     renderFolderDraft() {
         this.groupWordsList.innerHTML = '';
         this.folderDraftState.forEach((w, index) => {
@@ -1184,23 +1299,35 @@ class StudyModule {
                     </div>
 
                     <div class="edit-word-group" style="margin-bottom: 1rem;">
-                        <input type="text" class="edit-word-input" placeholder="Немецкое слово" value="${(w.word || '').replace(/"/g, '&quot;')}" data-field="word" data-idx="${index}">
+                        <input type="text" class="edit-word-input" 
+                            placeholder="${this.isIdiomFolder ? 'Идиома' : 'Немецкое слово'}" 
+                            value="${(w.word || '').replace(/"/g, '&quot;')}" data-field="word" data-idx="${index}">
                     </div>
                     <div class="edit-word-group" style="margin-bottom: 1rem;">
-                        <input type="text" class="edit-word-input" placeholder="Перевод" value="${(w.translation || '').replace(/"/g, '&quot;')}" data-field="translation" data-idx="${index}">
+                        <input type="text" class="edit-word-input" 
+                            placeholder="Перевод" 
+                            value="${(w.translation || '').replace(/"/g, '&quot;')}" data-field="translation" data-idx="${index}">
                     </div>
                     <div class="edit-word-group" style="margin-bottom: 1rem;">
-                        <input type="text" class="edit-word-input" placeholder="Формы глагола" value="${(w.info1 || '').replace(/"/g, '&quot;')}" data-field="info1" data-idx="${index}">
+                        <input type="text" class="edit-word-input" 
+                            placeholder="${this.isIdiomFolder ? 'Смысловой перевод' : 'Формы глагола'}" 
+                            value="${(w.info1 || '').replace(/"/g, '&quot;')}" data-field="info1" data-idx="${index}">
                     </div>
                     <div class="edit-word-group" style="margin-bottom: 1rem;">
-                        <input type="text" class="edit-word-input" placeholder="Дополнительно" value="${(w.info2 || '').replace(/"/g, '&quot;')}" data-field="info2" data-idx="${index}">
+                        <input type="text" class="edit-word-input" 
+                            placeholder="Дополнительно" 
+                            value="${(w.info2 || '').replace(/"/g, '&quot;')}" data-field="info2" data-idx="${index}">
                     </div>
                     <div class="edit-word-group" style="margin-bottom: 1rem;">
-                        <input type="text" class="edit-word-input" placeholder="Пример 1" value="${(w.ex1 || '').replace(/"/g, '&quot;')}" data-field="ex1" data-idx="${index}">
+                        <input type="text" class="edit-word-input" 
+                            placeholder="Пример" 
+                            value="${(w.ex1 || '').replace(/"/g, '&quot;')}" data-field="ex1" data-idx="${index}">
                     </div>
+                    ${this.isIdiomFolder ? '' : `
                     <div class="edit-word-group" style="margin-bottom: 0;">
                         <input type="text" class="edit-word-input" placeholder="Пример 2" value="${(w.ex2 || '').replace(/"/g, '&quot;')}" data-field="ex2" data-idx="${index}">
                     </div>
+                    `}
                 </div>
             `;
 
@@ -1258,36 +1385,64 @@ class StudyModule {
         const newWordIds = [];
         const updates = {};
 
-        // Find max ID
-        let currentMaxId = 0;
+        // Find max ID for words and idioms
+        let currentMaxWordId = 0;
         this.allWordsCache.forEach(w => {
             const id = parseInt(w.id);
-            if (!isNaN(id) && id > currentMaxId) currentMaxId = id;
+            if (!isNaN(id) && id < 100000 && id > currentMaxWordId) currentMaxWordId = id;
         });
 
-        validWords.forEach(w => {
+        let currentMaxIdiomId = 100000;
+        if (window.IdiomsUI && window.IdiomsUI.idiomsCache) {
+            window.IdiomsUI.idiomsCache.forEach(i => {
+                const num = parseInt(String(i.id).replace('i_', ''));
+                if (!isNaN(num) && num > currentMaxIdiomId) currentMaxIdiomId = num;
+            });
+        }
+
+        validWords.forEach((w, index) => {
             let id = w.id;
             if (!id) {
-                // New Word
-                currentMaxId++;
-                id = String(currentMaxId);
+                // New Item
+                if (this.isIdiomFolder) {
+                    currentMaxIdiomId++;
+                    id = String(currentMaxIdiomId);
+                } else {
+                    currentMaxWordId++;
+                    id = String(currentMaxWordId);
+                }
             }
 
             newWordIds.push(id);
 
-            // Important: Assign the folder name to each word
-            updates[`users/${this.userId}/words/${id}`] = {
-                id: id,
-                word: w.word,
-                translation: w.translation,
-                info1: w.info1,
-                info2: w.info2,
-                ex1: w.ex1,
-                ex2: w.ex2,
-                folder: name, // Set folder to the folder name
-                progress_global: w.progress_global || { interval: 0, nextDate: Date.now(), state: "new", is_ideal: false },
-                progress_groups: w.progress_groups || { interval: 0, nextDate: Date.now(), state: "new" }
-            };
+            const pathPrefix = this.isIdiomFolder ? 'idioms' : 'words';
+            const itemPath = `users/${this.userId}/${pathPrefix}/${id}`;
+
+            if (this.isIdiomFolder) {
+                updates[itemPath] = {
+                    id: id,
+                    idiom: w.word,
+                    translation: w.translation,
+                    meaning: w.info1,
+                    info: w.info2,
+                    example: w.ex1,
+                    folder: name,
+                    progress_global: w.progress_global || { interval: 0, nextDate: Date.now(), state: "new", is_ideal: false }
+                };
+            } else {
+                updates[itemPath] = {
+                    id: id,
+                    word: w.word,
+                    translation: w.translation,
+                    info1: w.info1,
+                    info2: w.info2,
+                    ex1: w.ex1,
+                    ex2: w.ex2,
+                    folder: name,
+                    progress_global: w.progress_global || { interval: 0, nextDate: Date.now(), state: "new", is_ideal: false },
+                    progress_groups: w.progress_groups || { interval: 0, nextDate: Date.now(), state: "new" }
+                };
+            }
         });
 
         // If editing and folder name changed, update folder field for old words that weren't included
@@ -1455,7 +1610,10 @@ class StudyModule {
 
     // --- STUDY DASHBOARD ---
     renderStudyDashboard() {
-        if (!this.allWordsCache || this.allWordsCache.length === 0) {
+        const hasWords = this.allWordsCache && this.allWordsCache.length > 0;
+        const hasIdioms = window.IdiomsUI && window.IdiomsUI.idiomsCache && window.IdiomsUI.idiomsCache.length > 0;
+
+        if (!hasWords && !hasIdioms) {
             if (this.studyDashboardMain) this.studyDashboardMain.classList.add('hidden');
             if (this.studyEmptyStateView) {
                 this.studyEmptyStateView.classList.remove('hidden');
@@ -1466,9 +1624,12 @@ class StudyModule {
             </div>
             <div>
                 <h3 style="color: var(--text-main); margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 700;">Здесь пока ничего нет</h3>
-                <p style="color: var(--text-muted); font-size: 1rem; margin-bottom: 1.5rem;">Добавьте свое первое слово, чтобы начать обучение</p>
+                <p style="color: var(--text-muted); font-size: 1rem; margin-bottom: 1.5rem;">Добавьте свое первое слово или идиому, чтобы начать обучение</p>
             </div>
-            <button onclick="window.openEditModal()" class="btn-primary" style="width: auto; padding: 0.8rem 2.5rem; font-weight: 600;">Добавить слово</button>
+            <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                <button onclick="window.openEditModal()" class="btn-primary" style="width: auto; padding: 0.8rem 2.5rem; font-weight: 600;">Добавить слово</button>
+                <button onclick="window.IdiomsUI.openIdiomEditModal()" class="btn-secondary" style="width: auto; padding: 0.8rem 2.5rem; font-weight: 600; background: rgba(255,255,255,0.05); border: 1px solid var(--border);">Добавить идиому</button>
+            </div>
         </div>
     `;
             }
@@ -1547,6 +1708,18 @@ class StudyModule {
                         title = groupIndex;
                         folderOrGroupWords = this.allWordsCache.filter(w => w.folder === groupIndex);
                         isValid = folderOrGroupWords.length > 0;
+                    } else if (mode === 'idiom_folder') {
+                        title = groupIndex;
+                        if (window.IdiomsUI) {
+                            folderOrGroupWords = window.IdiomsUI.idiomsCache.filter(i => i.folder === groupIndex);
+                            isValid = folderOrGroupWords.length > 0;
+                        }
+                    } else if (mode === 'idiom_global') {
+                        title = 'Все идиомы';
+                        if (window.IdiomsUI) {
+                            folderOrGroupWords = window.IdiomsUI.idiomsCache;
+                            isValid = folderOrGroupWords.length > 0;
+                        }
                     }
                 } catch (e) {
                     console.error("Error parsing last opened session", e);
@@ -1597,14 +1770,24 @@ class StudyModule {
                     lastCard.classList.remove('completed');
 
                     lastCard.style.cursor = 'pointer';
-                    lastCard.onclick = () => this.startSession(mode, groupIndex);
+                    lastCard.onclick = () => {
+                        if (mode.startsWith('idiom_') && window.IdiomsUI) {
+                            window.IdiomsUI.startIdiomSession(groupIndex);
+                        } else {
+                            this.startSession(mode, groupIndex);
+                        }
+                    };
                 }
 
                 // Bind Buttons
                 if (btnContinue) {
                     btnContinue.onclick = (e) => {
                         e.stopPropagation();
-                        this.startSession(mode, groupIndex);
+                        if (mode.startsWith('idiom_') && window.IdiomsUI) {
+                            window.IdiomsUI.startIdiomSession(groupIndex);
+                        } else {
+                            this.startSession(mode, groupIndex);
+                        }
                     };
                 }
 
@@ -1626,6 +1809,11 @@ class StudyModule {
 
         // Render Folders
         this.renderFolders();
+
+        // Ensure idiom cards are refreshed
+        if (window.IdiomsUI && typeof window.IdiomsUI.renderStudyIdiomCards === 'function') {
+            window.IdiomsUI.renderStudyIdiomCards();
+        }
 
     }
 
@@ -1809,7 +1997,7 @@ playDeSequence(word) {
 
     const rawItems = [];
     if (this.settings.audioWord && word.word) rawItems.push({ text: word.word, lang: 'de' });
-    if (this.settings.audioInfo1 && word.info1) rawItems.push({ text: word.info1, lang: 'de' });
+    if (this.settings.audioInfo1 && word.info1 && !word._isIdiom) rawItems.push({ text: word.info1, lang: 'de' });
     if (this.settings.audioInfo2 && word.info2) rawItems.push({ text: word.info2, lang: 'de' });
     if (this.settings.audioEx1 && word.ex1) rawItems.push({ text: word.ex1, lang: 'de' });
     if (this.settings.audioEx2 && word.ex2) rawItems.push({ text: word.ex2, lang: 'de' });
@@ -1934,6 +2122,37 @@ startSession(mode, groupIndex) {
     this.showNextCard();
 }
 
+/**
+ * Starts a session with pre-filtered/mapped words (e.g. from IdiomsUI)
+ */
+startSessionWithWords(words, title) {
+    if (!words || words.length === 0) {
+        alert("Нет элементов для изучения!");
+        return;
+    }
+
+    this.currentSession = {
+        mode: 'custom',
+        groupIndex: title,
+        key: 'progress_global',
+        queue: words,
+        currentIndex: 0,
+        currentWord: null,
+        history: []
+    };
+
+    if (this.sessionGroupTitle) {
+        this.sessionGroupTitle.textContent = title;
+    }
+
+    // Reset stats UI for the custom session
+    this.updateStatsUI(words);
+
+    if (window.switchView) window.switchView(this.viewStudySession);
+    this.startTracking();
+    this.showNextCard();
+}
+
 initSessionControls() {
     if (this.btnExitSession) {
         this.btnExitSession.onclick = () => {
@@ -2026,7 +2245,16 @@ initSessionControls() {
             if (willShowBack) {
                 // Speak translation when flipping to the back, if enabled
                 if (this.settings.audio && this.settings.audioTranslation && this.currentSession && this.currentSession.currentWord) {
-                    this.speakText(this.currentSession.currentWord.translation, 'ru');
+                    const word = this.currentSession.currentWord;
+                    if (word._isIdiom && word.info1 && this.settings.audioInfo1) {
+                        // Sequential: Translation first, then Meaning (info1) in Russian
+                        this.speakSequence([
+                            { text: word.translation, lang: 'ru' },
+                            { text: word.info1, lang: 'ru' }
+                        ]);
+                    } else {
+                        this.speakText(word.translation, 'ru');
+                    }
                 }
             } else {
                 // Repeat German sequence when flipping back to front
@@ -2050,8 +2278,13 @@ initSessionControls() {
     if (this.btnFlashcardEdit) {
         this.btnFlashcardEdit.onclick = (e) => {
             e.stopPropagation();
-            if (this.currentSession && this.currentSession.currentWord && window.openEditModal) {
-                window.openEditModal(this.currentSession.currentWord);
+            if (this.currentSession && this.currentSession.currentWord) {
+                const word = this.currentSession.currentWord;
+                if (word._isIdiom && window.IdiomsUI) {
+                    window.IdiomsUI.openIdiomEditModal(word);
+                } else if (window.openEditModal) {
+                    window.openEditModal(word);
+                }
             }
         };
     }
@@ -2084,6 +2317,7 @@ onWordRestored() {
     if (this.cardDeletedOverlay) this.cardDeletedOverlay.classList.add('hidden');
     // Restore all field visibilities
     if (this.cardWord) this.cardWord.style.visibility = 'visible';
+    if (this.cardFolderName) this.cardFolderName.style.visibility = 'visible';
     if (this.cardInfo1) this.cardInfo1.style.visibility = 'visible';
     if (this.cardInfo2) this.cardInfo2.style.visibility = 'visible';
     if (this.cardExamples) this.cardExamples.style.visibility = 'visible';
@@ -2115,6 +2349,7 @@ onWordDeleted(id, backupData) {
         }
         // Hide all content and edit icon
         if (this.cardWord) this.cardWord.style.visibility = 'hidden';
+        if (this.cardFolderName) this.cardFolderName.style.visibility = 'hidden';
         if (this.cardInfo1) this.cardInfo1.style.visibility = 'hidden';
         if (this.cardInfo2) this.cardInfo2.style.visibility = 'hidden';
         if (this.cardExamples) this.cardExamples.style.visibility = 'hidden';
@@ -2273,6 +2508,10 @@ showNextCard(stayOnCurrent = false) {
 
     const word = this.currentSession.currentWord;
 
+    if (this.cardFolderName) {
+        this.cardFolderName.textContent = '';
+    }
+
     if (this.cardDeletedOverlay) this.cardDeletedOverlay.classList.add('hidden');
     this.deletedWordBackup = null;
 
@@ -2341,7 +2580,11 @@ showNextCard(stayOnCurrent = false) {
         }
     }
 
-    this.cardInfo1.textContent = word.info1 || '';
+    if (word._isIdiom) {
+        this.cardInfo1.textContent = '';
+    } else {
+        this.cardInfo1.textContent = word.info1 || '';
+    }
     if (this.cardInfo2) this.cardInfo2.textContent = word.info2 || '';
 
     const examplesProps = ['ex1', 'ex2'];
@@ -2368,7 +2611,16 @@ showNextCard(stayOnCurrent = false) {
         } else {
             this.cardTranslation.style.fontSize = '1.6rem';
         }
-        this.cardTranslation.textContent = word.translation;
+        this.cardTranslation.textContent = word.translation || '';
+        if (this.cardMeaning) {
+            if (word._isIdiom && word.info1) {
+                this.cardMeaning.textContent = word.info1;
+                this.cardMeaning.classList.remove('hidden');
+            } else {
+                this.cardMeaning.textContent = '';
+                this.cardMeaning.classList.add('hidden');
+            }
+        }
     }, 400);
 
     this.ratingButtons.classList.remove('hidden');

@@ -65,7 +65,14 @@ document.addEventListener('DOMContentLoaded', () => {
         el.style.height = el.scrollHeight + 'px';
     }
 
-    // Attach auto-resize to all mobile inputs
+    // Global delegated auto-resize for all edit-word-input textareas (words + idioms)
+    document.addEventListener('input', (e) => {
+        if (e.target && e.target.tagName === 'TEXTAREA' && e.target.classList.contains('edit-word-input')) {
+            adjustTextareaHeight(e.target);
+        }
+    });
+
+    // Attach auto-resize to all mobile inputs (initial page load)
     Object.values(mInputs).forEach(input => {
         if (input && input.tagName === 'TEXTAREA') {
             input.addEventListener('input', () => adjustTextareaHeight(input));

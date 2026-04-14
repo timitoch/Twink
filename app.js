@@ -82,13 +82,18 @@ class WordLabDB {
         const updateData = {};
         updateData[typeKey] = newProgress;
 
-        // If updating global progress, sync to top-level fields
-        if (typeKey === 'progress_global' && newProgress) {
+        // Route to idioms or words path
+        // Legacy check for 'i_' and new check for offset range >= 100,000
+        const isIdiom = String(wordId).startsWith('i_') || (!isNaN(parseInt(wordId)) && parseInt(wordId) >= 100000);
+        const basePath = isIdiom ? 'idioms' : 'words';
+
+        // If updating global progress for WORDS, sync to top-level fields
+        if (!isIdiom && typeKey === 'progress_global' && newProgress) {
             updateData['interval'] = newProgress.interval || 0;
             updateData['nextDate'] = newProgress.nextDate || Date.now();
         }
 
-        await this.db.ref(`users/${this.userId}/words/${wordId}`).update(updateData);
+        await this.db.ref(`users/${this.userId}/${basePath}/${wordId}`).update(updateData);
     }
 
     async saveSettings(settings) {
@@ -136,11 +141,51 @@ class WordLabDB {
         }
     }
 
+    async resetIdiomProgressOnly() {
+        if (!this.userId) return;
+        if (confirm("Вы уверены? Это сбросит прогресс изучения для ВСЕХ идиом, но сами идиомы останутся.")) {
+            try {
+                const snap = await this.db.ref(`users/${this.userId}/idioms`).once('value');
+                const idioms = snap.val() || {};
+                const updates = {};
+                const defaultProgress = {
+                    interval: 0,
+                    nextDate: Date.now(),
+                    state: "new",
+                    excellentStreak: 0,
+                    isActive: false,
+                    is_ideal: false,
+                    lastRating: null,
+                    lastReviewed: null
+                };
+                Object.keys(idioms).forEach(id => {
+                    updates[`users/${this.userId}/idioms/${id}/progress_global`] = defaultProgress;
+                });
+
+                await this.db.ref().update(updates);
+                alert("Прогресс идиом сброшен.");
+                if (window.switchView) window.switchView(document.getElementById('view-profile'));
+            } catch (e) {
+                console.error("Error resetting idioms progress:", e);
+            }
+        }
+    }
+
     async clearAllWords() {
         if (!this.userId) return;
         if (confirm("Вы уверены? Это удалит ТИТАНИЧЕСКОЕ количество слов (весь ваш словарь) безвозвратно.")) {
             await this.db.ref(`users/${this.userId}/words`).remove();
             alert("Словарь очищен.");
+            // Redirect to dictionary
+            if (window.switchView) window.switchView(document.getElementById('view-words'));
+        }
+    }
+
+    async clearAllIdioms() {
+        if (!this.userId) return;
+        if (confirm("Вы уверены? Это удалит ВСЕ ваши идиомы безвозвратно.")) {
+            await this.db.ref(`users/${this.userId}/idioms`).remove();
+            alert("Идиомы удалены.");
             // Redirect to dictionary
             if (window.switchView) window.switchView(document.getElementById('view-words'));
         }
@@ -566,6 +611,9 @@ firebase.auth().onAuthStateChanged((user) => {
         if (window.ProfileModule) {
             window.ProfileModule.init(db, user, allWordsCache);
         }
+        if (window.IdiomsUI) {
+            window.IdiomsUI.init(db);
+        }
 
         // Prepare dashboard Views (hidden behind loader for now)
         if (dashboardScreen) dashboardScreen.classList.remove('hidden');
@@ -683,6 +731,9 @@ firebase.auth().onAuthStateChanged((user) => {
             } catch (err) {
                 console.error("Critical error in subscribeToWords:", err);
             } finally {
+                // Always update counters
+                updateDictionaryTabCounters();
+
                 // HIDE LOADER on first data load (ALWAYS hide it in finally to prevent infinite loading)
                 if (isFirstDataLoad) {
                     isFirstDataLoad = false;
@@ -785,11 +836,14 @@ function renderTable(arr) {
     const dictTableContainer = document.querySelector('.table-container');
 
     // Проверяем: словарь полностью пуст или просто поиск ничего не нашёл
-    const isDictionaryEmpty = allWordsCache.length === 0;
-    const isSearchEmpty = arr.length === 0 && !isDictionaryEmpty;
+    const hasWordsInDB = allWordsCache.length > 0;
+    const hasIdiomsInDB = window.IdiomsUI && window.IdiomsUI.idiomsCache && window.IdiomsUI.idiomsCache.length > 0;
+    const isTotalDatabaseEmpty = !hasWordsInDB && !hasIdiomsInDB;
+    
+    const isSearchEmpty = arr.length === 0 && !isTotalDatabaseEmpty;
 
-    if (isDictionaryEmpty) {
-        // Словарь полностью пуст - скрываем всё
+    if (isTotalDatabaseEmpty) {
+        // Словарь и идиомы полностью пусты - скрываем всё
         if (dictMainContainer) dictMainContainer.classList.add('hidden');
         if (dictToolbar) dictToolbar.classList.add('hidden');
         if (dictEmptyView) {
@@ -801,16 +855,31 @@ function renderTable(arr) {
                     </div>
                     <div>
                         <h3 style="color: var(--text-main); margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 700;">Здесь пока ничего нет</h3>
-                        <p style="color: var(--text-muted); font-size: 1rem; margin-bottom: 1.5rem;">Добавьте свое первое слово, чтобы начать обучение</p>
+                        <p style="color: var(--text-muted); font-size: 1rem; margin-bottom: 1.5rem;">Добавьте свое первое слово или идиому, чтобы начать обучение</p>
                     </div>
-                    <button onclick="window.openEditModal()" class="btn-primary" style="width: auto; padding: 0.8rem 2.5rem; font-weight: 600;">Добавить слово</button>
+                    <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                        <button onclick="window.openEditModal()" class="btn-primary" style="width: auto; padding: 0.8rem 2.5rem; font-weight: 600;">Добавить слово</button>
+                        <button onclick="window.IdiomsUI.openIdiomEditModal()" class="btn-secondary" style="width: auto; padding: 0.8rem 2.5rem; font-weight: 600; background: rgba(255,255,255,0.05); border: 1px solid var(--border);">Добавить идиому</button>
+                    </div>
                 </div>
             `;
         }
         return;
     }
 
-    if (isSearchEmpty) {
+    const dictSearchInput = document.getElementById('dict-search');
+    const dictFilterIntervalMenu = document.getElementById('dict-filter-interval-menu');
+    const dictFilterScoreMenu = document.getElementById('dict-filter-score-menu');
+    const dictFilterDuplicatesBtn = document.getElementById('dict-filter-duplicates-btn');
+
+    const isSearchActive = dictSearchInput && dictSearchInput.value.trim() !== '';
+    const isIntervalActive = dictFilterIntervalMenu && Array.from(dictFilterIntervalMenu.querySelectorAll('input[type="checkbox"]')).some(c => c.checked && c.value !== 'all');
+    const isScoreActive = dictFilterScoreMenu && Array.from(dictFilterScoreMenu.querySelectorAll('input[type="checkbox"]')).some(c => c.checked && c.value !== 'all');
+    const isDuplicateActive = dictFilterDuplicatesBtn && dictFilterDuplicatesBtn.classList.contains('filter-active');
+
+    const hasAnyFilterActive = isSearchActive || isIntervalActive || isScoreActive || isDuplicateActive;
+
+    if (isSearchEmpty && hasAnyFilterActive) {
         // Поиск не дал результатов - показываем сообщение, но оставляем toolbar видимым
         if (dictToolbar) dictToolbar.classList.remove('hidden');
         if (dictMainContainer) {
@@ -906,7 +975,7 @@ function renderTable(arr) {
     });
     // -------------------------
 
-    arr.forEach(w => {
+    arr.forEach((w, index) => {
         const tr = document.createElement('tr');
         tr.id = `word-row-${w.id}`;
         tr.setAttribute('data-id', w.id);
@@ -970,7 +1039,7 @@ function renderTable(arr) {
             : '';
 
         tr.innerHTML = `
-            <td class="id-cell" style="${displayStyle('id')}">${w.id}</td>
+            <td class="id-cell" style="${displayStyle('id')}">${allWordsCache.indexOf(w) + 1}</td>
             <td style="${displayStyle('active')}; text-align: center;">${activeDisplay}</td>
             <td style="${displayStyle('is_ideal')}; text-align: center;">${idealDisplay}</td>
             <td style="${displayStyle('word')}"><strong>${w.word}</strong></td>
@@ -1008,6 +1077,7 @@ function renderTable(arr) {
 
         tr.querySelector('.btn-edit').onclick = () => openEditModal(w);
         tr.querySelector('.btn-delete').onclick = async () => {
+            alert('Delete word clicked: ' + w.id);
             if (confirm(`Удалить слово "${w.word}"?`)) {
                 await db.deleteWord(w.id);
             }
@@ -1033,7 +1103,7 @@ if (excelFileInput) {
             document.getElementById('import-status-mobile')
         ].filter(el => el);
 
-        statusElements.forEach(el => el.textContent = 'Importing...');
+        statusElements.forEach(el => el.textContent = 'Анализ файла...');
 
         try {
             const data = await new Promise((res, rej) => {
@@ -1041,15 +1111,30 @@ if (excelFileInput) {
                 r.onload = ev => res(XLSX.utils.sheet_to_json(XLSX.read(new Uint8Array(ev.target.result), { type: 'array' }).Sheets[XLSX.read(new Uint8Array(ev.target.result), { type: 'array' }).SheetNames[0]], { header: 1 }));
                 r.onerror = rej; r.readAsArrayBuffer(f);
             });
-            const s = await db.processSmartImport(data);
-            const msg = `<span style="color: var(--success);">✔ Импорт завершен: Добавлено: ${s.created}, Обновлено: ${s.updated}, Удалено: ${s.deleted}</span>`;
+
+            // Auto-detect table type
+            const tableType = window.IdiomDB ? window.IdiomDB.detectTableType(data) : 'words';
+            let stats;
+            let typeLabel = '';
+
+            if (tableType === 'idioms' && window.IdiomsUI) {
+                statusElements.forEach(el => el.textContent = 'Импорт идиом...');
+                stats = await window.IdiomsUI.idiomDb.processSmartIdiomImport(data);
+                typeLabel = 'идиом';
+            } else {
+                statusElements.forEach(el => el.textContent = 'Импорт слов...');
+                stats = await db.processSmartImport(data);
+                typeLabel = 'слов';
+            }
+
+            const msg = `<span style="color: var(--success);">✔ Импорт ${typeLabel} завершен: Добавлено: ${stats.created}, Обновлено: ${stats.updated}, Удалено: ${stats.deleted || 0}</span>`;
             statusElements.forEach(el => {
                 el.innerHTML = msg;
                 el.classList.remove('hidden');
             });
         } catch (err) {
             console.error(err);
-            statusElements.forEach(el => el.textContent = err.message);
+            statusElements.forEach(el => el.textContent = 'Ошибка: ' + err.message);
         }
         excelFileInput.value = '';
     };
@@ -1143,11 +1228,20 @@ if (dictFilterScoreBtn) {
 // --- COLUMNS UI HANDLERS ---
 const dictFilterColumnsBtn = document.getElementById('dict-filter-columns-btn');
 const dictFilterColumnsMenu = document.getElementById('dict-filter-columns-menu');
+const dictFilterColumnsMenuIdioms = document.getElementById('dict-filter-idioms-columns-menu');
 
 if (dictFilterColumnsBtn) {
     dictFilterColumnsBtn.onclick = (e) => {
         e.stopPropagation();
-        dictFilterColumnsMenu.classList.toggle('hidden');
+        
+        if (window.IdiomsUI && window.IdiomsUI.activeTab === 'idioms') {
+            if (dictFilterColumnsMenuIdioms) dictFilterColumnsMenuIdioms.classList.toggle('hidden');
+            if (dictFilterColumnsMenu) dictFilterColumnsMenu.classList.add('hidden');
+        } else {
+            if (dictFilterColumnsMenu) dictFilterColumnsMenu.classList.toggle('hidden');
+            if (dictFilterColumnsMenuIdioms) dictFilterColumnsMenuIdioms.classList.add('hidden');
+        }
+        
         if (dictFilterIntervalMenu) dictFilterIntervalMenu.classList.add('hidden');
         if (dictFilterScoreMenu) dictFilterScoreMenu.classList.add('hidden');
         if (dictFilterSortMenu) dictFilterSortMenu.classList.add('hidden');
@@ -1259,6 +1353,12 @@ window.addEventListener('click', (e) => {
             dictFilterColumnsMenu.classList.add('hidden');
         }
     }
+    const dictFilterColumnsMenuIdioms = document.getElementById('dict-filter-idioms-columns-menu');
+    if (dictFilterColumnsMenuIdioms && !dictFilterColumnsMenuIdioms.classList.contains('hidden')) {
+        if (!dictFilterColumnsMenuIdioms.contains(e.target) && dictFilterColumnsBtn && !dictFilterColumnsBtn.contains(e.target)) {
+            dictFilterColumnsMenuIdioms.classList.add('hidden');
+        }
+    }
     if (dictFilterSortMenu && !dictFilterSortMenu.classList.contains('hidden')) {
         if (!dictFilterSortMenu.contains(e.target) && !dictFilterSortBtn.contains(e.target)) {
             dictFilterSortMenu.classList.add('hidden');
@@ -1333,6 +1433,13 @@ function updateScoreLabel() {
 
 
 function applyDictionaryFilters(returnOnly) {
+    // Redirect to Idioms UI if idioms tab is active
+    if (window.IdiomsUI && window.IdiomsUI.activeTab === 'idioms') {
+        if (typeof window.IdiomsUI.applyIdiomFilters === 'function') {
+            return window.IdiomsUI.applyIdiomFilters(returnOnly);
+        }
+    }
+
     if (typeof updateDictIntervalMenu === 'function') updateDictIntervalMenu();
     // If called from event listener, returnOnly is an Event object (truthy). 
     // We must ensure returnOnly is strictly true boolean if we want to return.
@@ -1656,3 +1763,20 @@ function levenshteinDistance(s1, s2) {
     }
     return dp[m][n];
 }
+
+/**
+ * Updates the counters in the Dictionary tab switcher (Words/Idioms)
+ */
+function updateDictionaryTabCounters() {
+    const wordsCountEl = document.getElementById('dict-tab-words-count');
+    const idiomsCountEl = document.getElementById('dict-tab-idioms-count');
+
+    if (wordsCountEl) {
+        wordsCountEl.textContent = allWordsCache.length;
+    }
+
+    if (idiomsCountEl && window.IdiomsUI && window.IdiomsUI.idiomsCache) {
+        idiomsCountEl.textContent = window.IdiomsUI.idiomsCache.length;
+    }
+}
+window.updateDictionaryTabCounters = updateDictionaryTabCounters;

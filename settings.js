@@ -351,6 +351,7 @@ class SettingsModule {
 
     // --- DATA ACTIONS ---
     initDataActions() {
+        // Words Actions
         const btnResetSessProg = document.getElementById('btn-reset-session-progress');
         if (btnResetSessProg) {
             btnResetSessProg.onclick = () => this.db.resetProgressOnly();
@@ -359,6 +360,17 @@ class SettingsModule {
         const btnClearDict = document.getElementById('btn-clear-dictionary');
         if (btnClearDict) {
             btnClearDict.onclick = () => this.db.clearAllWords();
+        }
+
+        // Idioms Actions
+        const btnResetIdioms = document.getElementById('btn-reset-idioms-progress');
+        if (btnResetIdioms) {
+            btnResetIdioms.onclick = () => this.db.resetIdiomProgressOnly();
+        }
+
+        const btnClearIdioms = document.getElementById('btn-clear-idioms');
+        if (btnClearIdioms) {
+            btnClearIdioms.onclick = () => this.db.clearAllIdioms();
         }
     }
 

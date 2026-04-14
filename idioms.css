@@ -1,0 +1,517 @@
+/* ===================================================
+   Idioms System — Styles
+   =================================================== */
+
+/* --- Dictionary Tab Switcher (Minimalist) --- */
+.dict-tab-bar {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    padding: 0;
+    border: none;
+    background: transparent;
+}
+
+.dict-tab-btn {
+    padding: 0.25rem 0;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    opacity: 0.7;
+}
+
+.dict-tab-btn svg {
+    display: none; /* Remove icons for maximum simplicity */
+}
+
+.dict-tab-btn:hover {
+    color: var(--text-main);
+    opacity: 1;
+}
+
+.dict-tab-btn.active {
+    color: var(--text-main);
+    font-weight: 700;
+    opacity: 1;
+    border-bottom: 2px solid var(--text-main);
+    border-radius: 0;
+}
+
+.dict-tab-btn .tab-count {
+    font-size: 0.7rem;
+    font-weight: 400;
+    opacity: 0.5;
+}
+
+.dict-tab-btn.active .tab-count {
+    opacity: 0.6;
+}
+
+/* --- Idiom Table --- */
+#idioms-table-container {
+    overflow-x: auto;
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+
+#idioms-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#idioms-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 0.6rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-align: left;
+    color: var(--text-muted);
+    background: var(--bg-main);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    white-space: nowrap;
+    letter-spacing: 0.5px;
+}
+
+#idioms-table tbody tr {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    transition: background 0.15s ease;
+}
+
+#idioms-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+#idioms-table td {
+    padding: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--text-main);
+    vertical-align: middle;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* --- Study: All Idioms Card --- */
+/* (Currently using standard group-card styling) */
+
+/* --- Study: Idiom Folders Section --- */
+.idiom-folders-section {
+    margin-top: 2rem;
+}
+
+.idiom-folders-section .section-title h2 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* --- Idiom Edit View --- */
+#view-idiom-edit .edit-word-group {
+    margin-bottom: 1rem;
+}
+
+#view-idiom-edit .edit-word-input {
+    width: 100%;
+    padding: 0.7rem 0;
+    border: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background: transparent;
+    color: var(--text-main);
+    font-family: inherit;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s ease;
+    resize: none;
+    overflow: hidden;
+}
+
+#view-idiom-edit .edit-word-input:focus {
+    border-bottom-color: var(--primary);
+}
+
+#view-idiom-edit .edit-word-input::placeholder {
+    color: var(--text-muted);
+    opacity: 0.5;
+}
+
+/* --- Profile Idiom Stats --- */
+#idiom-stats-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+#idiom-stats-row .stat-box {
+    border-left: 3px solid var(--primary);
+}
+
+/* --- Import auto-detect badge --- */
+.import-detect-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-top: 0.5rem;
+}
+
+.import-detect-badge.words {
+    background: rgba(var(--secondary-rgb), 0.1);
+    color: var(--secondary);
+}
+
+.import-detect-badge.idioms {
+    background: rgba(var(--primary-rgb, 99, 102, 241), 0.1);
+    color: var(--primary);
+}
+
+/* --- Mobile --- */
+@media (max-width: 768px) {
+    #idiom-stats-row {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .dict-tab-btn {
+        font-size: 0.82rem;
+        padding: 0.5rem 0.8rem;
+    }
+
+    #idioms-table td {
+        font-size: 0.8rem;
+        padding: 0.4rem;
+    }
+}
+
+
+/* --- Idiom Mode Toggle Button (Compact) --- */
+.idiom-mode-btn {
+    padding: 0.6rem 1.25rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    background: transparent;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.idiom-mode-btn svg {
+    opacity: 0.6;
+}
+
+.idiom-mode-btn:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+    color: var(--text-main);
+}
+
+.idiom-mode-btn.active {
+    background: #ffffff;
+    color: #000000;
+    border-color: #ffffff;
+    box-shadow: 0 4px 20px rgba(255, 255, 255, 0.15);
+}
+
+.idiom-mode-btn.active svg {
+    opacity: 1;
+    color: #000;
+}
+
+
+/* --- Mobile Adjustments for Dictionary Tabs --- */
+@media (max-width: 768px) {
+    .dict-tab-bar {
+        width: 100%;
+        gap: 0;
+        margin-bottom: 0.8rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .dict-tab-btn {
+        flex: 1;
+        justify-content: center;
+        padding: 0.6rem 0;
+        font-size: 0.8rem;
+    }
+
+    .dict-tab-btn.active {
+        border-bottom-width: 2px;
+    }
+}
+
+/* --- Mobile Dictionary: Idiom Card Layout (mirrors word cards exactly) --- */
+@media (max-width: 768px) {
+
+    /* Hide table header */
+    #idioms-table thead {
+        display: none;
+    }
+
+    /* Table wrapper becomes block */
+    #idioms-table,
+    #idioms-table tbody {
+        display: block;
+        width: 100%;
+    }
+
+    /* Each row → card */
+    #idioms-table tr {
+        display: flex;
+        flex-wrap: wrap;
+        position: relative;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        margin: 0 0 0.5rem 0 !important;
+        padding: 0.5rem 0.65rem !important;
+        gap: 0.35rem;
+        align-items: center;
+    }
+
+    /* Reset all cells */
+    #idioms-table td {
+        display: block;
+        padding: 0;
+        border: none;
+        overflow-wrap: anywhere;
+        word-break: normal;
+        white-space: normal !important;
+        max-width: 100%;
+    }
+
+    /* ID — bottom-right corner (like word nth-child(1)) */
+    #idioms-table .id-cell {
+        position: absolute;
+        bottom: 10px;
+        right: 0.1rem;
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        opacity: 0.45;
+        font-weight: 400;
+        pointer-events: none;
+        z-index: 10;
+        line-height: 1;
+        white-space: nowrap !important;
+    }
+
+    /* is_ideal star (like word nth-child(3), order 22) */
+    #idioms-table .idiom-ideal-cell {
+        width: auto;
+        order: 22;
+        margin-top: 0.6rem;
+        margin-right: 0.5rem;
+        background: transparent;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 22px;
+        vertical-align: middle;
+    }
+    #idioms-table .idiom-ideal-cell:empty { display: none !important; }
+    #idioms-table .idiom-ideal-cell svg {
+        width: 16px;
+        height: 16px;
+        opacity: 1;
+    }
+
+    /* Idiom text — top, full width (like word nth-child(4), order 1) */
+    #idioms-table .idiom-text-cell {
+        width: 100%;
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text-main);
+        order: 1;
+        line-height: 1.25;
+        padding-right: 4rem;
+    }
+
+    /* Translation — full width (like word nth-child(5), order 2) */
+    #idioms-table .idiom-translation-cell {
+        width: 100%;
+        font-size: 0.85rem;
+        color: var(--secondary);
+        order: 2;
+        margin-bottom: 0.2rem;
+        padding-right: 1.5rem;
+    }
+
+    /* Meaning (смысловой перевод) — tag chip (like word nth-child(6) forms, order 3) */
+    #idioms-table .idiom-meaning-cell {
+        font-size: 0.68rem;
+        color: var(--text-muted);
+        background: rgba(255, 255, 255, 0.05);
+        padding: 0.1rem 0.4rem;
+        border-radius: 5px;
+        order: 3;
+        margin-right: 0.3rem;
+    }
+    #idioms-table .idiom-meaning-cell:empty { display: none; }
+
+    /* Info (дополнительно) — tag chip (like word nth-child(7) extra, order 3) */
+    #idioms-table .idiom-info-cell {
+        font-size: 0.68rem;
+        color: var(--text-muted);
+        background: rgba(255, 255, 255, 0.05);
+        padding: 0.1rem 0.4rem;
+        border-radius: 5px;
+        order: 3;
+        margin-right: 0.3rem;
+    }
+    #idioms-table .idiom-info-cell:empty { display: none; }
+
+    /* Example — full width with left border (like word nth-child(8), order 4) */
+    #idioms-table .idiom-example-cell {
+        width: 100%;
+        font-size: 0.75rem;
+        color: rgba(255, 255, 255, 0.55);
+        font-style: normal;
+        padding-left: 0.45rem;
+        border-left: 1.5px solid rgba(255, 255, 255, 0.1);
+        margin-top: 0.2rem;
+        order: 4;
+    }
+    #idioms-table .idiom-example-cell:empty { display: none; }
+
+    /* Interval badge (like word nth-child(11), order 20) */
+    #idioms-table .idiom-interval-cell {
+        order: 20;
+        margin-top: 0.6rem;
+        margin-right: 0.5rem;
+        display: flex;
+        align-items: center;
+        height: 22px;
+    }
+    #idioms-table .idiom-interval-cell .level-badge {
+        background: rgba(99, 102, 241, 0.12) !important;
+        border: none !important;
+        padding: 0 0.55rem !important;
+        font-size: 0.8rem !important;
+        font-weight: 600 !important;
+        color: var(--text-muted) !important;
+        opacity: 1;
+        border-radius: 6px;
+        height: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Next date (like word nth-child(12), order 24) */
+    #idioms-table .idiom-date-cell {
+        display: flex !important;
+        order: 24;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        opacity: 0.4;
+        margin-top: 0.6rem;
+        margin-right: 0.5rem;
+        align-items: center;
+        height: 22px;
+    }
+    #idioms-table .idiom-date-cell:empty { display: none !important; }
+
+    /* Folder (like word nth-child(10), order 25) */
+    #idioms-table .idiom-folder-cell {
+        order: 25;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        opacity: 0.5;
+        margin-top: 0.6rem;
+        white-space: nowrap !important;
+        max-width: 100px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: flex;
+        align-items: center;
+        height: 22px;
+    }
+    #idioms-table .idiom-folder-cell:empty { display: none; }
+
+    /* Frequency — hidden (like word nth-child(13)) */
+    #idioms-table .idiom-freq-cell {
+        display: none !important;
+    }
+    /* Actions — Top-right corner of the card */
+    #idioms-table .idiom-actions-cell {
+        position: absolute;
+        top: 0.4rem;
+        right: 0.3rem;
+        width: auto !important;
+        display: flex !important;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.15rem;
+        padding: 0 !important;
+        background: transparent !important;
+        z-index: 100 !important;
+        pointer-events: auto !important;
+        margin: 0 !important;
+    }
+
+    #idioms-table .idiom-actions-cell button {
+        padding: 0.35rem !important;
+        min-width: 32px !important;
+        min-height: 32px !important;
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        opacity: 0.5 !important;
+        border: none !important;
+        background: transparent !important;
+        border-radius: 0 !important;
+        margin: 0 !important;
+    }
+
+    #idioms-table .idiom-actions-cell button:active {
+        opacity: 1 !important;
+        transform: scale(0.9);
+    }
+    #idioms-table .idiom-actions-cell svg {
+        width: 16px !important;
+        height: 16px !important;
+        color: var(--text-muted);
+    }
+    #idioms-table .idiom-actions-cell .btn-delete-idiom svg {
+        color: rgba(239, 68, 68, 0.7);
+    }
+}
+
+
+    .level-badge-photo {
+        background: #1a1b2e;
+        color: #a5b4fc;
+        padding: 0.3rem 0.6rem;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        display: inline-block;
+    }
+
+    .folder-name-photo {
+        color: #555;
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0.3px;
+    }
