@@ -133,7 +133,7 @@ class IdiomDB {
             }
         }
 
-        // Columns: ID | Идиома | Перевод | Смысловой перевод | Дополнительно | Пример | Папка | Интервал | След.повтор
+        // Columns: ID | Идиома | Перевод | Смысловой перевод | Дополнительно | Пример | Папка
         for (let i = startIndex; i < rows.length; i++) {
             const row = rows[i];
             if (!row || !Array.isArray(row) || row.length < 2) continue;
@@ -144,10 +144,6 @@ class IdiomDB {
             // Handle legacy i_ prefix by removing it, or keep numeric IDs as is
             id = id.replace('i_', '');
             
-            // If the ID is very small (e.g. from a fresh Excel without offset), 
-            // we could leave it, but to ensure no intersection with words, 
-            // we'll assume new numeric IDs should be in the 100,000+ range 
-            // if they are not already.
             let numericId = parseInt(id);
             if (!isNaN(numericId) && numericId < 100000) {
                 // If it's a small ID from import, we offset it to the idiom range
@@ -168,16 +164,6 @@ class IdiomDB {
                     idiomFolder = `Папка идиом ${autoFolderIndex}`;
                     wordsInCurrentAutoFolder++;
                 }
-            }
-
-            // Parse interval and nextDate from import
-            let importedInterval = row[7] !== undefined ? parseFloat(row[7]) : null;
-            if (isNaN(importedInterval)) importedInterval = null;
-
-            let importedNextDate = null;
-            if (row[8]) {
-                const parsed = Date.parse(row[8]);
-                if (!isNaN(parsed)) importedNextDate = parsed;
             }
 
             const idiomData = {
@@ -208,9 +194,10 @@ class IdiomDB {
                 if (hasChanges) stats.updated++;
             } else {
                 // Create new
+                // For new idioms, interval is 0 and nextDate is NOW
                 const defaultProgress = {
-                    interval: importedInterval || 0,
-                    nextDate: importedNextDate || Date.now(),
+                    interval: 0,
+                    nextDate: Date.now(),
                     state: 'new',
                     is_ideal: false
                 };
@@ -242,8 +229,8 @@ class IdiomDB {
             return;
         }
 
+        // Export only the static data columns to match vocabulary export and user request
         const data = allIdioms.map(idiom => {
-            const pg = idiom.progress_global || {};
             return {
                 'ID': idiom.id,
                 'Идиома': idiom.idiom || '',
@@ -251,9 +238,7 @@ class IdiomDB {
                 'Смысловой перевод': idiom.meaning || '',
                 'Дополнительно': idiom.info || '',
                 'Пример': idiom.example || '',
-                'Папка': idiom.folder || '',
-                'Интервал': pg.interval || 0,
-                'След. повтор': pg.nextDate ? new Date(pg.nextDate).toISOString() : ''
+                'Папка': idiom.folder || ''
             };
         });
 

@@ -6,7 +6,8 @@
 .dict-tab-bar {
     display: flex;
     gap: 1.5rem;
-    margin-bottom: 1.5rem;
+    margin-top: -1rem; /* Reduced top gap */
+    margin-bottom: 1.25rem;
     padding: 0;
     border: none;
     background: transparent;
@@ -78,7 +79,8 @@
     color: var(--text-muted);
     background: var(--bg-main);
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    white-space: nowrap;
+    white-space: normal; /* Allow header wrapping */
+    vertical-align: bottom;
     letter-spacing: 0.5px;
 }
 
@@ -92,14 +94,35 @@
 }
 
 #idioms-table td {
-    padding: 0.5rem;
-    font-size: 0.85rem;
+    padding: 0.8rem 0.5rem;
+    font-size: 0.82rem;
     color: var(--text-main);
-    vertical-align: middle;
-    max-width: 200px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    vertical-align: top; /* Changed from middle to top for better multi-line look */
+    white-space: normal; /* Enable wrapping */
+    word-break: break-word;
+    overflow-wrap: break-word;
+    line-height: 1.4;
+}
+
+/* Specific Column Widths for Desktop and Wrapping */
+#idioms-table .id-cell { width: 45px; text-align: center; color: var(--text-muted); }
+#idioms-table .idiom-ideal-cell { width: 40px; text-align: center; }
+#idioms-table .idiom-text-cell { min-width: 140px; }
+#idioms-table .idiom-translation-cell { min-width: 140px; }
+#idioms-table .idiom-meaning-cell { min-width: 160px; }
+#idioms-table .idiom-info-cell { min-width: 120px; }
+#idioms-table .idiom-example-cell { min-width: 170px; } /* Slightly narrower */
+#idioms-table .idiom-folder-cell { min-width: 130px; color: var(--secondary); font-weight: 500; } /* Slightly wider */
+#idioms-table .idiom-interval-cell { width: 90px; text-align: center; }
+#idioms-table .idiom-date-cell { width: 110px; text-align: center; font-size: 0.75rem; color: var(--text-muted); }
+#idioms-table .idiom-actions-cell { width: 90px; text-align: right; }
+
+@media (max-width: 768px) {
+    #idioms-table td {
+        vertical-align: middle;
+        max-width: none;
+        word-break: normal;
+    }
 }
 
 /* --- Study: All Idioms Card --- */
@@ -240,6 +263,7 @@
     .dict-tab-bar {
         width: 100%;
         gap: 0;
+        margin-top: 0;
         margin-bottom: 0.8rem;
         border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     }

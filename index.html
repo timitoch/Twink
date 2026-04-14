@@ -1192,6 +1192,73 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- New: Idioms Structure Guide -->
+                            <div style="display: flex; align-items: center; gap: 0.75rem; margin-top: 2rem; margin-bottom: 1rem;">
+                                <!-- Excel Icon -->
+                                <div
+                                    style="width: 32px; height: 32px; background: rgba(var(--primary-rgb, 99, 102, 241), 0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--primary);">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                        <polyline points="14 2 14 8 20 8"></polyline>
+                                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                                        <polyline points="10 9 9 9 8 9"></polyline>
+                                    </svg>
+                                </div>
+                                <h3 style="font-size: 1.1rem; margin: 0; color: var(--text-main);">Структура Excel для идиом</h3>
+                            </div>
+
+                            <div class="import-guide-card">
+                                <div class="import-guide-padding">
+                                    <p class="import-guide-text">
+                                        Для идиом используйте колонки A-G. Система автоматически определит тип данных.
+                                    </p>
+
+                                    <!-- Desktop Table -->
+                                    <div class="import-guide-table-wrapper desktop-only">
+                                        <div style="width: 100%; overflow-x: auto;">
+                                            <table class="import-guide-table" style="width: 100%;">
+                                                <thead>
+                                                    <tr>
+                                                        <th style="width: 50px;">A</th>
+                                                        <th>B: Идиома</th>
+                                                        <th>C: Перевод</th>
+                                                        <th>D: Смысловой перевод</th>
+                                                        <th>E: Дополнительно</th>
+                                                        <th>F: Пример</th>
+                                                        <th>G: Папка</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td style="color: var(--text-muted);">100001</td>
+                                                        <td style="color: var(--text-main); font-weight: 500;">Auf Achse sein</td>
+                                                        <td>Быть в разъездах</td>
+                                                        <td>Быть очень занятым, путешествовать</td>
+                                                        <td><i>Разговорное</i></td>
+                                                        <td style="color: var(--text-main);">Er ist ständig auf Achse.</td>
+                                                        <td style="color: var(--secondary);">Путешествия</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <!-- Mobile Card List for Idioms -->
+                                    <div class="import-guide-mobile-list mobile-only">
+                                        <div class="guide-mobile-item"><span>A</span> ID (необязательно)</div>
+                                        <div class="guide-mobile-item"><span>B</span> Идиома</div>
+                                        <div class="guide-mobile-item"><span>C</span> Перевод</div>
+                                        <div class="guide-mobile-item"><span>D</span> Смысловой перевод</div>
+                                        <div class="guide-mobile-item"><span>E</span> Дополнительно</div>
+                                        <div class="guide-mobile-item"><span>F</span> Пример</div>
+                                        <div class="guide-mobile-item"><span>G</span> Название папки</div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1666,20 +1733,20 @@
                         <table id="idioms-table">
                                 <thead>
                                     <tr>
-                                        <th>#</th>
-                                        <th style="text-align: center;" title="Идеально">
+                                        <th class="id-cell">#</th>
+                                        <th class="idiom-ideal-cell" style="text-align: center;" title="Идеально">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
                                         </th>
-                                        <th>Идиома</th>
-                                        <th>Перевод</th>
-                                        <th>Смысловой перевод</th>
-                                        <th>Дополнительно</th>
-                                        <th>Пример</th>
-                                        <th>Папка</th>
-                                        <th>Интервал</th>
-                                        <th>След. повтор</th>
-                                        <th></th> <!-- Placeholder for Употребительность -->
-                                        <th style="width: 70px;"></th>
+                                        <th class="idiom-text-cell">Идиома</th>
+                                        <th class="idiom-translation-cell">Перевод</th>
+                                        <th class="idiom-meaning-cell">Смысловой перевод</th>
+                                        <th class="idiom-info-cell">Дополнительно</th>
+                                        <th class="idiom-example-cell">Пример</th>
+                                        <th class="idiom-folder-cell">Папка</th>
+                                        <th class="idiom-interval-cell">Интервал</th>
+                                        <th class="idiom-date-cell">След. повтор</th>
+                                        <th class="idiom-freq-cell"></th> <!-- Placeholder for Употребительность -->
+                                        <th class="idiom-actions-cell"></th>
                                     </tr>
                                 </thead>
                                 <tbody id="idioms-table-body"></tbody>
