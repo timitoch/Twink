@@ -11,6 +11,7 @@ const ASSETS_TO_CACHE = [
   '/idioms.css',
   '/app.js',
   '/manifest.json',
+  '/icon.svg',
   '/icon-192.png',
   '/icon-512.png'
 ];
