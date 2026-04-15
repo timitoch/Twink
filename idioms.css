@@ -295,7 +295,7 @@
         width: 100%;
     }
 
-    /* Each row → card */
+    /* Each row → card    /* THE CARD */
     #idioms-table tr {
         display: flex;
         flex-wrap: wrap;
@@ -309,6 +309,7 @@
         padding: 0.5rem 0.65rem !important;
         gap: 0.35rem;
         align-items: center;
+        justify-content: flex-start !important; /* Ensure everything sticks to the left */
     }
 
     /* Reset all cells */
@@ -320,13 +321,15 @@
         word-break: normal;
         white-space: normal !important;
         max-width: 100%;
+        width: auto !important; /* Prevents td from expanding by default */
+        flex: none !important; /* Prevents flex-grow */
     }
 
-    /* ID — bottom-right corner (like word nth-child(1)) */
+    /* 1. ID — bottom-right corner */
     #idioms-table .id-cell {
         position: absolute;
-        bottom: 10px;
-        right: 0.1rem;
+        bottom: 0.6rem;
+        right: 0.65rem;
         font-size: 0.7rem;
         color: var(--text-muted);
         opacity: 0.45;
@@ -334,22 +337,21 @@
         pointer-events: none;
         z-index: 10;
         line-height: 1;
-        white-space: nowrap !important;
+        width: auto !important;
     }
 
-    /* is_ideal star (like word nth-child(3), order 22) */
+    /* is_ideal star */
     #idioms-table .idiom-ideal-cell {
-        width: auto;
         order: 22;
         margin-top: 0.6rem;
-        margin-right: 0.5rem;
+        margin-right: 0.15rem; /* Compact gap */
         background: transparent;
         padding: 0;
         display: flex;
         align-items: center;
         justify-content: center;
         height: 22px;
-        vertical-align: middle;
+        width: auto !important;
     }
     #idioms-table .idiom-ideal-cell:empty { display: none !important; }
     #idioms-table .idiom-ideal-cell svg {
@@ -358,9 +360,10 @@
         opacity: 1;
     }
 
-    /* Idiom text — top, full width (like word nth-child(4), order 1) */
+    /* Idiom text — top, full width */
     #idioms-table .idiom-text-cell {
-        width: 100%;
+        width: 100% !important;
+        flex: 0 0 100% !important;
         font-size: 1rem;
         font-weight: 700;
         color: var(--text-main);
@@ -369,9 +372,10 @@
         padding-right: 4rem;
     }
 
-    /* Translation — full width (like word nth-child(5), order 2) */
+    /* Translation — full width */
     #idioms-table .idiom-translation-cell {
-        width: 100%;
+        width: 100% !important;
+        flex: 0 0 100% !important;
         font-size: 0.85rem;
         color: var(--secondary);
         order: 2;
@@ -379,33 +383,48 @@
         padding-right: 1.5rem;
     }
 
-    /* Meaning (смысловой перевод) — tag chip (like word nth-child(6) forms, order 3) */
+    /* Meaning (смысловой перевод) — tag chip */
     #idioms-table .idiom-meaning-cell {
+        order: 3;
+        margin-right: 0.1rem;
+        background: transparent !important;
+        padding: 0 !important;
+        width: auto !important;
+    }
+    #idioms-table .idiom-meaning-cell span {
         font-size: 0.68rem;
         color: var(--text-muted);
         background: rgba(255, 255, 255, 0.05);
         padding: 0.1rem 0.4rem;
         border-radius: 5px;
-        order: 3;
-        margin-right: 0.3rem;
+        display: inline-block;
     }
-    #idioms-table .idiom-meaning-cell:empty { display: none; }
+    #idioms-table .idiom-meaning-cell:empty, 
+    #idioms-table .idiom-meaning-cell span:empty { display: none !important; }
 
-    /* Info (дополнительно) — tag chip (like word nth-child(7) extra, order 3) */
+    /* Info (дополнительно) — tag chip */
     #idioms-table .idiom-info-cell {
+        order: 3;
+        margin-right: 0.1rem;
+        background: transparent !important;
+        padding: 0 !important;
+        width: auto !important;
+    }
+    #idioms-table .idiom-info-cell span {
         font-size: 0.68rem;
         color: var(--text-muted);
         background: rgba(255, 255, 255, 0.05);
         padding: 0.1rem 0.4rem;
         border-radius: 5px;
-        order: 3;
-        margin-right: 0.3rem;
+        display: inline-block;
     }
-    #idioms-table .idiom-info-cell:empty { display: none; }
+    #idioms-table .idiom-info-cell:empty, 
+    #idioms-table .idiom-info-cell span:empty { display: none !important; }
 
-    /* Example — full width with left border (like word nth-child(8), order 4) */
+    /* Example — full width with left border */
     #idioms-table .idiom-example-cell {
-        width: 100%;
+        width: 100% !important;
+        flex: 0 0 100% !important;
         font-size: 0.75rem;
         color: rgba(255, 255, 255, 0.55);
         font-style: normal;
@@ -416,14 +435,15 @@
     }
     #idioms-table .idiom-example-cell:empty { display: none; }
 
-    /* Interval badge (like word nth-child(11), order 20) */
+    /* Interval badge */
     #idioms-table .idiom-interval-cell {
         order: 20;
         margin-top: 0.6rem;
-        margin-right: 0.5rem;
+        margin-right: 0.2rem;
         display: flex;
         align-items: center;
         height: 22px;
+        width: auto !important;
     }
     #idioms-table .idiom-interval-cell .level-badge {
         background: rgba(99, 102, 241, 0.12) !important;
@@ -440,7 +460,7 @@
         justify-content: center;
     }
 
-    /* Next date (like word nth-child(12), order 24) */
+    /* Next date */
     #idioms-table .idiom-date-cell {
         display: flex !important;
         order: 24;
@@ -452,10 +472,11 @@
         margin-right: 0.5rem;
         align-items: center;
         height: 22px;
+        width: auto !important;
     }
     #idioms-table .idiom-date-cell:empty { display: none !important; }
 
-    /* Folder (like word nth-child(10), order 25) */
+    /* Folder */
     #idioms-table .idiom-folder-cell {
         order: 25;
         font-size: 0.8rem;
@@ -470,6 +491,7 @@
         display: flex;
         align-items: center;
         height: 22px;
+        width: auto !important;
     }
     #idioms-table .idiom-folder-cell:empty { display: none; }
 

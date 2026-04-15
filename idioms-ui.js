@@ -407,8 +407,8 @@ class IdiomsUI {
                 <td class="idiom-ideal-cell" style="${displayStyle('ideal')}">${idealDisplay}</td>
                 <td class="idiom-text-cell" style="${displayStyle('idiom')}"><strong>${idiom.idiom || ''}</strong></td>
                 <td class="idiom-translation-cell" style="${displayStyle('translation')}"><strong>${idiom.translation || ''}</strong></td>
-                <td class="idiom-meaning-cell" style="${displayStyle('meaning')}">${idiom.meaning || ''}</td>
-                <td class="idiom-info-cell" style="${displayStyle('info')}">${idiom.info || ''}</td>
+                <td class="idiom-meaning-cell" style="${displayStyle('meaning')}"><span>${idiom.meaning || ''}</span></td>
+                <td class="idiom-info-cell" style="${displayStyle('info')}"><span>${idiom.info || ''}</span></td>
                 <td class="idiom-example-cell" style="${displayStyle('example')}">${idiom.example || ''}</td>
                 <td class="idiom-folder-cell" style="${displayStyle('folder')}" title="${idiom.folder || ''}">${idiom.folder || ''}</td>
                 <td class="idiom-interval-cell" style="${displayStyle('interval')}"><span class="level-badge">${intervalDisplay}</span></td>
